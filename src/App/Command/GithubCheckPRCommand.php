@@ -70,40 +70,40 @@ class GithubCheckPRCommand extends Command
         $date->sub(new DateInterval('P1D'));
 
         $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:pr is:merged merged:>'.$date->format('Y-m-d'));
-        return $this->checkPR($mergedPullRequests, $output, $table, $hasRows);
+        return $this->checkPR('Merged PR', $mergedPullRequests, $output, $table, $hasRows);
     }
 
     private function checkPRWaitingForMerge(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
     {
         $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:open is:pr label:"QA ✔️"');
-        return $this->checkPR($mergedPullRequests, $output, $table, $hasRows);
+        return $this->checkPR('PR Waiting for Merge', $mergedPullRequests, $output, $table, $hasRows);
     }
 
     private function checkPRWaitingForQA(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
     {
         $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:open is:pr label:"waiting for QA"');
-        return $this->checkPR($mergedPullRequests, $output, $table, $hasRows);
+        return $this->checkPR('PR Waiting for QA', $mergedPullRequests, $output, $table, $hasRows);
     }
 
     private function checkPRWaitingForPM(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
     {
         $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:open is:pr label:"waiting for PM"');
-        return $this->checkPR($mergedPullRequests, $output, $table, $hasRows);
+        return $this->checkPR('PR Waiting for PM', $mergedPullRequests, $output, $table, $hasRows);
     }
 
     private function checkPRWaitingForUX(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
     {
         $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:open is:pr label:"waiting for UX"');
-        return $this->checkPR($mergedPullRequests, $output, $table, $hasRows);
+        return $this->checkPR('PR Waiting for UX', $mergedPullRequests, $output, $table, $hasRows);
     }
 
     private function checkPRWaitingForWording(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
     {
         $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:open is:pr label:"waiting for Wording"');
-        return $this->checkPR($mergedPullRequests, $output, $table, $hasRows);
+        return $this->checkPR('PR Waiting for Wording', $mergedPullRequests, $output, $table, $hasRows);
     }
 
-    private function checkPR(array $returnSearch, OutputInterface $output, Table $table, bool $hasRows)
+    private function checkPR(string $title, array $returnSearch, OutputInterface $output, Table $table, bool $hasRows)
     {
         $rows = [];
         foreach($returnSearch['items'] as $pullRequest) {
@@ -126,7 +126,7 @@ class GithubCheckPRCommand extends Command
             $table->addRows([new TableSeparator()]);
         }
         $table->addRows([
-            [new TableCell('<fg=black;bg=white;options=bold> PR Waiting for Wording </>', ['colspan' => 7])],
+            [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' </>', ['colspan' => 7])],
             new TableSeparator(),
             ['<info>#</info>', '<info>Created At</info>','<info>Title</info>', '<info>Author</info>', '<info>Milestone</info>', '<info>Issue</info>', '<info>Milestone</info>'],
             new TableSeparator(),
