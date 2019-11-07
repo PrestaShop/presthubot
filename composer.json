@@ -1,0 +1,16 @@
+{
+    "name": "prestashop/presthubot",
+    "type": "project",
+    "require": {
+        "symfony/console": "^4.3",
+        "knplabs/github-api": "^2.11",
+        "php-http/guzzle6-adapter": "^1.1"
+    },
+    "autoload": {
+         "psr-4": {
+             "Console\\": "src"
+         },
+         "classmap": ["src"]
+    },
+    "license": "MIT"
+}
