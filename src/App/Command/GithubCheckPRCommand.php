@@ -73,37 +73,37 @@ class GithubCheckPRCommand extends Command
         $date = new DateTime();
         $date->sub(new DateInterval('P1D'));
 
-        $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:pr is:merged merged:>'.$date->format('Y-m-d'));
+        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:pr is:merged merged:>'.$date->format('Y-m-d'));
         return $this->checkPR('Merged PR', $mergedPullRequests, $output, $table, $hasRows);
     }
 
     private function checkPRWaitingForMerge(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
     {
-        $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:open is:pr label:"QA ✔️"');
+        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:open is:pr label:"QA ✔️"');
         return $this->checkPR('PR Waiting for Merge', $mergedPullRequests, $output, $table, $hasRows);
     }
 
     private function checkPRWaitingForQA(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
     {
-        $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:open is:pr label:"waiting for QA"');
+        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:open is:pr label:"waiting for QA"');
         return $this->checkPR('PR Waiting for QA', $mergedPullRequests, $output, $table, $hasRows);
     }
 
     private function checkPRWaitingForPM(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
     {
-        $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:open is:pr label:"waiting for PM"');
+        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:open is:pr label:"waiting for PM"');
         return $this->checkPR('PR Waiting for PM', $mergedPullRequests, $output, $table, $hasRows);
     }
 
     private function checkPRWaitingForUX(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
     {
-        $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:open is:pr label:"waiting for UX"');
+        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:open is:pr label:"waiting for UX"');
         return $this->checkPR('PR Waiting for UX', $mergedPullRequests, $output, $table, $hasRows);
     }
 
     private function checkPRWaitingForWording(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
     {
-        $mergedPullRequests = $this->client->api('search')->issues('repo:PrestaShop/PrestaShop is:open is:pr label:"waiting for Wording"');
+        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:open is:pr label:"waiting for Wording"');
         return $this->checkPR('PR Waiting for Wording', $mergedPullRequests, $output, $table, $hasRows);
     }
 
@@ -112,15 +112,18 @@ class GithubCheckPRCommand extends Command
         $rows = [];
         foreach($returnSearch['items'] as $pullRequest) {
             $linkedIssue = $this->getIssue($output, $pullRequest);
+            $repoName = str_replace('https://api.github.com/repos/PrestaShop/', '', $pullRequest['repository_url']);
             
             $rows[] = [
+                '<href=https://github.com/PrestaShop/'.$repoName.'>'.$repoName.'</>',
                 '<href='.$pullRequest['html_url'].'>#'.$pullRequest['number'].'</>',
                 $pullRequest['created_at'],
                 $pullRequest['title'],
                 '<href='.$pullRequest['user']['html_url'].'>'.$pullRequest['user']['login'].'</>',
                 !empty($pullRequest['milestone']) ? '    <info>✓</info>' : '    <error>✗ </error>',
-                !is_null($linkedIssue) ? '<href='.$linkedIssue['html_url'].'>#'.$linkedIssue['number'].'</>' : '',
-                !is_null($linkedIssue) ? (!empty($linkedIssue['milestone']) ? '    <info>✓</info>' : '    <error>✗ </error>') : '',
+                !is_null($linkedIssue) && $repoName == 'PrestaShop'
+                    ? (!empty($linkedIssue['milestone']) ? '<info>✓ </info>' : '<error>✗ </error>') .' <href='.$linkedIssue['html_url'].'>#'.$linkedIssue['number'].'</>'
+                    : '',
             ];
         }
         if (empty($rows)) {
@@ -132,7 +135,7 @@ class GithubCheckPRCommand extends Command
         $table->addRows([
             [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' </>', ['colspan' => 7])],
             new TableSeparator(),
-            ['<info>#</info>', '<info>Created At</info>','<info>Title</info>', '<info>Author</info>', '<info>Milestone</info>', '<info>Issue</info>', '<info>Milestone</info>'],
+            ['<info>Project</info>', '<info>#</info>', '<info>Created At</info>','<info>Title</info>', '<info>Author</info>', '<info>Milestone</info>', '<info>Issue</info>'],
             new TableSeparator(),
         ]);
         $table->addRows($rows);
