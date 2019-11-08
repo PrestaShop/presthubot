@@ -151,6 +151,10 @@ class GithubCheckPRCommand extends Command
             preg_match('#Fixes\sissue\s\#([0-9]{1,5})#', $pullRequest['body'], $matches);
             $issueId = !empty($matches) && !empty($matches[1]) ? $matches[1] : null;
         }
+        if (empty($issueId)) {
+            preg_match('#Fixes\shttps:\/\/github.com\/PrestaShop\/PrestaShop\/issues\/([0-9]{1,5})#', $pullRequest['body'], $matches);
+            $issueId = !empty($matches) && !empty($matches[1]) ? $matches[1] : null;
+        }
         $issue = is_null($issueId) ? null : $this->client->api('issue')->show('PrestaShop', 'PrestaShop', $issueId);
 
         // API Alert
