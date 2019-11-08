@@ -6,6 +6,10 @@ use Console\App\Command\GithubCheckPRCommand;
 use Console\App\Command\GithubCheckModuleCommand;
 use Console\App\Command\GithubStatsCommand;
 use Symfony\Component\Console\Application;
+use Symfony\Component\Dotenv\Dotenv;
+
+$dotenv = new Dotenv();
+$dotenv->load(__DIR__.'/../.env');
  
 $app = new Application();
 $app->add(new GithubCheckModuleCommand());

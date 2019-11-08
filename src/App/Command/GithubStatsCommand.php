@@ -27,12 +27,16 @@ class GithubStatsCommand extends Command
             ->addOption(
                 'ghtoken',
                 null,
-                InputOption::VALUE_OPTIONAL
+                InputOption::VALUE_OPTIONAL,
+                '',
+                $_ENV['GH_TOKEN']
             )
             ->addOption(
                 'username',
                 null,
-                InputOption::VALUE_REQUIRED
+                InputOption::VALUE_OPTIONAL,
+                '',
+                $_ENV['GH_USERNAME']
             );
         
     }
