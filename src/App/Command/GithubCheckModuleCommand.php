@@ -26,32 +26,75 @@ class GithubCheckModuleCommand extends Command
     protected $repositories = [
         'bankwire',
         'blockreassurance',
-        'cheque',
+        'contactform',
         'cronjobs',
+        'dashactivity',
+        'dashgoals',
+        'dashproducts',
+        'dashtrends',
         'dateofdelivery',
         'gadwords',
         'gamification',
+        'graphnvd3',
+        'gridhtml',
+        'gsitemap',
+        'pagesnotfound',
         'productcomments',
+        'ps_banner',
+        'ps_categorytree',
+        'ps_checkpayment',
         'ps_contactinfo',
         'ps_crossselling',
+        'ps_currencyselector',
         'ps_customeraccountlinks',
+        'ps_customersignin',
+        'ps_customtext',
         'ps_dataprivacy',
         'ps_emailalerts',
         'ps_emailsmanager',
         'ps_emailsubscription',
         'ps_facetedsearch',
+        'ps_faviconnotificationbo',
+        'ps_featuredproducts',
         'ps_googleanalytics',
         'ps_imageslider',
+        'ps_languageselector',
         'ps_linklist',
         'ps_mainmenu',
         'ps_mbo',
         'ps_newproducts',
         'ps_searchbar',
+        'ps_sharebuttons',
         'ps_shoppingcart',
+        'ps_socialfollow',
         'ps_themecusto',
         'ps_wirepayment',
         'pscleaner',
         'psgdpr',
+        'sekeywords',
+        'statsbestcategories',
+        'statsbestcustomers',
+        'statsbestmanufacturers',
+        'statsbestproducts',
+        'statsbestsuppliers',
+        'statsbestvouchers',
+        'statscarrier',
+        'statscatalog',
+        'statscheckup',
+        'statsdata',
+        'statsequipment',
+        'statsforecast',
+        'statslive',
+        'statsnewsletter',
+        'statsorigin',
+        'statspersonalinfos',
+        'statsproduct',
+        'statsregistrations',
+        'statssales',
+        'statssearch',
+        'statsstock',
+        'statsvisits',
+        'welcome',
         'watermark',
     ];    
 
@@ -115,10 +158,10 @@ class GithubCheckModuleCommand extends Command
         foreach($labelsInfo as $info) {
             $labels[] = $info['name'];
         }
-        $checkLabels = (in_array('Waiting for QA', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . " Waiting for QA" . PHP_EOL .
-            (in_array('QA ✔️', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . " QA ✓" . PHP_EOL .
-            (in_array('Waiting for author', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . " Waiting for author" . PHP_EOL .
-            (in_array('Waiting for PM', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . " Waiting for PM";
+        $checkLabels = (in_array('Waiting for QA', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' Waiting for QA' . PHP_EOL .
+            (in_array('QA ✔️', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' QA ✓' . PHP_EOL .
+            (in_array('Waiting for author', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' Waiting for author' . PHP_EOL .
+            (in_array('Waiting for PM', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' Waiting for PM';
 
         // Check branch dev ou develop
         $references = $this->client->api('gitData')->references()->branches($org, $repository);
@@ -140,15 +183,15 @@ class GithubCheckModuleCommand extends Command
         $hasLogoPNG = $this->client->api('repo')->contents()->exists($org, $repository, 'logo.png', 'refs/heads/master');
         $hasReleaseDrafter = $this->client->api('repo')->contents()->exists($org, $repository, '.github/release-drafter.yml', 'refs/heads/master');
         $hasPRTemplate = $this->client->api('repo')->contents()->exists($org, $repository, '.github/PULL_REQUEST_TEMPLATE.md', 'refs/heads/master');
-        $checkFiles = ($hasReadme ? '<info>✓ </info>' : '<error>✗ </error>') . " README.md" . PHP_EOL .
-            ($hasContributors ? '<info>✓ </info>' : '<error>✗ </error>') . " CONTRIBUTORS.md" . PHP_EOL .
-            ($hasChangelog ? '<info>✓ </info>' : '<error>✗ </error>') . " CHANGELOG.txt" . PHP_EOL .
-            ($hasComposerJson ? '<info>✓ </info>' : '<error>✗ </error>') . " composer.json" . PHP_EOL .
-            ($hasComposerLock ? '<info>✓ </info>' : '<error>✗ </error>') . " composer.lock" . PHP_EOL .
-            ($hasConfigXML ? '<info>✓ </info>' : '<error>✗ </error>') . " config.xml" . PHP_EOL .
-            ($hasLogoPNG ? '<info>✓ </info>' : '<error>✗ </error>') . " logo.png" . PHP_EOL .
-            ($hasReleaseDrafter ? '<info>✓ </info>' : '<error>✗ </error>') . " .github/release-drafter.yml" . PHP_EOL .
-            ($hasPRTemplate ? '<info>✓ </info>' : '<error>✗ </error>') . " .github/PULL_REQUEST_TEMPLATE.md";
+        $checkFiles = ($hasReadme ? '<info>✓ </info>' : '<error>✗ </error>') . ' README.md' . PHP_EOL .
+            ($hasContributors ? '<info>✓ </info>' : '<error>✗ </error>') . ' CONTRIBUTORS.md' . PHP_EOL .
+            ($hasChangelog ? '<info>✓ </info>' : '<error>✗ </error>') . ' CHANGELOG.txt' . PHP_EOL .
+            ($hasComposerJson ? '<info>✓ </info>' : '<error>✗ </error>') . ' composer.json' . PHP_EOL .
+            ($hasComposerLock ? '<info>✓ </info>' : '<error>✗ </error>') . ' composer.lock' . PHP_EOL .
+            ($hasConfigXML ? '<info>✓ </info>' : '<error>✗ </error>') . ' config.xml' . PHP_EOL .
+            ($hasLogoPNG ? '<info>✓ </info>' : '<error>✗ </error>') . ' logo.png' . PHP_EOL .
+            ($hasReleaseDrafter ? '<info>✓ </info>' : '<error>✗ </error>') . ' .github/release-drafter.yml' . PHP_EOL .
+            ($hasPRTemplate ? '<info>✓ </info>' : '<error>✗ </error>') . ' .github/PULL_REQUEST_TEMPLATE.md';
 
         // Check Issues
         $hasIssuesOpened = $repositoryInfo['has_issues'];
@@ -178,8 +221,8 @@ class GithubCheckModuleCommand extends Command
         foreach($repositoryInfoGraphQL['data']['repository']['repositoryTopics']['edges'] as $edge) {
             $topics[] = $edge['node']['topic']['name'];
         }
-        $checkTopics = (in_array('prestashop', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . " prestashop" . PHP_EOL .
-            (in_array('prestashop-module', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . " prestashop-module";
+        $checkTopics = (in_array('prestashop', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . ' prestashop' . PHP_EOL .
+            (in_array('prestashop-module', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . ' prestashop-module';
 
         $table->addRows([[
             '<href='.$repositoryInfo['html_url'].'>'.$repository.'</>',
