@@ -15,6 +15,14 @@ use Symfony\Component\Console\Output\OutputInterface;
  
 class GithubCheckPRCommand extends Command
 {
+    const LABEL_QA_OK = 'label:"QA ✔️"';
+    const LABEL_WAITING_FOR_AUTHOR = 'label:"waiting for author"';
+    const LABEL_WAITING_FOR_PM = 'label:"waiting for PM"';
+    const LABEL_WAITING_FOR_QA = 'label:"waiting for QA"';
+    const LABEL_WAITING_FOR_UX = 'label:"waiting for UX"';
+    const LABEL_WAITING_FOR_WORDING = 'label:"waiting for Wording"';
+    const LABEL_WIP = 'label:WIP';
+    
     /**
      * @var Client;
      */
@@ -49,62 +57,41 @@ class GithubCheckPRCommand extends Command
             $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
         }
 
-        $table = new Table($output);
-        $table->setStyle('box');
-
-        // Check Merged PR (Milestone, Issue & Milestone)
-        $hasRows = $this->checkMergedPR($input, $output, $table, false);
-        // Check PR waiting for merge
-        $hasRows = $this->checkPRWaitingForMerge($input, $output, $table, $hasRows);
-        // Check PR waiting for QA
-        $hasRows = $this->checkPRWaitingForQA($input, $output, $table, $hasRows);
-        // Check PR waiting for PM
-        $hasRows = $this->checkPRWaitingForPM($input, $output, $table, $hasRows);
-        // Check PR waiting for UX
-        $hasRows = $this->checkPRWaitingForUX($input, $output, $table, $hasRows);
-        // Check PR waiting for Wording
-        $hasRows = $this->checkPRWaitingForWording($input, $output, $table, $hasRows);
-
-        $table->render();
-    }
-
-    private function checkMergedPR(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
-    {
         $date = new DateTime();
         $date->sub(new DateInterval('P1D'));
+        $arrayRequests = [
+            // Check Merged PR (Milestone, Issue & Milestone)
+            'Merged PR' => 'is:merged merged:>'.$date->format('Y-m-d'),
+            // Check PR waiting for merge
+            'PR Waiting for Merge' => 'is:open ' . self::LABEL_QA_OK,
+            // Check PR waiting for QA
+            'PR Waiting for QA' => 'is:open ' . self::LABEL_WAITING_FOR_QA,
+            // Check PR waiting for PM
+            'PR Waiting for PM' => 'is:open ' . self::LABEL_WAITING_FOR_PM,
+            // Check PR waiting for UX
+            'PR Waiting for UX' => 'is:open ' . self::LABEL_WAITING_FOR_UX,
+            // Check PR waiting for Wording
+            'PR Waiting for Wording' => 'is:open ' . self::LABEL_WAITING_FOR_WORDING,
+            // Check PR waiting for Review 
+            'PR Waiting for Review' => 'is:open review:required '
+                .' -'.self::LABEL_WAITING_FOR_AUTHOR
+                .' -'.self::LABEL_WAITING_FOR_PM
+                .' -'.self::LABEL_WAITING_FOR_QA
+                .' -'.self::LABEL_WAITING_FOR_UX
+                .' -'.self::LABEL_WAITING_FOR_WORDING
+                .' -'.self::LABEL_WAITING_FOR_QA
+                .' -'.self::LABEL_WIP,
+        ];
+        $requestCommon = 'org:PrestaShop is:pr ';
 
-        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:pr is:merged merged:>'.$date->format('Y-m-d'));
-        return $this->checkPR('Merged PR', $mergedPullRequests, $output, $table, $hasRows);
-    }
+        $table = new Table($output);
+        $table->setStyle('box');
+        foreach($arrayRequests as $title => $request) {
+            $result = $this->client->api('search')->issues($requestCommon . $request);
+            $hasRows = $this->checkPR($title, $result, $output, $table, $hasRows ?? false);
+        }
 
-    private function checkPRWaitingForMerge(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
-    {
-        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:open is:pr label:"QA ✔️"');
-        return $this->checkPR('PR Waiting for Merge', $mergedPullRequests, $output, $table, $hasRows);
-    }
-
-    private function checkPRWaitingForQA(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
-    {
-        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:open is:pr label:"waiting for QA"');
-        return $this->checkPR('PR Waiting for QA', $mergedPullRequests, $output, $table, $hasRows);
-    }
-
-    private function checkPRWaitingForPM(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
-    {
-        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:open is:pr label:"waiting for PM"');
-        return $this->checkPR('PR Waiting for PM', $mergedPullRequests, $output, $table, $hasRows);
-    }
-
-    private function checkPRWaitingForUX(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
-    {
-        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:open is:pr label:"waiting for UX"');
-        return $this->checkPR('PR Waiting for UX', $mergedPullRequests, $output, $table, $hasRows);
-    }
-
-    private function checkPRWaitingForWording(InputInterface $input, OutputInterface $output, Table $table, bool $hasRows)
-    {
-        $mergedPullRequests = $this->client->api('search')->issues('org:PrestaShop is:open is:pr label:"waiting for Wording"');
-        return $this->checkPR('PR Waiting for Wording', $mergedPullRequests, $output, $table, $hasRows);
+        $table->render();
     }
 
     private function checkPR(string $title, array $returnSearch, OutputInterface $output, Table $table, bool $hasRows)
