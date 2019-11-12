@@ -19,10 +19,11 @@ class GithubCheckPRCommand extends Command
     const LABEL_WAITING_FOR_AUTHOR = 'label:"waiting for author"';
     const LABEL_WAITING_FOR_PM = 'label:"waiting for PM"';
     const LABEL_WAITING_FOR_QA = 'label:"waiting for QA"';
+    const LABEL_WAITING_FOR_REBASE = 'label:"waiting for rebase"';
     const LABEL_WAITING_FOR_UX = 'label:"waiting for UX"';
     const LABEL_WAITING_FOR_WORDING = 'label:"waiting for Wording"';
     const LABEL_WIP = 'label:WIP';
-    
+
     /**
      * @var Client;
      */
@@ -64,6 +65,8 @@ class GithubCheckPRCommand extends Command
             'Merged PR' => 'is:merged merged:>'.$date->format('Y-m-d'),
             // Check PR waiting for merge
             'PR Waiting for Merge' => 'is:open ' . self::LABEL_QA_OK,
+            // Check PR waiting for Rebase
+            'PR Waiting for Rebase' => 'is:open ' . self::LABEL_WAITING_FOR_REBASE,
             // Check PR waiting for QA
             'PR Waiting for QA' => 'is:open ' . self::LABEL_WAITING_FOR_QA,
             // Check PR waiting for PM
@@ -77,6 +80,7 @@ class GithubCheckPRCommand extends Command
                 .' -'.self::LABEL_WAITING_FOR_AUTHOR
                 .' -'.self::LABEL_WAITING_FOR_PM
                 .' -'.self::LABEL_WAITING_FOR_QA
+                .' -'.self::LABEL_WAITING_FOR_REBASE
                 .' -'.self::LABEL_WAITING_FOR_UX
                 .' -'.self::LABEL_WAITING_FOR_WORDING
                 .' -'.self::LABEL_WAITING_FOR_QA
@@ -119,8 +123,18 @@ class GithubCheckPRCommand extends Command
         if ($hasRows) {
             $table->addRows([new TableSeparator()]);
         }
+        uasort($rows, function($row1, $row2) {
+            $key = 0;
+            if ($row1[0] == $row2[0]) {
+                $key = 1;
+                if ($row1[1] == $row2[1]) {
+                    return 0;
+                }
+            }
+            return ($row1[$key] < $row2[$key]) ? -1 : 1;
+        });
         $table->addRows([
-            [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' </>', ['colspan' => 7])],
+            [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' ('.count($rows).') </>', ['colspan' => 7])],
             new TableSeparator(),
             ['<info>Project</info>', '<info>#</info>', '<info>Created At</info>','<info>Title</info>', '<info>Author</info>', '<info>Milestone</info>', '<info>Issue</info>'],
             new TableSeparator(),
