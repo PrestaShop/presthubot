@@ -101,6 +101,18 @@ class GithubCheckPRCommand extends Command
     private function checkPR(string $title, array $returnSearch, OutputInterface $output, Table $table, bool $hasRows)
     {
         $rows = [];
+        uasort($returnSearch['items'], function($row1, $row2) {
+            $repoName1 = strtolower(str_replace('https://api.github.com/repos/PrestaShop/', '', $row1['repository_url']));
+            $repoName2 = strtolower(str_replace('https://api.github.com/repos/PrestaShop/', '', $row2['repository_url']));
+            $key = 0;
+            if ($repoName1 == $repoName2) {
+                if ($row1['number'] == $row2['number']) {
+                    return 0;
+                }
+                return $row1['number'] < $row2['number'] ? -1 : 1;
+            }
+            return $repoName1 < $repoName2 ? -1 : 1;
+        });
         foreach($returnSearch['items'] as $pullRequest) {
             $linkedIssue = $this->getIssue($output, $pullRequest);
             $repoName = str_replace('https://api.github.com/repos/PrestaShop/', '', $pullRequest['repository_url']);
@@ -123,16 +135,6 @@ class GithubCheckPRCommand extends Command
         if ($hasRows) {
             $table->addRows([new TableSeparator()]);
         }
-        uasort($rows, function($row1, $row2) {
-            $key = 0;
-            if ($row1[0] == $row2[0]) {
-                $key = 1;
-                if ($row1[1] == $row2[1]) {
-                    return 0;
-                }
-            }
-            return ($row1[$key] < $row2[$key]) ? -1 : 1;
-        });
         $table->addRows([
             [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' ('.count($rows).') </>', ['colspan' => 7])],
             new TableSeparator(),
