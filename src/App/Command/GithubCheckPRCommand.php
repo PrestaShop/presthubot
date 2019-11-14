@@ -67,6 +67,8 @@ class GithubCheckPRCommand extends Command
             'PR Waiting for Merge' => 'is:open ' . self::LABEL_QA_OK,
             // Check PR waiting for Rebase
             'PR Waiting for Rebase' => 'is:open ' . self::LABEL_WAITING_FOR_REBASE,
+            // Check PR waiting for Author
+            'PR Waiting for Author' => 'is:open ' . self::LABEL_WAITING_FOR_AUTHOR,
             // Check PR waiting for QA
             'PR Waiting for QA' => 'is:open ' . self::LABEL_WAITING_FOR_QA,
             // Check PR waiting for PM
