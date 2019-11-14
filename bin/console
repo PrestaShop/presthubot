@@ -8,8 +8,10 @@ use Console\App\Command\GithubStatsCommand;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Dotenv\Dotenv;
 
-$dotenv = new Dotenv();
-$dotenv->load(__DIR__.'/../.env');
+if (!file_exists(_DIR__.'/../.env')) {
+    $dotenv = new Dotenv();
+    $dotenv->load(__DIR__.'/../.env');
+}
  
 $app = new Application();
 $app->add(new GithubCheckModuleCommand());
