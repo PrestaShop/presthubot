@@ -40,13 +40,6 @@ class GithubCheckPRCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 '',
                 $_ENV['GH_TOKEN']
-            )
-            ->addOption(
-                'username',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                '',
-                $_ENV['GH_USERNAME']
             );
         
     }

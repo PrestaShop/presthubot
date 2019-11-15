@@ -1,29 +1,55 @@
 # PrestHubot
 
-## Check PR
+## Installation
+
+* Install dependancies
+```bash
+composer install
+```
+* Fetch a Github Token : https://github.com/settings/tokens/new?description=PrestHubot&scopes=repo,read:org
+
+## Configuration
+
+You can using parameters :
+* `--ghtoken=<ghtoken>`
+* `--username=<ghusername> `
+
+**OR**
+
+You can use .env file :
+* Copy .env.dist to .env
+* Define your token & username from Github
+```
+GH_TOKEN=<ghtoken>
+GH_USERNAME=<ghusername>
+```
+
+## Usage
+
+### Check PR
 Permits to check PrestaShop PR (and their status)
 
 ```bash
-php bin/console github:check:pr --ghtoken=<ghtoken> --username=<username> 
+php bin/console github:check:pr --ghtoken=<ghtoken>
 ```
 
-## Check Module
+### Check Module
 Permits to check PrestaShop Modules
 
 ```bash
 php bin/console github:check:module --ghtoken=<ghtoken>
 ```
 
-## Check Repositories
+### Check Repositories
 Permits to check PrestaShop Repositories
 
 ```bash
 php bin/console github:check:repository --ghtoken=<ghtoken>
 ```
 
-## Get Stats
+### Get Stats
 Get Stats
 
 ```bash
-php bin/console github:stats --ghtoken=<ghtoken> --username=<username> 
+php bin/console github:stats --ghtoken=<ghtoken> --username=<ghusername> 
 ```
