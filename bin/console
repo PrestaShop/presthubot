@@ -4,6 +4,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
  
 use Console\App\Command\GithubCheckPRCommand;
 use Console\App\Command\GithubCheckModuleCommand;
+use Console\App\Command\GithubCheckRepositoryCommand;
 use Console\App\Command\GithubStatsCommand;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Dotenv\Dotenv;
@@ -16,5 +17,6 @@ if (file_exists(__DIR__.'/../.env')) {
 $app = new Application();
 $app->add(new GithubCheckModuleCommand());
 $app->add(new GithubCheckPRCommand());
+$app->add(new GithubCheckRepositoryCommand());
 $app->add(new GithubStatsCommand());
 $app->run();

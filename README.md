@@ -14,6 +14,13 @@ Permits to check PrestaShop Modules
 php bin/console github:check:module --ghtoken=<ghtoken>
 ```
 
+## Check Repositories
+Permits to check PrestaShop Repositories
+
+```bash
+php bin/console github:check:repository --ghtoken=<ghtoken>
+```
+
 ## Get Stats
 Get Stats
 
