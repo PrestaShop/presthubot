@@ -4,6 +4,7 @@ namespace Console\App\Command;
 use DateInterval;
 use DateTime;
 use Github\Client;
+use Github\ResultPager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
@@ -92,8 +93,10 @@ class GithubCheckPRCommand extends Command
 
         $table = new Table($output);
         $table->setStyle('box');
+        $searchApi = $this->client->api('search');
+        $paginator  = new ResultPager($this->client);
         foreach($arrayRequests as $title => $request) {
-            $result = $this->client->api('search')->issues($requestCommon . $request);
+            $result = $paginator->fetchAll($searchApi, 'issues', [$requestCommon . $request]);
             $hasRows = $this->checkPR($title, $result, $output, $table, $hasRows ?? false);
         }
 
@@ -103,7 +106,7 @@ class GithubCheckPRCommand extends Command
     private function checkPR(string $title, array $returnSearch, OutputInterface $output, Table $table, bool $hasRows)
     {
         $rows = [];
-        uasort($returnSearch['items'], function($row1, $row2) {
+        uasort($returnSearch, function($row1, $row2) {
             $repoName1 = strtolower(str_replace('https://api.github.com/repos/PrestaShop/', '', $row1['repository_url']));
             $repoName2 = strtolower(str_replace('https://api.github.com/repos/PrestaShop/', '', $row2['repository_url']));
             $key = 0;
@@ -115,15 +118,17 @@ class GithubCheckPRCommand extends Command
             }
             return $repoName1 < $repoName2 ? -1 : 1;
         });
-        foreach($returnSearch['items'] as $pullRequest) {
+        foreach($returnSearch as $pullRequest) {
             $linkedIssue = $this->getIssue($output, $pullRequest);
             $repoName = str_replace('https://api.github.com/repos/PrestaShop/', '', $pullRequest['repository_url']);
+            $pullRequestTitle = str_split($pullRequest['title'], 80);
+            $pullRequestTitle = implode(PHP_EOL, $pullRequestTitle);
             
             $rows[] = [
                 '<href=https://github.com/PrestaShop/'.$repoName.'>'.$repoName.'</>',
                 '<href='.$pullRequest['html_url'].'>#'.$pullRequest['number'].'</>',
                 $pullRequest['created_at'],
-                $pullRequest['title'],
+                $pullRequestTitle,
                 '<href='.$pullRequest['user']['html_url'].'>'.$pullRequest['user']['login'].'</>',
                 !empty($pullRequest['milestone']) ? '    <info>✓</info>' : '    <error>✗ </error>',
                 !is_null($linkedIssue) && $repoName == 'PrestaShop'
