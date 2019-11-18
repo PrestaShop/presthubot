@@ -167,11 +167,9 @@ class GithubCheckModuleCommand extends Command
         $references = $this->client->api('gitData')->references()->branches($org, $repository);
         $branches = [];
         foreach($references as $info) {
-            $reference = $reference ?? $info['ref'];
-            $branches[$info['node_id']] = str_replace('refs/heads/', '', $info['ref']);
+            $branches[str_replace('refs/heads/', '', $info['ref'])] = $info['object']['sha'];
         }
-        $checkDevelop = (in_array('dev', $branches) ? true : (in_array('develop', $branches) ? true : false));
-        $branchDevelop = (in_array('dev', $branches) ? 'dev' : (in_array('develop', $branches) ? 'develop' : ''));
+        $branchDevelop = (array_key_exists('dev', $branches) ? 'dev' : (in_ararray_key_existsray('develop', $branches) ? 'develop' : ''));
 
         // Check Files 
         $hasReadme = $this->client->api('repo')->contents()->exists($org, $repository, 'README.md', 'refs/heads/master');
@@ -226,6 +224,9 @@ class GithubCheckModuleCommand extends Command
         $checkTopics = (in_array('prestashop', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . ' prestashop' . PHP_EOL .
             (in_array('prestashop-module', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . ' prestashop-module';
 
+        $labelBranch = 'Branch : ';
+        $labelBranch .= $branchDevelop ? '<info>✓ </info>' . ' ('.$branchDevelop.')' : '<error>✗ </error>';
+        $labelBranch .= $branchDevelop ? PHP_EOL . 'Status : ' . ($branches[$branchDevelop] == $branches['master'] ? '<info>✓ </info>': '<error>✗ </error>') : ''; 
         $table->addRows([[
             '<href='.$repositoryInfo['html_url'].'>'.$repository.'</>',
             $repositoryInfo['stargazers_count'],
@@ -235,7 +236,7 @@ class GithubCheckModuleCommand extends Command
             !empty($repositoryInfo['description']) ? '<info>✓ </info>' : '<error>✗ </error>',
             $repositoryInfo['license']['spdx_id'],
             $checkLabels,
-            ($checkDevelop ? '<info>✓ </info>' . ' ('.$branchDevelop.')' : '<error>✗ </error>'),
+            $labelBranch,
             $checkFiles,
             $checkTopics
         ]]);
