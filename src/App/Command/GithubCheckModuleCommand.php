@@ -152,16 +152,16 @@ class GithubCheckModuleCommand extends Command
         // Num PR 
         $numOpenPR = $this->client->api('search')->issues('repo:'.$org.'/'.$repository.' is:open is:pr');
 
-        // Check Labels “Waiting for QA”, “QA approved”, “Waiting for author”, “Waiting for PM”
+        // Check Labels “waiting for QA”, “QA approved”, “waiting for author”, “waiting for PM”
         $labelsInfo = $this->client->api('issue')->labels()->all($org, $repository);
         $labels = [];
         foreach($labelsInfo as $info) {
             $labels[] = $info['name'];
         }
-        $checkLabels = (in_array('Waiting for QA', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' Waiting for QA' . PHP_EOL .
+        $checkLabels = (in_array('waiting for QA', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for QA' . PHP_EOL .
             (in_array('QA ✔️', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' QA ✓' . PHP_EOL .
-            (in_array('Waiting for author', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' Waiting for author' . PHP_EOL .
-            (in_array('Waiting for PM', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' Waiting for PM';
+            (in_array('waiting for author', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for author' . PHP_EOL .
+            (in_array('waiting for PM', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for PM';
 
         // Check branch dev ou develop
         $references = $this->client->api('gitData')->references()->branches($org, $repository);
