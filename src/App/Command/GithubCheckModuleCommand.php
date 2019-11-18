@@ -181,6 +181,7 @@ class GithubCheckModuleCommand extends Command
         $hasComposerLock = $this->client->api('repo')->contents()->exists($org, $repository, 'composer.lock', 'refs/heads/master');
         $hasConfigXML = $this->client->api('repo')->contents()->exists($org, $repository, 'config.xml', 'refs/heads/master');
         $hasLogoPNG = $this->client->api('repo')->contents()->exists($org, $repository, 'logo.png', 'refs/heads/master');
+        $hasTravis = $this->client->api('repo')->contents()->exists($org, $repository, '.travis.yml', 'refs/heads/master');
         $hasReleaseDrafter = $this->client->api('repo')->contents()->exists($org, $repository, '.github/release-drafter.yml', 'refs/heads/master');
         $hasPRTemplate = $this->client->api('repo')->contents()->exists($org, $repository, '.github/PULL_REQUEST_TEMPLATE.md', 'refs/heads/master');
         $checkFiles = ($hasReadme ? '<info>✓ </info>' : '<error>✗ </error>') . ' README.md' . PHP_EOL .
@@ -191,7 +192,8 @@ class GithubCheckModuleCommand extends Command
             ($hasConfigXML ? '<info>✓ </info>' : '<error>✗ </error>') . ' config.xml' . PHP_EOL .
             ($hasLogoPNG ? '<info>✓ </info>' : '<error>✗ </error>') . ' logo.png' . PHP_EOL .
             ($hasReleaseDrafter ? '<info>✓ </info>' : '<error>✗ </error>') . ' .github/release-drafter.yml' . PHP_EOL .
-            ($hasPRTemplate ? '<info>✓ </info>' : '<error>✗ </error>') . ' .github/PULL_REQUEST_TEMPLATE.md';
+            ($hasPRTemplate ? '<info>✓ </info>' : '<error>✗ </error>') . ' .github/PULL_REQUEST_TEMPLATE.md' . PHP_EOL .
+            ($hasTravis ? '<info>✓ </info>' : '<error>✗ </error>') . ' .travis.yml';
 
         // Check Issues
         $hasIssuesOpened = $repositoryInfo['has_issues'];
