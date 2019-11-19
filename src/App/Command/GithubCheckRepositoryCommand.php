@@ -39,6 +39,8 @@ class GithubCheckRepositoryCommand extends Command
         if (!empty($ghToken)) {
             $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
         }
+        $time = time();
+
         $page = 1;
         $results = [];
         do {
@@ -100,5 +102,6 @@ class GithubCheckRepositoryCommand extends Command
             $licenseCell,
         ]]);
         $table->render();
+        $output->writeLn(['', 'Ouput generated in ' . (time() - $time) . 's.']);
     }
 }

@@ -50,7 +50,9 @@ class GithubStatsCommand extends Command
         }
 
         // Get Stats
+        $time = time();
         $this->getStats($input, $output);
+        $output->writeLn(['', 'Ouput generated in ' . (time() - $time) . 's.']);
     }
 
     private function getStats(InputInterface $input, OutputInterface $output)

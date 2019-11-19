@@ -51,6 +51,7 @@ class GithubCheckPRCommand extends Command
         if (!empty($ghToken)) {
             $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
         }
+        $time = time();
 
         $date = new DateTime();
         $date->sub(new DateInterval('P1D'));
@@ -94,6 +95,7 @@ class GithubCheckPRCommand extends Command
         }
 
         $table->render();
+        $output->writeLn(['', 'Ouput generated in ' . (time() - $time) . 's.']);
     }
 
     private function checkPR(string $title, array $returnSearch, OutputInterface $output, Table $table, bool $hasRows)

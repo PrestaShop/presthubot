@@ -118,6 +118,7 @@ class GithubCheckModuleCommand extends Command
         if (!empty($ghToken)) {
             $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
         }
+        $time = time();
 
         $table = new Table($output);
         $table
@@ -143,6 +144,7 @@ class GithubCheckModuleCommand extends Command
             }
         }
         $table->render();
+        $output->writeLn(['', 'Ouput generated in ' . (time() - $time) . 's.']);
     }
 
     private function checkRepository(string $org, string $repository, Table $table)
