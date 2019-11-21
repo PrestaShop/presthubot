@@ -39,6 +39,7 @@ class GithubCheckModuleCommand extends Command
         'gridhtml',
         'gsitemap',
         'pagesnotfound',
+        'prestafraud',
         'productcomments',
         'ps_banner',
         'ps_categorytree',
