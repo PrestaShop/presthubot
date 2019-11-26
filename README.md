@@ -37,7 +37,7 @@ php bin/console github:check:pr --ghtoken=<ghtoken>
 Permits to check PrestaShop Modules
 
 ```bash
-php bin/console github:check:module --ghtoken=<ghtoken>
+php bin/console github:check:module --ghtoken=<ghtoken> --module=<module>
 ```
 
 #### Informations

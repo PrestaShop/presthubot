@@ -109,17 +109,26 @@ class GithubCheckModuleCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 '',
                 $_ENV['GH_TOKEN']
+            )
+            ->addOption(
+                'module',
+                null,
+                InputOption::VALUE_OPTIONAL
             );   
     }
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->client = new Client();
         $ghToken = $input->getOption('ghtoken');
+        $module = $input->getOption('module');
+
+        $this->client = new Client();
         if (!empty($ghToken)) {
             $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
         }
         $time = time();
+
+        $arrayRepositories = $module ? [$module] : $this->repositories;
 
         $table = new Table($output);
         $table
@@ -137,10 +146,10 @@ class GithubCheckModuleCommand extends Command
                 'Files',
                 'GH Topics',
             ]);
-        foreach($this->repositories as $key => $repository) {
+        foreach($arrayRepositories as $key => $repository) {
             $this->checkRepository('PrestaShop', $repository, $table);
 
-            if ($key !== array_key_last($this->repositories)) {
+            if ($key !== array_key_last($arrayRepositories)) {
                 $table->addRows([new TableSeparator()]);
             }
         }
