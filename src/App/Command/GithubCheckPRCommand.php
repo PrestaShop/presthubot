@@ -59,19 +59,21 @@ class GithubCheckPRCommand extends Command
             // Check Merged PR (Milestone, Issue & Milestone)
             'Merged PR' => 'is:merged merged:>'.$date->format('Y-m-d'),
             // Check PR waiting for merge
-            'PR Waiting for Merge' => 'is:open ' . self::LABEL_QA_OK,
+            'PR Waiting for Merge' => 'is:open ' . self::LABEL_QA_OK
+                .' -'.self::LABEL_WAITING_FOR_REBASE,
+            // Check PR waiting for QA
+            'PR Waiting for QA' => 'is:open ' . self::LABEL_WAITING_FOR_QA
+                .' -'.self::LABEL_WAITING_FOR_AUTHOR,
             // Check PR waiting for Rebase
             'PR Waiting for Rebase' => 'is:open ' . self::LABEL_WAITING_FOR_REBASE,
+            // Check PR waiting for PM
+            'PR Waiting for PM' => 'is:open ' . self::LABEL_WAITING_FOR_PM .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+            // Check PR waiting for UX
+            'PR Waiting for UX' => 'is:open ' . self::LABEL_WAITING_FOR_UX .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+            // Check PR waiting for Wording
+            'PR Waiting for Wording' => 'is:open ' . self::LABEL_WAITING_FOR_WORDING .' -'.self::LABEL_WAITING_FOR_AUTHOR,
             // Check PR waiting for Author
             'PR Waiting for Author' => 'is:open ' . self::LABEL_WAITING_FOR_AUTHOR,
-            // Check PR waiting for QA
-            'PR Waiting for QA' => 'is:open ' . self::LABEL_WAITING_FOR_QA,
-            // Check PR waiting for PM
-            'PR Waiting for PM' => 'is:open ' . self::LABEL_WAITING_FOR_PM,
-            // Check PR waiting for UX
-            'PR Waiting for UX' => 'is:open ' . self::LABEL_WAITING_FOR_UX,
-            // Check PR waiting for Wording
-            'PR Waiting for Wording' => 'is:open ' . self::LABEL_WAITING_FOR_WORDING,
             // Check PR waiting for Review 
             'PR Waiting for Review' => 'is:open review:required '
                 .' -'.self::LABEL_WAITING_FOR_AUTHOR
