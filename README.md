@@ -40,6 +40,11 @@ Permits to check PrestaShop Modules
 php bin/console github:check:module --ghtoken=<ghtoken>
 ```
 
+#### Informations
+| Column | | Notes|
+| ------------- | ------------- | ------------- |
+| Files  | .travis.yml | Check if .travis.yml is present<br>Check if `before_deploy` & `deploy` are present in the file |
+
 ### Check Repositories
 Permits to check PrestaShop Repositories
 

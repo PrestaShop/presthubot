@@ -186,6 +186,9 @@ class GithubCheckModuleCommand extends Command
         $fileGitIgnore = $hasGitIgnore ? $this->client->api('repo')->contents()->download($org, $repository, '.gitignore', 'refs/heads/master') : '';
         $checkGitIgnore = $hasGitIgnore ? strpos($fileGitIgnore, 'vendor') !== false : false;
         $hasTravis = $this->client->api('repo')->contents()->exists($org, $repository, '.travis.yml', 'refs/heads/master');
+        $fileTravis = $hasTravis ? $this->client->api('repo')->contents()->download($org, $repository, '.travis.yml', 'refs/heads/master') : '';
+        $checkTravis = $hasTravis ? strpos($fileTravis, 'before_deploy:') !== false : false;
+        $checkTravis = $checkTravis ? strpos($fileTravis, 'deploy:') !== false : false;
         $hasReleaseDrafter = $this->client->api('repo')->contents()->exists($org, $repository, '.github/release-drafter.yml', 'refs/heads/master');
         $hasPRTemplate = $this->client->api('repo')->contents()->exists($org, $repository, '.github/PULL_REQUEST_TEMPLATE.md', 'refs/heads/master');
         $checkFiles = ($hasReadme ? '<info>✓ </info>' : '<error>✗ </error>') . ' README.md' . PHP_EOL .
@@ -199,7 +202,8 @@ class GithubCheckModuleCommand extends Command
             ($hasPRTemplate ? '<info>✓ </info>' : '<error>✗ </error>') . ' .github/PULL_REQUEST_TEMPLATE.md' . PHP_EOL .
             ($hasGitIgnore ? '<info>✓ </info>' : '<error>✗ </error>') . ' .gitignore' . 
             ($checkGitIgnore ? '(<info>✓ </info>)' : '(<error>✗ </error>)') . PHP_EOL .
-            ($hasTravis ? '<info>✓ </info>' : '<error>✗ </error>') . ' .travis.yml';
+            ($hasTravis ? '<info>✓ </info>' : '<error>✗ </error>') . ' .travis.yml' .
+            ($checkTravis ? '(<info>✓ </info>)' : '(<error>✗ </error>)');
 
         // Check Issues
         $hasIssuesOpened = $repositoryInfo['has_issues'];
