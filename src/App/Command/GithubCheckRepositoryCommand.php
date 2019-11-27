@@ -29,22 +29,45 @@ class GithubCheckRepositoryCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 '',
                 $_ENV['GH_TOKEN']
+            )
+            ->addOption(
+                'public',
+                null,
+                InputOption::VALUE_NONE,
+                'Only public repositories'
+            )
+            ->addOption(
+                'private',
+                null,
+                InputOption::VALUE_NONE,
+                'Only private repositories'
             );   
     }
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->client = new Client();
         $ghToken = $input->getOption('ghtoken');
+        $onlyPublic = $input->getOption('public');
+        $onlyPrivate = $input->getOption('private');
+
+        $this->client = new Client();
         if (!empty($ghToken)) {
             $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
         }
         $time = time();
 
+        if (($onlyPublic && $onlyPrivate) || (!$onlyPublic && !$onlyPrivate)) {
+            $type = 'all';
+        } elseif($onlyPrivate) {
+            $type = 'private';
+        } elseif($onlyPublic) {
+            $type = 'public';
+        }
+
         $page = 1;
         $results = [];
         do {
-            $repos = $this->client->api('organization')->repositories('PrestaShop', 'public', $page);
+            $repos = $this->client->api('organization')->repositories('PrestaShop', $type, $page);
             $page++;
             $results = array_merge($results, $repos);
         } while (!empty($repos));

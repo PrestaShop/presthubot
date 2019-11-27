@@ -30,15 +30,27 @@ GH_USERNAME=<ghusername>
 Permits to check PrestaShop PR (and their status)
 
 ```bash
-php bin/console github:check:pr --ghtoken=<ghtoken>
+php bin/console github:check:pr
 ```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
 
 ### Check Module
 Permits to check PrestaShop Modules
 
 ```bash
-php bin/console github:check:module --ghtoken=<ghtoken> --module=<module>
+php bin/console github:check:module
 ```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
+| --module=<module>  | No | Filter only one module |
+
 
 #### Informations
 | Column | | Notes|
@@ -49,12 +61,25 @@ php bin/console github:check:module --ghtoken=<ghtoken> --module=<module>
 Permits to check PrestaShop Repositories
 
 ```bash
-php bin/console github:check:repository --ghtoken=<ghtoken>
+php bin/console github:check:repository
 ```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
+| --public  | No | Filter only on public repositories |
+| --private  | No | Filter only on private repositories |
 
 ### Get Stats
-Get Stats
+Get some stats
 
 ```bash
-php bin/console github:stats --ghtoken=<ghtoken> --username=<ghusername> 
+php bin/console github:stats
 ```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
+| --username=<ghusername>  | Yes/No | Use it or use .env |
