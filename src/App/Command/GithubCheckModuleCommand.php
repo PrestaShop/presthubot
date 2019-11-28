@@ -21,6 +21,11 @@ class GithubCheckModuleCommand extends Command
     protected $client;
 
     /**
+     * @var int
+     */
+    protected $countNumIssuesOpened = 0;
+
+    /**
      * @var array<string>
      */
     protected $repositories = [
@@ -148,11 +153,23 @@ class GithubCheckModuleCommand extends Command
             ]);
         foreach($arrayRepositories as $key => $repository) {
             $this->checkRepository('PrestaShop', $repository, $table);
-
-            if ($key !== array_key_last($arrayRepositories)) {
+            if (count($arrayRepositories) > 1) {
                 $table->addRows([new TableSeparator()]);
             }
         }
+        $table->addRows([[
+            'Total : ' . count($arrayRepositories),
+            '',
+            '',
+            'Opened : ' . $this->countNumIssuesOpened . PHP_EOL . 'Closed : ' . (count($arrayRepositories) - $this->countNumIssuesOpened),
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+        ]]);
         $table->render();
         $output->writeLn(['', 'Ouput generated in ' . (time() - $time) . 's.']);
     }
@@ -220,6 +237,8 @@ class GithubCheckModuleCommand extends Command
         if (!$hasIssuesOpened) {
             $numIssues = $this->client->api('search')->issues('repo:'.$org.'/PrestaShop is:open is:issue label:"'.$repository.'"');
             $numIssues = $numIssues['total_count'];
+        } else {
+            $this->countNumIssuesOpened++;
         }
 
         // Check topics
