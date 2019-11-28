@@ -78,7 +78,7 @@ class GithubCheckRepositoryCommand extends Command
             return strtolower($row1['name']) < strtolower($row2['name']) ? -1 : 1;
         });
 
-        $countStars = $countWDescription = 0;
+        $countStars = $countWDescription = $countIssuesOpened = 0;
         $countWLicense = [];
 
         $table = new Table($output);
@@ -88,6 +88,7 @@ class GithubCheckRepositoryCommand extends Command
                 'Title',
                 '# Stars',
                 'Description',
+                'Issues Opened',
                 'License',
             ]);
         foreach($results as $key => $result) {
@@ -95,10 +96,12 @@ class GithubCheckRepositoryCommand extends Command
                 '<href='.$result['html_url'].'>'.$result['name'].'</>',
                 $result['stargazers_count'],
                 !empty($result['description']) ? '<info>✓ </info>' : '<error>✗ </error>',
+                $result['has_issues'] ? '<info>✓ </info>' : '<error>✗ </error>',
                 $result['license']['spdx_id'],
             ]]);
 
             $countStars += $result['stargazers_count'];
+            $countIssuesOpened += ($result['has_issues'] ? 1 : 0);
             $countWDescription += (!empty($result['description']) ? 1 : 0);
             if (!empty($result['license']['spdx_id'])) {
                 if (!array_key_exists($result['license']['spdx_id'], $countWLicense)) {
@@ -121,6 +124,7 @@ class GithubCheckRepositoryCommand extends Command
         $table->addRows([[
             'Total : ' . count($results),
             'Avg : ' . number_format($countStars / count($results), 2),
+            'Opened : ' . $countIssuesOpened . PHP_EOL . 'Closed : ' . (count($results) - $countIssuesOpened),
             'Num : ' . $countWDescription,
             $licenseCell,
         ]]);
