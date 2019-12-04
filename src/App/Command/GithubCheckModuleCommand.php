@@ -31,6 +31,7 @@ class GithubCheckModuleCommand extends Command
     protected $repositories = [
         'bankwire',
         'blockreassurance',
+        'circuit-breaker',
         'contactform',
         'cronjobs',
         'dashactivity',
@@ -38,6 +39,7 @@ class GithubCheckModuleCommand extends Command
         'dashproducts',
         'dashtrends',
         'dateofdelivery',
+        'decimal',
         'gadwords',
         'gamification',
         'graphnvd3',
@@ -46,6 +48,7 @@ class GithubCheckModuleCommand extends Command
         'pagesnotfound',
         'prestafraud',
         'productcomments',
+        'php-cssjanus',
         'ps_banner',
         'ps_categorytree',
         'ps_checkpayment',
@@ -100,6 +103,7 @@ class GithubCheckModuleCommand extends Command
         'statssearch',
         'statsstock',
         'statsvisits',
+        'TranslationToolsBundle',
         'welcome',
         'watermark',
     ];    
