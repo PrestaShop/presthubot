@@ -198,7 +198,7 @@ class GithubCheckModuleCommand extends Command
         foreach($references as $info) {
             $branches[str_replace('refs/heads/', '', $info['ref'])] = $info['object']['sha'];
         }
-        $branchDevelop = (array_key_exists('dev', $branches) ? 'dev' : (in_ararray_key_existsray('develop', $branches) ? 'develop' : ''));
+        $branchDevelop = (array_key_exists('dev', $branches) ? 'dev' : (array_key_exists('develop', $branches) ? 'develop' : ''));
 
         $countFiles = $this->github->countRepoFiles($org, $repository);
 
