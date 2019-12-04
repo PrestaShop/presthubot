@@ -138,8 +138,8 @@ class GithubCheckModuleCommand extends Command
                 'Title',
                 '# Stars',
                 '# PR',
-                'PS Issues',
-                '# Issues',
+                'Issues',
+                '# Files',
                 'Description',
                 'License',
                 'Labels',
@@ -196,6 +196,8 @@ class GithubCheckModuleCommand extends Command
         }
         $branchDevelop = (array_key_exists('dev', $branches) ? 'dev' : (in_ararray_key_existsray('develop', $branches) ? 'develop' : ''));
 
+        $countFiles = $this->github->countRepoFiles($org, $repository);
+
         // Check Files 
         $hasReadme = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'README.md', 'refs/heads/master');
         $hasContributors = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'CONTRIBUTORS.md', 'refs/heads/master');
@@ -231,7 +233,7 @@ class GithubCheckModuleCommand extends Command
         $hasIssuesOpened = $repositoryInfo['has_issues'];
         $numIssues = $repositoryInfo['open_issues_count'];
         if (!$hasIssuesOpened) {
-            $numIssues = $this->client->api('search')->issues('repo:'.$org.'/PrestaShop is:open is:issue label:"'.$repository.'"');
+            $numIssues = $this->github->getClient()->api('search')->issues('repo:'.$org.'/PrestaShop is:open is:issue label:"'.$repository.'"');
             $numIssues = $numIssues['total_count'];
         } else {
             $this->countNumIssuesOpened++;
@@ -249,8 +251,8 @@ class GithubCheckModuleCommand extends Command
             '<href='.$repositoryInfo['html_url'].'>'.$repository.'</>',
             $repositoryInfo['stargazers_count'],
             $numOpenPR['total_count'],
-            !$hasIssuesOpened ? '<info>✓ </info>' : '<error>✗ </error>',
-            $numIssues,
+            'Opened : ' . (!$hasIssuesOpened ? '<info>✓ </info>' : '<error>✗ </error>') . PHP_EOL . 'Number : ' . $numIssues,
+            $countFiles,
             !empty($repositoryInfo['description']) ? '<info>✓ </info>' : '<error>✗ </error>',
             $repositoryInfo['license']['spdx_id'],
             $checkLabels,
