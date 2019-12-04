@@ -5,6 +5,7 @@ use DateInterval;
 use DateTime;
 use Console\App\Service\Github;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -128,22 +129,23 @@ class GithubCheckModuleCommand extends Command
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $module = $input->getOption('module');
-
         $this->github = new Github($input->getOption('ghtoken'));
+        $module = $input->getOption('module');
         $time = time();
+
+        $sectionProgressBar = $output->section();
+        $sectionTable = $output->section();
 
         $arrayRepositories = $module ? [$module] : $this->repositories;
 
-        $table = new Table($output);
+        // Table
+        $table = new Table($sectionTable);
         $table
             ->setStyle('box')
             ->setHeaders([
                 'Title',
-                '# Stars',
-                '# PR',
+                '#',
                 'Issues',
-                '# Files',
                 'Description',
                 'License',
                 'Labels',
@@ -151,18 +153,24 @@ class GithubCheckModuleCommand extends Command
                 'Files',
                 'GH Topics',
             ]);
+        // Progress Bar
+        $progressBar = new ProgressBar($sectionProgressBar, count($arrayRepositories));
+        $progressBar->start();
+
         foreach($arrayRepositories as $key => $repository) {
             $this->checkRepository('PrestaShop', $repository, $table);
             if (count($arrayRepositories) > 1) {
                 $table->addRows([new TableSeparator()]);
             }
+            $progressBar->advance();
         }
+        $progressBar->finish();
+        $sectionProgressBar->clear();
+
         $table->addRows([[
             'Total : ' . count($arrayRepositories),
             '',
-            '',
             'Opened : ' . $this->countNumIssuesOpened . PHP_EOL . 'Closed : ' . (count($arrayRepositories) - $this->countNumIssuesOpened),
-            '',
             '',
             '',
             '',
@@ -181,6 +189,29 @@ class GithubCheckModuleCommand extends Command
         // Num PR 
         $numOpenPR = $this->github->getClient()->api('search')->issues('repo:'.$org.'/'.$repository.' is:open is:pr');
 
+        // Check branch dev ou develop
+        $references = $this->github->getClient()->api('gitData')->references()->branches($org, $repository);
+        $branches = [];
+        foreach($references as $info) {
+            $branches[str_replace('refs/heads/', '', $info['ref'])] = $info['object']['sha'];
+        }
+        $branchDevelop = (array_key_exists('dev', $branches) ? 'dev' : (array_key_exists('develop', $branches) ? 'develop' : ''));
+
+        // #
+        $nums = 'Stars : '. $repositoryInfo['stargazers_count'] . PHP_EOL
+            . 'PR : ' . $numOpenPR['total_count']  . PHP_EOL
+            . 'Files : ' . $this->github->countRepoFiles($org, $repository);
+
+        // Check Issues
+        $hasIssuesOpened = $repositoryInfo['has_issues'];
+        $numIssues = $repositoryInfo['open_issues_count'];
+        if (!$hasIssuesOpened) {
+            $numIssues = $this->github->getClient()->api('search')->issues('repo:'.$org.'/PrestaShop is:open is:issue label:"'.$repository.'"');
+            $numIssues = $numIssues['total_count'];
+        } else {
+            $this->countNumIssuesOpened++;
+        }
+
         // Check Labels “waiting for QA”, “QA approved”, “waiting for author”, “waiting for PM”
         $labelsInfo = $this->github->getClient()->api('issue')->labels()->all($org, $repository);
         $labels = [];
@@ -191,16 +222,11 @@ class GithubCheckModuleCommand extends Command
             (in_array('QA ✔️', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' QA ✓' . PHP_EOL .
             (in_array('waiting for author', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for author' . PHP_EOL .
             (in_array('waiting for PM', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for PM';
-
-        // Check branch dev ou develop
-        $references = $this->github->getClient()->api('gitData')->references()->branches($org, $repository);
-        $branches = [];
-        foreach($references as $info) {
-            $branches[str_replace('refs/heads/', '', $info['ref'])] = $info['object']['sha'];
-        }
-        $branchDevelop = (array_key_exists('dev', $branches) ? 'dev' : (array_key_exists('develop', $branches) ? 'develop' : ''));
-
-        $countFiles = $this->github->countRepoFiles($org, $repository);
+            
+        // Branch
+        $labelBranch = 'Branch : ';
+        $labelBranch .= $branchDevelop ? '<info>✓ </info>' . ' ('.$branchDevelop.')' : '<error>✗ </error>';
+        $labelBranch .= $branchDevelop ? PHP_EOL . 'Status : ' . ($branches[$branchDevelop] == $branches['master'] ? '<info>✓ </info>': '<error>✗ </error>') : ''; 
 
         // Check Files 
         $hasReadme = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'README.md', 'refs/heads/master');
@@ -233,30 +259,15 @@ class GithubCheckModuleCommand extends Command
             ($hasTravis ? '<info>✓ </info>' : '<error>✗ </error>') . ' .travis.yml' .
             ($checkTravis ? '(<info>✓ </info>)' : '(<error>✗ </error>)');
 
-        // Check Issues
-        $hasIssuesOpened = $repositoryInfo['has_issues'];
-        $numIssues = $repositoryInfo['open_issues_count'];
-        if (!$hasIssuesOpened) {
-            $numIssues = $this->github->getClient()->api('search')->issues('repo:'.$org.'/PrestaShop is:open is:issue label:"'.$repository.'"');
-            $numIssues = $numIssues['total_count'];
-        } else {
-            $this->countNumIssuesOpened++;
-        }
-
         // Check topics
         $topics = $this->github->getRepoTopics($org, $repository);
         $checkTopics = (in_array('prestashop', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . ' prestashop' . PHP_EOL .
             (in_array('prestashop-module', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . ' prestashop-module';
 
-        $labelBranch = 'Branch : ';
-        $labelBranch .= $branchDevelop ? '<info>✓ </info>' . ' ('.$branchDevelop.')' : '<error>✗ </error>';
-        $labelBranch .= $branchDevelop ? PHP_EOL . 'Status : ' . ($branches[$branchDevelop] == $branches['master'] ? '<info>✓ </info>': '<error>✗ </error>') : ''; 
         $table->addRows([[
             '<href='.$repositoryInfo['html_url'].'>'.$repository.'</>',
-            $repositoryInfo['stargazers_count'],
-            $numOpenPR['total_count'],
-            'Opened : ' . (!$hasIssuesOpened ? '<info>✓ </info>' : '<error>✗ </error>') . PHP_EOL . 'Number : ' . $numIssues,
-            $countFiles,
+            $nums,
+            'Closed : ' . (!$hasIssuesOpened ? '<info>✓ </info>' : '<error>✗ </error>') . PHP_EOL . 'Number : ' . $numIssues,
             !empty($repositoryInfo['description']) ? '<info>✓ </info>' : '<error>✗ </error>',
             $repositoryInfo['license']['spdx_id'],
             $checkLabels,
