@@ -3,7 +3,7 @@ namespace Console\App\Command;
 
 use DateInterval;
 use DateTime;
-use Github\Client;
+use Console\App\Service\Github;
 use Github\ResultPager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -26,9 +26,9 @@ class GithubCheckPRCommand extends Command
     const LABEL_WIP = 'label:WIP';
 
     /**
-     * @var Client;
+     * @var Github;
      */
-    protected $client;
+    protected $github;
 
     protected function configure()
     {
@@ -46,11 +46,7 @@ class GithubCheckPRCommand extends Command
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->client = new Client();
-        $ghToken = $input->getOption('ghtoken');
-        if (!empty($ghToken)) {
-            $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
-        }
+        $this->github = new Github($input->getOption('ghtoken'));
         $time = time();
 
         $date = new DateTime();
@@ -89,8 +85,8 @@ class GithubCheckPRCommand extends Command
 
         $table = new Table($output);
         $table->setStyle('box');
-        $searchApi = $this->client->api('search');
-        $paginator  = new ResultPager($this->client);
+        $searchApi = $this->github->getClient()->api('search');
+        $paginator  = new ResultPager($this->github->getClient());
         foreach($arrayRequests as $title => $request) {
             $result = $paginator->fetchAll($searchApi, 'issues', [$requestCommon . $request]);
             $hasRows = $this->checkPR($title, $result, $output, $table, $hasRows ?? false);
@@ -116,7 +112,7 @@ class GithubCheckPRCommand extends Command
             return $repoName1 < $repoName2 ? -1 : 1;
         });
         foreach($returnSearch as $pullRequest) {
-            $linkedIssue = $this->getIssue($output, $pullRequest);
+            $linkedIssue = $this->github->getLinkedIssue($pullRequest);
             $repoName = str_replace('https://api.github.com/repos/PrestaShop/', '', $pullRequest['repository_url']);
             $pullRequestTitle = str_split($pullRequest['title'], 80);
             $pullRequestTitle = implode(PHP_EOL, $pullRequestTitle);
@@ -147,28 +143,5 @@ class GithubCheckPRCommand extends Command
         ]);
         $table->addRows($rows);
         return true;
-    }
-
-    private function getIssue(OutputInterface $output, array $pullRequest)
-    {
-        // Linked Issue
-        preg_match('#Fixes\s\#([0-9]{1,5})#', $pullRequest['body'], $matches);
-        $issueId = !empty($matches) && !empty($matches[1]) ? $matches[1] : null;
-        if (empty($issueId)) {
-            preg_match('#Fixes\sissue\s\#([0-9]{1,5})#', $pullRequest['body'], $matches);
-            $issueId = !empty($matches) && !empty($matches[1]) ? $matches[1] : null;
-        }
-        if (empty($issueId)) {
-            preg_match('#Fixes\shttps:\/\/github.com\/PrestaShop\/PrestaShop\/issues\/([0-9]{1,5})#', $pullRequest['body'], $matches);
-            $issueId = !empty($matches) && !empty($matches[1]) ? $matches[1] : null;
-        }
-        $issue = is_null($issueId) ? null : $this->client->api('issue')->show('PrestaShop', 'PrestaShop', $issueId);
-
-        // API Alert
-        if (isset($pullRequest['_links'])) {
-            $output->writeln('PR #'.$pullRequest['number'].' has _links in its API');
-        }
-
-        return $issue;
     }
 }

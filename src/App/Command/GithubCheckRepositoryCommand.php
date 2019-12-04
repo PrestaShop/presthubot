@@ -3,7 +3,7 @@ namespace Console\App\Command;
 
 use DateInterval;
 use DateTime;
-use Github\Client;
+use Console\App\Service\Github;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
@@ -16,9 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class GithubCheckRepositoryCommand extends Command
 {
     /**
-     * @var Client;
+     * @var Github;
      */
-    protected $client;
+    protected $github;
+
     protected function configure()
     {
         $this->setName('github:check:repository')
@@ -46,14 +47,10 @@ class GithubCheckRepositoryCommand extends Command
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $ghToken = $input->getOption('ghtoken');
         $onlyPublic = $input->getOption('public');
         $onlyPrivate = $input->getOption('private');
 
-        $this->client = new Client();
-        if (!empty($ghToken)) {
-            $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
-        }
+        $this->github = new Github($input->getOption('ghtoken'));
         $time = time();
 
         if (($onlyPublic && $onlyPrivate) || (!$onlyPublic && !$onlyPrivate)) {
@@ -67,7 +64,7 @@ class GithubCheckRepositoryCommand extends Command
         $page = 1;
         $results = [];
         do {
-            $repos = $this->client->api('organization')->repositories('PrestaShop', $type, $page);
+            $repos = $this->github->getClient()->api('organization')->repositories('PrestaShop', $type, $page);
             $page++;
             $results = array_merge($results, $repos);
         } while (!empty($repos));

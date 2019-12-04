@@ -3,7 +3,7 @@ namespace Console\App\Command;
 
 use DateInterval;
 use DateTime;
-use Github\Client;
+use Console\App\Service\Github;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
@@ -16,9 +16,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 class GithubCheckModuleCommand extends Command
 {
     /**
-     * @var Client;
+     * @var Github;
      */
-    protected $client;
+    protected $github;
 
     /**
      * @var int
@@ -124,13 +124,9 @@ class GithubCheckModuleCommand extends Command
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $ghToken = $input->getOption('ghtoken');
         $module = $input->getOption('module');
 
-        $this->client = new Client();
-        if (!empty($ghToken)) {
-            $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
-        }
+        $this->github = new Github($input->getOption('ghtoken'));
         $time = time();
 
         $arrayRepositories = $module ? [$module] : $this->repositories;
@@ -176,13 +172,13 @@ class GithubCheckModuleCommand extends Command
 
     private function checkRepository(string $org, string $repository, Table $table)
     {
-        $repositoryInfo = $this->client->api('repo')->show($org, $repository);
+        $repositoryInfo = $this->github->getClient()->api('repo')->show($org, $repository);
 
         // Num PR 
-        $numOpenPR = $this->client->api('search')->issues('repo:'.$org.'/'.$repository.' is:open is:pr');
+        $numOpenPR = $this->github->getClient()->api('search')->issues('repo:'.$org.'/'.$repository.' is:open is:pr');
 
         // Check Labels “waiting for QA”, “QA approved”, “waiting for author”, “waiting for PM”
-        $labelsInfo = $this->client->api('issue')->labels()->all($org, $repository);
+        $labelsInfo = $this->github->getClient()->api('issue')->labels()->all($org, $repository);
         $labels = [];
         foreach($labelsInfo as $info) {
             $labels[] = $info['name'];
@@ -193,7 +189,7 @@ class GithubCheckModuleCommand extends Command
             (in_array('waiting for PM', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for PM';
 
         // Check branch dev ou develop
-        $references = $this->client->api('gitData')->references()->branches($org, $repository);
+        $references = $this->github->getClient()->api('gitData')->references()->branches($org, $repository);
         $branches = [];
         foreach($references as $info) {
             $branches[str_replace('refs/heads/', '', $info['ref'])] = $info['object']['sha'];
@@ -201,22 +197,22 @@ class GithubCheckModuleCommand extends Command
         $branchDevelop = (array_key_exists('dev', $branches) ? 'dev' : (in_ararray_key_existsray('develop', $branches) ? 'develop' : ''));
 
         // Check Files 
-        $hasReadme = $this->client->api('repo')->contents()->exists($org, $repository, 'README.md', 'refs/heads/master');
-        $hasContributors = $this->client->api('repo')->contents()->exists($org, $repository, 'CONTRIBUTORS.md', 'refs/heads/master');
-        $hasChangelog = $this->client->api('repo')->contents()->exists($org, $repository, 'CHANGELOG.txt', 'refs/heads/master');
-        $hasComposerJson = $this->client->api('repo')->contents()->exists($org, $repository, 'composer.json', 'refs/heads/master');
-        $hasComposerLock = $this->client->api('repo')->contents()->exists($org, $repository, 'composer.lock', 'refs/heads/master');
-        $hasConfigXML = $this->client->api('repo')->contents()->exists($org, $repository, 'config.xml', 'refs/heads/master');
-        $hasLogoPNG = $this->client->api('repo')->contents()->exists($org, $repository, 'logo.png', 'refs/heads/master');
-        $hasGitIgnore = $this->client->api('repo')->contents()->exists($org, $repository, '.gitignore', 'refs/heads/master');
-        $fileGitIgnore = $hasGitIgnore ? $this->client->api('repo')->contents()->download($org, $repository, '.gitignore', 'refs/heads/master') : '';
+        $hasReadme = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'README.md', 'refs/heads/master');
+        $hasContributors = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'CONTRIBUTORS.md', 'refs/heads/master');
+        $hasChangelog = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'CHANGELOG.txt', 'refs/heads/master');
+        $hasComposerJson = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'composer.json', 'refs/heads/master');
+        $hasComposerLock = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'composer.lock', 'refs/heads/master');
+        $hasConfigXML = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'config.xml', 'refs/heads/master');
+        $hasLogoPNG = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'logo.png', 'refs/heads/master');
+        $hasGitIgnore = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, '.gitignore', 'refs/heads/master');
+        $fileGitIgnore = $hasGitIgnore ? $this->github->getClient()->api('repo')->contents()->download($org, $repository, '.gitignore', 'refs/heads/master') : '';
         $checkGitIgnore = $hasGitIgnore ? strpos($fileGitIgnore, 'vendor') !== false : false;
-        $hasTravis = $this->client->api('repo')->contents()->exists($org, $repository, '.travis.yml', 'refs/heads/master');
-        $fileTravis = $hasTravis ? $this->client->api('repo')->contents()->download($org, $repository, '.travis.yml', 'refs/heads/master') : '';
+        $hasTravis = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, '.travis.yml', 'refs/heads/master');
+        $fileTravis = $hasTravis ? $this->github->getClient()->api('repo')->contents()->download($org, $repository, '.travis.yml', 'refs/heads/master') : '';
         $checkTravis = $hasTravis ? strpos($fileTravis, 'before_deploy:') !== false : false;
         $checkTravis = $checkTravis ? strpos($fileTravis, 'deploy:') !== false : false;
-        $hasReleaseDrafter = $this->client->api('repo')->contents()->exists($org, $repository, '.github/release-drafter.yml', 'refs/heads/master');
-        $hasPRTemplate = $this->client->api('repo')->contents()->exists($org, $repository, '.github/PULL_REQUEST_TEMPLATE.md', 'refs/heads/master');
+        $hasReleaseDrafter = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, '.github/release-drafter.yml', 'refs/heads/master');
+        $hasPRTemplate = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, '.github/PULL_REQUEST_TEMPLATE.md', 'refs/heads/master');
         $checkFiles = ($hasReadme ? '<info>✓ </info>' : '<error>✗ </error>') . ' README.md' . PHP_EOL .
             ($hasContributors ? '<info>✓ </info>' : '<error>✗ </error>') . ' CONTRIBUTORS.md' . PHP_EOL .
             ($hasChangelog ? '<info>✓ </info>' : '<error>✗ </error>') . ' CHANGELOG.txt' . PHP_EOL .
@@ -242,25 +238,7 @@ class GithubCheckModuleCommand extends Command
         }
 
         // Check topics
-        $query = '{
-            repository(owner: "PrestaShop", name: "'.$repository.'") {
-              repositoryTopics(first: 10) {
-                edges {
-                  node {
-                    topic {
-                      name
-                    }
-                  }
-                }
-              }
-            }
-          }';
-
-        $repositoryInfoGraphQL = $this->client->api('graphql')->execute($query, []);
-        $topics = [];
-        foreach($repositoryInfoGraphQL['data']['repository']['repositoryTopics']['edges'] as $edge) {
-            $topics[] = $edge['node']['topic']['name'];
-        }
+        $topics = $this->github->getRepoTopics($org, $repository);
         $checkTopics = (in_array('prestashop', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . ' prestashop' . PHP_EOL .
             (in_array('prestashop-module', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . ' prestashop-module';
 
