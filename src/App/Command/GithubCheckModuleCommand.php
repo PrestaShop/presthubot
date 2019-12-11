@@ -22,17 +22,11 @@ class GithubCheckModuleCommand extends Command
     protected $github;
 
     /**
-     * @var int
-     */
-    protected $countNumIssuesOpened = 0;
-
-    /**
      * @var array<string>
      */
     protected $repositories = [
         'bankwire',
         'blockreassurance',
-        'circuit-breaker',
         'contactform',
         'cronjobs',
         'dashactivity',
@@ -40,7 +34,6 @@ class GithubCheckModuleCommand extends Command
         'dashproducts',
         'dashtrends',
         'dateofdelivery',
-        'decimal',
         'gadwords',
         'gamification',
         'graphnvd3',
@@ -49,7 +42,6 @@ class GithubCheckModuleCommand extends Command
         'pagesnotfound',
         'prestafraud',
         'productcomments',
-        'php-cssjanus',
         'ps_banner',
         'ps_categorytree',
         'ps_checkpayment',
@@ -104,10 +96,29 @@ class GithubCheckModuleCommand extends Command
         'statssearch',
         'statsstock',
         'statsvisits',
-        'TranslationToolsBundle',
         'welcome',
         'watermark',
-    ];    
+    ];
+    
+    const COL_ALL = 'all';
+    const COL_BRANCH = 'branch';
+    const COL_DESCRIPTION = 'description';
+    const COL_FILES = 'files';
+    const COL_ISSUES = 'issues';
+    const COL_LABELS = 'labels';
+    const COL_LICENSE = 'license';
+    const COL_TOPICS = 'topics';
+
+    protected $stats = [
+        self::COL_ALL => 0,
+        self::COL_BRANCH => 0,
+        self::COL_DESCRIPTION => 0,
+        self::COL_FILES => 0,
+        self::COL_ISSUES => 0,
+        self::COL_LABELS => 0,
+        self::COL_LICENSE => 0,
+        self::COL_TOPICS => 0,
+    ];
 
     protected function configure()
     {
@@ -137,6 +148,7 @@ class GithubCheckModuleCommand extends Command
         $sectionTable = $output->section();
 
         $arrayRepositories = $module ? [$module] : $this->repositories;
+        $numRepositories = count($arrayRepositories);
 
         // Table
         $table = new Table($sectionTable);
@@ -152,9 +164,10 @@ class GithubCheckModuleCommand extends Command
                 'Branch dev',
                 'Files',
                 'GH Topics',
+                '%',
             ]);
         // Progress Bar
-        $progressBar = new ProgressBar($sectionProgressBar, count($arrayRepositories));
+        $progressBar = new ProgressBar($sectionProgressBar, $numRepositories);
         $progressBar->start();
 
         foreach($arrayRepositories as $key => $repository) {
@@ -168,15 +181,16 @@ class GithubCheckModuleCommand extends Command
         $sectionProgressBar->clear();
 
         $table->addRows([[
-            'Total : ' . count($arrayRepositories),
+            'Total : ' . $numRepositories,
             '',
-            'Opened : ' . $this->countNumIssuesOpened . PHP_EOL . 'Closed : ' . (count($arrayRepositories) - $this->countNumIssuesOpened),
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
+            '✓ ' . number_format((($this->stats[self::COL_ISSUES] / 1) / $numRepositories) * 100, 2). '%',
+            '✓ ' . number_format((($this->stats[self::COL_DESCRIPTION] / 1) / $numRepositories) * 100, 2). '%',
+            '✓ ' . number_format((($this->stats[self::COL_LICENSE] / 1) / $numRepositories) * 100, 2). '%',
+            '✓ ' . number_format((($this->stats[self::COL_LABELS] / 4) / $numRepositories) * 100, 2). '%',
+            '✓ ' . number_format((($this->stats[self::COL_BRANCH] / 2) / $numRepositories) * 100, 2). '%',
+            '✓ ' . number_format((($this->stats[self::COL_FILES] / 13) / $numRepositories) * 100, 2). '%',
+            '✓ ' . number_format((($this->stats[self::COL_TOPICS] / 2) / $numRepositories) * 100, 2). '%',
+            '✓ ' . number_format((($this->stats[self::COL_ALL] / 24) / $numRepositories) * 100, 2). '%',
         ]]);
         $table->render();
         $output->writeLn(['', 'Ouput generated in ' . (time() - $time) . 's.']);
@@ -186,33 +200,34 @@ class GithubCheckModuleCommand extends Command
     {
         $repositoryInfo = $this->github->getClient()->api('repo')->show($org, $repository);
 
-        // Num PR 
-        $numOpenPR = $this->github->getClient()->api('search')->issues('repo:'.$org.'/'.$repository.' is:open is:pr');
+        $rating = $ratingBranch = $ratingDescription = $ratingIssues = $ratingLabels = $ratingLicense = $ratingTopics = 0;
+        $ratingMax = 24;
 
-        // Check branch dev ou develop
-        $references = $this->github->getClient()->api('gitData')->references()->branches($org, $repository);
-        $branches = [];
-        foreach($references as $info) {
-            $branches[str_replace('refs/heads/', '', $info['ref'])] = $info['object']['sha'];
-        }
-        $branchDevelop = (array_key_exists('dev', $branches) ? 'dev' : (array_key_exists('develop', $branches) ? 'develop' : ''));
+        // Title
+        //...
 
         // #
+        $numOpenPR = $this->github->getClient()->api('search')->issues('repo:'.$org.'/'.$repository.' is:open is:pr');
         $nums = 'Stars : '. $repositoryInfo['stargazers_count'] . PHP_EOL
             . 'PR : ' . $numOpenPR['total_count']  . PHP_EOL
             . 'Files : ' . $this->github->countRepoFiles($org, $repository);
 
-        // Check Issues
+        // Issues
         $hasIssuesOpened = $repositoryInfo['has_issues'];
         $numIssues = $repositoryInfo['open_issues_count'];
         if (!$hasIssuesOpened) {
             $numIssues = $this->github->getClient()->api('search')->issues('repo:'.$org.'/PrestaShop is:open is:issue label:"'.$repository.'"');
             $numIssues = $numIssues['total_count'];
-        } else {
-            $this->countNumIssuesOpened++;
+            $ratingIssues++;
         }
 
-        // Check Labels “waiting for QA”, “QA approved”, “waiting for author”, “waiting for PM”
+        // Description
+        $ratingDescription += (!empty($repositoryInfo['description']) ? 1 : 0);
+
+        // License
+        $ratingLicense += (!empty($repositoryInfo['license']['spdx_id']) ? 1 : 0);
+
+        // Labels
         $labelsInfo = $this->github->getClient()->api('issue')->labels()->all($org, $repository);
         $labels = [];
         foreach($labelsInfo as $info) {
@@ -222,13 +237,26 @@ class GithubCheckModuleCommand extends Command
             (in_array('QA ✔️', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' QA ✓' . PHP_EOL .
             (in_array('waiting for author', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for author' . PHP_EOL .
             (in_array('waiting for PM', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for PM';
+        $ratingLabels += (in_array('waiting for QA', $labels) ? 1 : 0);
+        $ratingLabels += (in_array('QA ✔️', $labels) ? 1 : 0);
+        $ratingLabels += (in_array('waiting for author', $labels) ? 1 : 0);
+        $ratingLabels += (in_array('waiting for PM', $labels) ? 1 : 0);
             
         // Branch
+        $references = $this->github->getClient()->api('gitData')->references()->branches($org, $repository);
+        $branches = [];
+        foreach($references as $info) {
+            $branches[str_replace('refs/heads/', '', $info['ref'])] = $info['object']['sha'];
+        }
+        $branchDevelop = (array_key_exists('dev', $branches) ? 'dev' : (array_key_exists('develop', $branches) ? 'develop' : ''));
+
         $labelBranch = 'Branch : ';
         $labelBranch .= $branchDevelop ? '<info>✓ </info>' . ' ('.$branchDevelop.')' : '<error>✗ </error>';
-        $labelBranch .= $branchDevelop ? PHP_EOL . 'Status : ' . ($branches[$branchDevelop] == $branches['master'] ? '<info>✓ </info>': '<error>✗ </error>') : ''; 
+        $labelBranch .= $branchDevelop ? PHP_EOL . 'Status : ' . (isset($branches[$branchDevelop]) && $branches[$branchDevelop] == $branches['master'] ? '<info>✓ </info>': '<error>✗ </error>') : ''; 
+        $ratingBranch += ($branchDevelop ? 1 : 0);
+        $ratingBranch += ((isset($branches[$branchDevelop]) && $branches[$branchDevelop] == $branches['master']) ? 1 : 0);
 
-        // Check Files 
+        // Files
         $hasReadme = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'README.md', 'refs/heads/master');
         $hasContributors = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'CONTRIBUTORS.md', 'refs/heads/master');
         $hasChangelog = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'CHANGELOG.txt', 'refs/heads/master');
@@ -258,11 +286,36 @@ class GithubCheckModuleCommand extends Command
             ($checkGitIgnore ? '(<info>✓ </info>)' : '(<error>✗ </error>)') . PHP_EOL .
             ($hasTravis ? '<info>✓ </info>' : '<error>✗ </error>') . ' .travis.yml' .
             ($checkTravis ? '(<info>✓ </info>)' : '(<error>✗ </error>)');
+        $ratingFiles = ($hasReadme ? 1 : 0) +
+            ($hasContributors ? 1 : 0) +
+            ($hasChangelog ? 1 : 0) +
+            ($hasComposerJson ? 1 : 0) +
+            ($hasComposerLock ? 1 : 0) +
+            ($hasConfigXML ? 1 : 0) +
+            ($hasLogoPNG ? 1 : 0) +
+            ($hasReleaseDrafter ? 1 : 0) +
+            ($hasPRTemplate ? 1 : 0) +
+            ($hasGitIgnore ? 1 : 0) + 
+            ($checkGitIgnore ? 1 : 0) +
+            ($hasTravis ? 1 : 0) +
+            ($checkTravis ? 1 : 0);
 
-        // Check topics
+        // GH Topics
         $topics = $this->github->getRepoTopics($org, $repository);
         $checkTopics = (in_array('prestashop', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . ' prestashop' . PHP_EOL .
             (in_array('prestashop-module', $topics) ? '<info>✓ </info>' : '<error>✗ </error>') . ' prestashop-module';
+        $ratingTopics = (in_array('prestashop', $topics) ? 1 : 0) + (in_array('prestashop-module', $topics) ? 1 : 0);
+
+        // %
+        $this->stats[self::COL_BRANCH] += $ratingBranch;
+        $this->stats[self::COL_DESCRIPTION] += $ratingDescription;
+        $this->stats[self::COL_FILES] += $ratingFiles;
+        $this->stats[self::COL_ISSUES] += $ratingIssues;
+        $this->stats[self::COL_LABELS] += $ratingLabels;
+        $this->stats[self::COL_LICENSE] += $ratingLicense;
+        $this->stats[self::COL_TOPICS] += $ratingTopics;
+        $rating = $ratingIssues + $ratingDescription + $ratingLicense + $ratingLabels + $ratingBranch + $ratingFiles + $ratingTopics;
+        $this->stats[self::COL_ALL] += $rating;
 
         $table->addRows([[
             '<href='.$repositoryInfo['html_url'].'>'.$repository.'</>',
@@ -273,7 +326,8 @@ class GithubCheckModuleCommand extends Command
             $checkLabels,
             $labelBranch,
             $checkFiles,
-            $checkTopics
+            $checkTopics,
+            number_format(($rating / $ratingMax) * 100, 2) . '%'
         ]]);
     }
 }
