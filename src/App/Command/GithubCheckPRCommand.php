@@ -40,6 +40,11 @@ class GithubCheckPRCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 '',
                 $_ENV['GH_TOKEN']
+            )
+            ->addOption(
+                'request',
+                null,
+                InputOption::VALUE_OPTIONAL
             );
         
     }
@@ -51,7 +56,7 @@ class GithubCheckPRCommand extends Command
 
         $date = new DateTime();
         $date->sub(new DateInterval('P1D'));
-        $arrayRequests = [
+        $requests = [
             // Check Merged PR (Milestone, Issue & Milestone)
             'Merged PR' => 'is:merged merged:>'.$date->format('Y-m-d'),
             // Check PR waiting for merge
@@ -83,11 +88,23 @@ class GithubCheckPRCommand extends Command
         ];
         $requestCommon = 'org:PrestaShop is:pr ';
 
+        $request = $input->getOption('request');
+        if ($request) {
+            if (array_key_exists($request, $requests)) {
+                $requests = [
+                    $request => $requests[$request]
+                ];
+            } else {
+                $requests = [
+                    $request => $request
+                ];
+            }
+        }
         $table = new Table($output);
         $table->setStyle('box');
         $searchApi = $this->github->getClient()->api('search');
         $paginator  = new ResultPager($this->github->getClient());
-        foreach($arrayRequests as $title => $request) {
+        foreach($requests as $title => $request) {
             $result = $paginator->fetchAll($searchApi, 'issues', [$requestCommon . $request]);
             $hasRows = $this->checkPR($title, $result, $output, $table, $hasRows ?? false);
         }

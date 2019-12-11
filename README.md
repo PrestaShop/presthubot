@@ -37,6 +37,7 @@ php bin/console github:check:pr
 | Parameter | Required | Notes |
 | ------------- | ------------- | ------------- |
 | --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
+| --request=<request>  | No | Use the title of a search request or create your specific request |
 
 ### Check Module
 Permits to check PrestaShop Modules
