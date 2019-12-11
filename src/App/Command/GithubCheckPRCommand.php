@@ -114,8 +114,15 @@ class GithubCheckPRCommand extends Command
         foreach($returnSearch as $pullRequest) {
             $linkedIssue = $this->github->getLinkedIssue($pullRequest);
             $repoName = str_replace('https://api.github.com/repos/PrestaShop/', '', $pullRequest['repository_url']);
-            $pullRequestTitle = str_split($pullRequest['title'], 80);
+            $pullRequestTitle = str_split($pullRequest['title'], 70);
             $pullRequestTitle = implode(PHP_EOL, $pullRequestTitle);
+            $countFilesType = $this->github->countPRFileTypes('PrestaShop', $repoName, $pullRequest['number']);
+            ksort($countFilesType);
+            $countFilesTypeTitle = '';
+            foreach ($countFilesType as $fileType => $count) {
+                $countFilesTypeTitle .= $fileType . ' (' . $count . ')' . PHP_EOL;
+            }
+            $countFilesTypeTitle = substr($countFilesTypeTitle, 0, -1);
             
             $rows[] = [
                 '<href=https://github.com/PrestaShop/'.$repoName.'>'.$repoName.'</>',
@@ -127,6 +134,7 @@ class GithubCheckPRCommand extends Command
                 !is_null($linkedIssue) && $repoName == 'PrestaShop'
                     ? (!empty($linkedIssue['milestone']) ? '<info>✓ </info>' : '<error>✗ </error>') .' <href='.$linkedIssue['html_url'].'>#'.$linkedIssue['number'].'</>'
                     : '',
+                $countFilesTypeTitle,
             ];
         }
         if (empty($rows)) {
@@ -138,7 +146,16 @@ class GithubCheckPRCommand extends Command
         $table->addRows([
             [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' ('.count($rows).') </>', ['colspan' => 7])],
             new TableSeparator(),
-            ['<info>Project</info>', '<info>#</info>', '<info>Created At</info>','<info>Title</info>', '<info>Author</info>', '<info>Milestone</info>', '<info>Issue</info>'],
+            [
+                '<info>Project</info>',
+                '<info>#</info>',
+                '<info>Created At</info>',
+                '<info>Title</info>',
+                '<info>Author</info>',
+                '<info>Milestone</info>',
+                '<info>Issue</info>',
+                '<info>Files</info>',
+            ],
             new TableSeparator(),
         ]);
         $table->addRows($rows);

@@ -88,4 +88,19 @@ class Github
         }
         return $topics;
     }
+
+    public function countPRFileTypes(string $org, string $repository, int $prId): array
+    {
+        $files = $this->client->api('pull_request')->files($org, $repository, $prId);
+        $types = [];
+
+        foreach($files as $file) {
+            $extension = pathinfo($file['filename'], PATHINFO_EXTENSION);
+            if (!array_key_exists($extension, $types)) {
+                $types[$extension] = 0;
+            }
+            $types[$extension]++;
+        }
+        return $types;
+    }
 }
