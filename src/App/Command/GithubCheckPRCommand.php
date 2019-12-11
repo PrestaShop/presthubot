@@ -106,15 +106,28 @@ class GithubCheckPRCommand extends Command
         $paginator  = new ResultPager($this->github->getClient());
         foreach($requests as $title => $request) {
             $result = $paginator->fetchAll($searchApi, 'issues', [$requestCommon . $request]);
-            $hasRows = $this->checkPR($title, $result, $output, $table, $hasRows ?? false);
+            $hasRows = $this->checkPR(
+                $title,
+                $result,
+                $output,
+                $table,
+                $hasRows ?? false,
+                $title == 'PR Waiting for Review' || count($requests) == 1 ? true : false
+            );
         }
 
         $table->render();
         $output->writeLn(['', 'Ouput generated in ' . (time() - $time) . 's.']);
     }
 
-    private function checkPR(string $title, array $returnSearch, OutputInterface $output, Table $table, bool $hasRows)
-    {
+    private function checkPR(
+        string $title,
+        array $returnSearch,
+        OutputInterface $output,
+        Table $table,
+        bool $hasRows,
+        bool $needCountFilesType
+    ) {
         $rows = [];
         uasort($returnSearch, function($row1, $row2) {
             $repoName1 = strtolower(str_replace('https://api.github.com/repos/PrestaShop/', '', $row1['repository_url']));
@@ -133,13 +146,15 @@ class GithubCheckPRCommand extends Command
             $repoName = str_replace('https://api.github.com/repos/PrestaShop/', '', $pullRequest['repository_url']);
             $pullRequestTitle = str_split($pullRequest['title'], 70);
             $pullRequestTitle = implode(PHP_EOL, $pullRequestTitle);
-            $countFilesType = $this->github->countPRFileTypes('PrestaShop', $repoName, $pullRequest['number']);
-            ksort($countFilesType);
             $countFilesTypeTitle = '';
-            foreach ($countFilesType as $fileType => $count) {
-                $countFilesTypeTitle .= $fileType . ' (' . $count . ')' . PHP_EOL;
+            if ($needCountFilesType) {
+                $countFilesType = $this->github->countPRFileTypes('PrestaShop', $repoName, $pullRequest['number']);
+                ksort($countFilesType);
+                foreach ($countFilesType as $fileType => $count) {
+                    $countFilesTypeTitle .= $fileType . ' (' . $count . ')' . PHP_EOL;
+                }
+                $countFilesTypeTitle = substr($countFilesTypeTitle, 0, -1);
             }
-            $countFilesTypeTitle = substr($countFilesTypeTitle, 0, -1);
             
             $rows[] = [
                 '<href=https://github.com/PrestaShop/'.$repoName.'>'.$repoName.'</>',
