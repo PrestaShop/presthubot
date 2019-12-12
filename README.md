@@ -36,9 +36,9 @@ php bin/console github:check:pr
 #### Parameters
 | Parameter | Required | Notes |
 | ------------- | ------------- | ------------- |
-| --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
-| --request=<request>  | No | Use the title of a search request or create your specific request |
-| --filter:file=<ext>  | No | Filter on extensions file (one or many separated by comma) |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--request=<request>` | No | Use the title of a search request or create your specific request |
+| `--filter:file=<ext>` | No | Filter on extensions file (one or many separated by comma) |
 
 ### Check Module
 Permits to check PrestaShop Modules
@@ -50,14 +50,14 @@ php bin/console github:check:module
 #### Parameters
 | Parameter | Required | Notes |
 | ------------- | ------------- | ------------- |
-| --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
-| --module=<module>  | No | Filter only one module |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--module=<module>` | No | Filter only one module |
 
 
 #### Informations
 | Column | | Notes|
 | ------------- | ------------- | ------------- |
-| Files  | .travis.yml | Check if .travis.yml is present<br>Check if `before_deploy` & `deploy` are present in the file |
+| Files | .travis.yml | Check if .travis.yml is present<br>Check if `before_deploy` & `deploy` are present in the file |
 
 ### Check Repositories
 Permits to check PrestaShop Repositories
@@ -69,9 +69,9 @@ php bin/console github:check:repository
 #### Parameters
 | Parameter | Required | Notes |
 | ------------- | ------------- | ------------- |
-| --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
-| --public  | No | Filter only on public repositories |
-| --private  | No | Filter only on private repositories |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--public` | No | Filter only on public repositories |
+| `--private` | No | Filter only on private repositories |
 
 ### Get Stats
 Get some stats
@@ -83,8 +83,8 @@ php bin/console github:stats
 #### Parameters
 | Parameter | Required | Notes |
 | ------------- | ------------- | ------------- |
-| --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
-| --username=<ghusername>  | Yes/No | Use it or use .env |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--username=<ghusername>` | Yes/No | Use it or use .env |
 
 ### Get Stats from repository
 Get some stats
@@ -96,7 +96,7 @@ php bin/console github:stats:repository
 #### Parameters
 | Parameter | Required | Notes |
 | ------------- | ------------- | ------------- |
-| --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
-| --repository=<repository>  | No | Just a repository in PS Organization or all the org if it is not defined |
-| --pr:date:created=<date>  | No | Filter on creation date for PR |
-| --pr:date:merged=<date>  | No | Filter on merge date for PR |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--repository=<repository>` | No | Just a repository in PS Organization or all the org if it is not defined |
+| `--pr:date:created=<date>` | No | Filter on creation date for PR |
+| `--pr:date:merged=<date>` | No | Filter on merge date for PR |
