@@ -85,3 +85,18 @@ php bin/console github:stats
 | ------------- | ------------- | ------------- |
 | --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
 | --username=<ghusername>  | Yes/No | Use it or use .env |
+
+### Get Stats from repository
+Get some stats
+
+```bash
+php bin/console github:stats:repository
+```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| --ghtoken=<ghtoken>  | Yes/No | Use it or use .env |
+| --repository=<repository>  | No | Just a repository in PS Organization or all the org if it is not defined |
+| --pr:date:created=<date>  | No | Filter on creation date for PR |
+| --pr:date:merged=<date>  | No | Filter on merge date for PR |
