@@ -45,6 +45,11 @@ class GithubCheckPRCommand extends Command
                 'request',
                 null,
                 InputOption::VALUE_OPTIONAL
+            )
+            ->addOption(
+                'filter:file',
+                null,
+                InputOption::VALUE_OPTIONAL
             );
         
     }
@@ -100,6 +105,8 @@ class GithubCheckPRCommand extends Command
                 ];
             }
         }
+        $filterFile = $input->getOption('filter:file');
+        $filterFile = explode(',', $filterFile);
         $table = new Table($output);
         $table->setStyle('box');
         $searchApi = $this->github->getClient()->api('search');
@@ -112,7 +119,8 @@ class GithubCheckPRCommand extends Command
                 $output,
                 $table,
                 $hasRows ?? false,
-                $title == 'PR Waiting for Review' || count($requests) == 1 ? true : false
+                $title == 'PR Waiting for Review' || count($requests) == 1 ? true : false,
+                $filterFile
             );
         }
 
@@ -126,7 +134,8 @@ class GithubCheckPRCommand extends Command
         OutputInterface $output,
         Table $table,
         bool $hasRows,
-        bool $needCountFilesType
+        bool $needCountFilesType,
+        array $fileTypeAuth
     ) {
         $rows = [];
         uasort($returnSearch, function($row1, $row2) {
@@ -148,12 +157,23 @@ class GithubCheckPRCommand extends Command
             $pullRequestTitle = implode(PHP_EOL, $pullRequestTitle);
             $countFilesTypeTitle = '';
             if ($needCountFilesType) {
+                $authFilterFileType = false;
                 $countFilesType = $this->github->countPRFileTypes('PrestaShop', $repoName, $pullRequest['number']);
                 ksort($countFilesType);
                 foreach ($countFilesType as $fileType => $count) {
                     $countFilesTypeTitle .= $fileType . ' (' . $count . ')' . PHP_EOL;
+                    if (!empty($fileTypeAuth)) {
+                        if (in_array($fileType, $fileTypeAuth)) {
+                            $authFilterFileType = true;
+                        }
+                    }
                 }
                 $countFilesTypeTitle = substr($countFilesTypeTitle, 0, -1);
+            } else {
+                $authFilterFileType = true;
+            }
+            if ($authFilterFileType === false) {
+                continue;
             }
             
             $rows[] = [
