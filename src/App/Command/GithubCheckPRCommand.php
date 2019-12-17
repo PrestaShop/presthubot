@@ -106,7 +106,7 @@ class GithubCheckPRCommand extends Command
             }
         }
         $filterFile = $input->getOption('filter:file');
-        $filterFile = explode(',', $filterFile);
+        $filterFile = empty($filterFile) ? null : explode(',', $filterFile);
         $table = new Table($output);
         $table->setStyle('box');
         $searchApi = $this->github->getClient()->api('search');
@@ -135,7 +135,7 @@ class GithubCheckPRCommand extends Command
         Table $table,
         bool $hasRows,
         bool $needCountFilesType,
-        array $fileTypeAuth
+        ?array $fileTypeAuth
     ) {
         $rows = [];
         uasort($returnSearch, function($row1, $row2) {
@@ -157,7 +157,7 @@ class GithubCheckPRCommand extends Command
             $pullRequestTitle = implode(PHP_EOL, $pullRequestTitle);
             $countFilesTypeTitle = '';
             if ($needCountFilesType) {
-                $authFilterFileType = false;
+                $authFilterFileType = empty($fileTypeAuth);
                 $countFilesType = $this->github->countPRFileTypes('PrestaShop', $repoName, $pullRequest['number']);
                 ksort($countFilesType);
                 foreach ($countFilesType as $fileType => $count) {
