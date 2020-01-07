@@ -119,7 +119,7 @@ class GithubCheckPRCommand extends Command
                 $output,
                 $table,
                 $hasRows ?? false,
-                $title == 'PR Waiting for Review' || count($requests) == 1 ? true : false,
+                empty($filterFile) ? false : ($title == 'PR Waiting for Review' || count($requests) == 1 ? true : false),
                 $filterFile
             );
         }
@@ -176,7 +176,7 @@ class GithubCheckPRCommand extends Command
                 continue;
             }
             
-            $rows[] = [
+            $currentRow = [
                 '<href=https://github.com/PrestaShop/'.$repoName.'>'.$repoName.'</>',
                 '<href='.$pullRequest['html_url'].'>#'.$pullRequest['number'].'</>',
                 $pullRequest['created_at'],
@@ -186,8 +186,12 @@ class GithubCheckPRCommand extends Command
                 !is_null($linkedIssue) && $repoName == 'PrestaShop'
                     ? (!empty($linkedIssue['milestone']) ? '<info>✓ </info>' : '<error>✗ </error>') .' <href='.$linkedIssue['html_url'].'>#'.$linkedIssue['number'].'</>'
                     : '',
-                $countFilesTypeTitle,
             ];
+            if ($needCountFilesType) {
+                array_push($currentRow, $countFilesTypeTitle);
+            }
+
+            $rows[] = $currentRow;
         }
         if (empty($rows)) {
             return $hasRows;
@@ -195,20 +199,24 @@ class GithubCheckPRCommand extends Command
         if ($hasRows) {
             $table->addRows([new TableSeparator()]);
         }
+
+        $headers = [
+            '<info>Project</info>',
+            '<info>#</info>',
+            '<info>Created At</info>',
+            '<info>Title</info>',
+            '<info>Author</info>',
+            '<info>Milestone</info>',
+            '<info>Issue</info>',
+        ];
+        if ($needCountFilesType) {
+            array_push($headers, '<info>Files</info>');
+        }
         $table->addRows([
             [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' ('.count($rows).') </>', ['colspan' => 7])],
             new TableSeparator(),
-            [
-                '<info>Project</info>',
-                '<info>#</info>',
-                '<info>Created At</info>',
-                '<info>Title</info>',
-                '<info>Author</info>',
-                '<info>Milestone</info>',
-                '<info>Issue</info>',
-                '<info>Files</info>',
-            ],
             new TableSeparator(),
+            $headers
         ]);
         $table->addRows($rows);
         return true;
