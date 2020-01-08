@@ -120,6 +120,13 @@ class GithubCheckModuleCommand extends Command
         self::COL_TOPICS => 0,
     ];
 
+    protected $labels = [
+        'waiting for QA' => 'fbca04',
+        'QA ✔️' => 'b8ed50',
+        'waiting for author' => 'fbca04',
+        'waiting for PM' => 'fbca04',
+    ];
+
     protected function configure()
     {
         $this->setName('github:check:module')
@@ -186,11 +193,11 @@ class GithubCheckModuleCommand extends Command
             '✓ ' . number_format((($this->stats[self::COL_ISSUES] / 1) / $numRepositories) * 100, 2). '%',
             '✓ ' . number_format((($this->stats[self::COL_DESCRIPTION] / 1) / $numRepositories) * 100, 2). '%',
             '✓ ' . number_format((($this->stats[self::COL_LICENSE] / 1) / $numRepositories) * 100, 2). '%',
-            '✓ ' . number_format((($this->stats[self::COL_LABELS] / 4) / $numRepositories) * 100, 2). '%',
+            '✓ ' . number_format((($this->stats[self::COL_LABELS] / 8) / $numRepositories) * 100, 2). '%',
             '✓ ' . number_format((($this->stats[self::COL_BRANCH] / 2) / $numRepositories) * 100, 2). '%',
             '✓ ' . number_format((($this->stats[self::COL_FILES] / 13) / $numRepositories) * 100, 2). '%',
             '✓ ' . number_format((($this->stats[self::COL_TOPICS] / 2) / $numRepositories) * 100, 2). '%',
-            '✓ ' . number_format((($this->stats[self::COL_ALL] / 24) / $numRepositories) * 100, 2). '%',
+            '✓ ' . number_format((($this->stats[self::COL_ALL] / 28) / $numRepositories) * 100, 2). '%',
         ]]);
         $table->render();
         $output->writeLn(['', 'Ouput generated in ' . (time() - $time) . 's.']);
@@ -231,16 +238,16 @@ class GithubCheckModuleCommand extends Command
         $labelsInfo = $this->github->getClient()->api('issue')->labels()->all($org, $repository);
         $labels = [];
         foreach($labelsInfo as $info) {
-            $labels[] = $info['name'];
+            $labels[$info['name']] = $info['color'];
         }
-        $checkLabels = (in_array('waiting for QA', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for QA' . PHP_EOL .
-            (in_array('QA ✔️', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' QA ✓' . PHP_EOL .
-            (in_array('waiting for author', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for author' . PHP_EOL .
-            (in_array('waiting for PM', $labels) ? '<info>✓ </info>' : '<error>✗ </error>') . ' waiting for PM';
-        $ratingLabels += (in_array('waiting for QA', $labels) ? 1 : 0);
-        $ratingLabels += (in_array('QA ✔️', $labels) ? 1 : 0);
-        $ratingLabels += (in_array('waiting for author', $labels) ? 1 : 0);
-        $ratingLabels += (in_array('waiting for PM', $labels) ? 1 : 0);
+        $checkLabels = '';
+        foreach ($this->labels as $name => $color) {
+            $checkLabels .= (in_array($name, array_keys($labels)) ? '<info>✓ </info>' : '<error>✗ </error>') . ' '
+                . (in_array($name, array_keys($labels)) && $labels[$name] == $color ? '<info>✓ </info>' : '<error>✗ </error>') 
+                . ' ' . str_replace('✔️', '✓', $name) . PHP_EOL;
+            $ratingLabels += (in_array($name, array_keys($labels)) ? 1 : 0);
+            $ratingLabels += (in_array($name, array_keys($labels)) && $labels[$name] == $color) ? 1 : 0;
+        }
             
         // Branch
         $references = $this->github->getClient()->api('gitData')->references()->branches($org, $repository);
