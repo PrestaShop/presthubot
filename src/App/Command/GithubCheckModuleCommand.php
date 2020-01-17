@@ -250,9 +250,22 @@ class GithubCheckModuleCommand extends Command
         }
         $branchDevelop = (array_key_exists('dev', $branches) ? 'dev' : (array_key_exists('develop', $branches) ? 'develop' : ''));
 
+        if ($branchDevelop !== '') {
+            $releaseStatus = $this->findReleaseStatus($references, $repository);
+        }
+
         $labelBranch = 'Branch : ';
-        $labelBranch .= $branchDevelop ? '<info>✓ </info>' . ' ('.$branchDevelop.')' : '<error>✗ </error>';
-        $labelBranch .= $branchDevelop ? PHP_EOL . 'Status : ' . (isset($branches[$branchDevelop]) && $branches[$branchDevelop] == $branches['master'] ? '<info>✓ </info>': '<error>✗ </error>') : ''; 
+        $labelBranch .= $branchDevelop ? '<info>✓ </info>' . ' (' . $branchDevelop . ')' : '<error>✗ </error>';
+        $labelBranch .= $branchDevelop ? PHP_EOL . 'Status : ' . (isset($branches[$branchDevelop]) && $branches[$branchDevelop] == $branches['master'] ? '<info>✓ </info>' : '<error>✗ </error>') : '';
+
+        if ($releaseStatus['ahead'] > 0) {
+            $labelBranch .= PHP_EOL . sprintf('- master > dev by %d commits', $releaseStatus['ahead']) . PHP_EOL;
+        }
+        if ($releaseStatus['behind'] > 0) {
+            $labelBranch .= sprintf('- dev < master by %d commits', $releaseStatus['behind']) . PHP_EOL;
+            $labelBranch .= sprintf('THIS MODULE NEEDS A RELEASE');
+        }
+
         $ratingBranch += ($branchDevelop ? 1 : 0);
         $ratingBranch += ((isset($branches[$branchDevelop]) && $branches[$branchDevelop] == $branches['master']) ? 1 : 0);
 
@@ -329,5 +342,49 @@ class GithubCheckModuleCommand extends Command
             $checkTopics,
             number_format(($rating / $ratingMax) * 100, 2) . '%'
         ]]);
+    }
+
+    /**
+     * @param array[] $references branch github data
+     * @param string $repository repository name
+     *
+     * @return array
+     */
+    private function findReleaseStatus(array $references, string $repository)
+    {
+        $devBranchName = null;
+
+        foreach ($references as $branchID => $branchData) {
+            $branchName = $branchData['ref'];
+
+            if ($branchName === 'refs/heads/dev') {
+                $devBranchData = $branchData;
+            }
+            if ($branchName === 'refs/heads/develop') {
+                $devBranchData = $branchData;
+            }
+            if ($branchName === 'refs/heads/master') {
+                $masterBranchData = $branchData;
+            }
+        }
+
+        $masterLastCommitSha = $masterBranchData['object']['sha'];
+        $devLastCommitSha = $devBranchData['object']['sha'];
+
+
+        $comparison = $this->github->getClient()->api('repo')->commits()->compare(
+            'prestashop',
+            $repository,
+            $masterLastCommitSha,
+            $devLastCommitSha
+        );
+
+        $behindBy = $comparison['behind_by'];
+        $aheadBy = $comparison['ahead_by'];
+
+        return [
+            'behind' => $behindBy,
+            'ahead' => $aheadBy,
+        ];
     }
 }
