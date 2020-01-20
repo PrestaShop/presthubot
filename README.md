@@ -2,7 +2,7 @@
 
 ## Installation
 
-* Install dependancies
+* Install dependencies
 ```bash
 composer install
 ```

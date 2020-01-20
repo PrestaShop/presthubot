@@ -2,6 +2,9 @@
 
 namespace Console\App\Service;
 
+use League\Flysystem\Adapter\Local;
+use League\Flysystem\Filesystem;
+use Cache\Adapter\Filesystem\FilesystemCachePool;
 use Github\Client;
 
 class Github
@@ -13,7 +16,13 @@ class Github
 
     public function __construct(string $ghToken = null)
     {
+        $filesystemAdapter = new Local(__DIR__ . '/../../../var/');
+        $filesystem = new Filesystem($filesystemAdapter);
+        $pool = new FilesystemCachePool($filesystem);
+
         $this->client = new Client();
+        $this->client->addCache($pool);
+
         if (!empty($ghToken)) {
             $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
         }

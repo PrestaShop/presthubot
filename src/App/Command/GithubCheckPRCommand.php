@@ -9,7 +9,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Helper\TableSeparator;
-use Symfony\Component\Console\Helper\TableStyle;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -125,7 +124,7 @@ class GithubCheckPRCommand extends Command
         }
 
         $table->render();
-        $output->writeLn(['', 'Ouput generated in ' . (time() - $time) . 's.']);
+        $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
     }
 
     private function checkPR(

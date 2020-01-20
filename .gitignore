@@ -1,2 +1,5 @@
 .env
+.idea
+composer.phar
 vendor
+var/cache/*
