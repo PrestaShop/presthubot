@@ -1,14 +1,13 @@
 <?php
+
 namespace Console\App\Command;
 
 use Console\App\Service\Github;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
- 
+
 class GithubCheckRepositoryCommand extends Command
 {
     /**
@@ -38,22 +37,42 @@ class GithubCheckRepositoryCommand extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Only private repositories'
-            );   
+            );
     }
- 
+
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $onlyPublic = $input->getOption('public');
         $onlyPrivate = $input->getOption('private');
 
         $this->github = new Github($input->getOption('ghtoken'));
+
         $time = time();
 
+        $githubRawData = $this->fetchGithubData($onlyPublic, $onlyPrivate);
+        $dataset = $this->buildDataSet($githubRawData);
+
+        $tableDrawer = new TableDrawer();
+        $tableDrawer->drawResultsAsTable($dataset, $output, $time);
+    }
+
+    /**
+     * @param bool $onlyPublic
+     * @param bool $onlyPrivate
+     *
+     * @return array
+     */
+    private function fetchGithubData($onlyPublic, $onlyPrivate)
+    {
         if (($onlyPublic && $onlyPrivate) || (!$onlyPublic && !$onlyPrivate)) {
             $type = 'all';
-        } elseif($onlyPrivate) {
+        } elseif ($onlyPrivate) {
             $type = 'private';
-        } elseif($onlyPublic) {
+        } elseif ($onlyPublic) {
             $type = 'public';
         }
 
@@ -61,67 +80,42 @@ class GithubCheckRepositoryCommand extends Command
         $results = [];
         do {
             $repos = $this->github->getClient()->api('organization')->repositories('PrestaShop', $type, $page);
+
             $page++;
             $results = array_merge($results, $repos);
         } while (!empty($repos));
-        uasort($results, function($row1, $row2) {
+        uasort($results, function ($row1, $row2) {
             if (strtolower($row1['name']) == strtolower($row2['name'])) {
                 return 0;
             }
             return strtolower($row1['name']) < strtolower($row2['name']) ? -1 : 1;
         });
 
-        $countStars = $countWDescription = $countIssuesOpened = 0;
-        $countWLicense = [];
+        return $results;
+    }
 
-        $table = new Table($output);
-        $table
-            ->setStyle('box')
-            ->setHeaders([
-                'Title',
-                '# Stars',
-                'Description',
-                'Issues Opened',
-                'License',
-            ]);
-        foreach($results as $key => $result) {
-            $table->addRows([[
-                '<href='.$result['html_url'].'>'.$result['name'].'</>',
-                $result['stargazers_count'],
-                !empty($result['description']) ? '<info>✓ </info>' : '<error>✗ </error>',
-                $result['has_issues'] ? '<info>✓ </info>' : '<error>✗ </error>',
-                $result['license']['spdx_id'],
-            ]]);
+    /**
+     * @param array $rawData
+     *
+     * @return RepositoryModel[]
+     */
+    private function buildDataSet(array $rawData)
+    {
+        $collection = [];
 
-            $countStars += $result['stargazers_count'];
-            $countIssuesOpened += ($result['has_issues'] ? 1 : 0);
-            $countWDescription += (!empty($result['description']) ? 1 : 0);
-            if (!empty($result['license']['spdx_id'])) {
-                if (!array_key_exists($result['license']['spdx_id'], $countWLicense)) {
-                    $countWLicense[$result['license']['spdx_id']] = 0;
-                }
-                $countWLicense[$result['license']['spdx_id']]++;
-            }
-            $table->addRows([new TableSeparator()]);
+        foreach ($rawData as $item) {
+
+            $model = new RepositoryModel();
+            $model->name = $item['name'];
+            $model->description = !empty($item['description']) ? $item['description'] : '';
+            $model->html_url = $item['html_url'];
+            $model->has_issues = $item['has_issues'];
+            $model->license = $item['license']['spdx_id'];
+            $model->stargazers_count = $item['stargazers_count'];
+
+            $collection[] = $model;
         }
 
-        $licenseCell = '';
-        ksort($countWLicense);
-        foreach($countWLicense as $license => $count) {
-            $licenseCell .= $license . ' : ' . $count;
-            if ($license !== array_key_last($countWLicense)) {
-                $licenseCell .= PHP_EOL;
-            }
-        }
-
-        $table->addRows([[
-            'Total : ' . count($results),
-            'Avg : ' . number_format($countStars / count($results), 2),
-            'Opened : ' . $countIssuesOpened . PHP_EOL . 'Closed : ' . (count($results) - $countIssuesOpened),
-            'Num : ' . $countWDescription,
-            $licenseCell,
-        ]]);
-        $table->render();
-        $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
+        return $collection;
     }
 }
