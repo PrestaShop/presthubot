@@ -122,7 +122,7 @@ class GithubCheckIssueCommand extends Command
             return $repoName1 < $repoName2 ? -1 : 1;
         });
         foreach($returnSearch as $issueGithub) {
-            //$linkedIssue = $this->github->getLinkedIssue($issueGithub);
+            $linkedIssue = $this->github->getLinkedIssue($issueGithub);
             $repoName = str_replace('https://api.github.com/repos/PrestaShop/', '', $issueGithub['repository_url']);
             $issueGithubTitle = str_split($issueGithub['title'], 70);
             $issueGithubTitle = implode(PHP_EOL, $issueGithubTitle);
@@ -153,9 +153,9 @@ class GithubCheckIssueCommand extends Command
                 $issueGithub,
                 '<href='.$issueGithub['user']['html_url'].'>'.$issueGithub['user']['login'].'</>',
                 !empty($issueGithub['milestone']) ? '    <info>✓</info>' : '    <error>✗ </error>',
-/*                !is_null($linkedIssue) && $repoName == 'PrestaShop'
+                !is_null($linkedIssue) && $repoName == 'PrestaShop'
                     ? (!empty($linkedIssue['milestone']) ? '<info>✓ </info>' : '<error>✗ </error>') .' <href='.$linkedIssue['html_url'].'>#'.$linkedIssue['number'].'</>'
-                    : '',*/
+                    : '',
                 $countFilesTypeTitle,
             ];
         }
