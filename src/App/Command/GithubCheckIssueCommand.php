@@ -150,7 +150,7 @@ class GithubCheckIssueCommand extends Command
                 '<href=https://github.com/PrestaShop/'.$repoName.'>'.$repoName.'</>',
                 '<href='.$issueGithub['html_url'].'>#'.$issueGithub['number'].'</>',
                 $issueGithub['created_at'],
-                $issueGithub,
+                $issueGithubTitle,
                 '<href='.$issueGithub['user']['html_url'].'>'.$issueGithub['user']['login'].'</>',
                 !empty($issueGithub['milestone']) ? '    <info>✓</info>' : '    <error>✗ </error>',
                 !is_null($linkedIssue) && $repoName == 'PrestaShop'
@@ -168,7 +168,7 @@ class GithubCheckIssueCommand extends Command
         $title='<fg=black;bg=white;options=bold> ' . $title . ' ('.count($rows).') </>';
         echo $title;
         $table->addRows([
-            [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' ('.count($rows).') </>', ['colspan' => 6])],
+            [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' ('.count($rows).') </>', ['colspan' => 8])],
             new TableSeparator(),
             [
                 '<info>Project</info>',
