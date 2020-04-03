@@ -57,9 +57,9 @@ class GithubCheckIssueCommand extends Command
         $requests = [
             // Check Issue created and closed
             //'Created Issue' => 'is:closed created:>='.$date->format('Y-m-d'),
-            'Created Issue' => 'is:issue created:>=2020-02-12',
+            'Created Issue' => 'is:issue created:>=2020-03-11',
             // Check Issue duplicated
-            'Duplicated Issue' => 'is:closed created:>=2020-02-12 ' . self::LABEL_DUPLICATE,
+            'Duplicated Issue' => 'is:closed created:>=2020-03-11 ' . self::LABEL_DUPLICATE,
 
         ];
         $requestCommon = 'org:PrestaShop is:issue ';
