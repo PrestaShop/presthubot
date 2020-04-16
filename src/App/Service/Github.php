@@ -33,6 +33,24 @@ class Github
         return $this->client;
     }
 
+    public function search(string $queryString, array $params): array
+    {
+        $requestBase = str_replace(array_keys($params), array_values($params), $queryString);
+        $request = str_replace('%pageAfter%', '', $requestBase);
+        $result = [];
+        do {
+            $resultPage = $this->client->api('graphql')->execute($request, []);
+            $result = array_merge($result, $resultPage['data']['search']['edges']);
+            $request = str_replace(
+                '%pageAfter%',
+                ', after: "' . $resultPage['data']['search']['pageInfo']['endCursor'] . '"',
+                $requestBase
+            );
+            
+        } while($resultPage['data']['search']['pageInfo']['hasNextPage']);
+        return $result;
+    }
+
     public function countRepoFiles(string $org, string $repository, string $path = null): int
     {
         $numFiles = 0;
@@ -96,20 +114,5 @@ class Github
             $topics[] = $edge['node']['topic']['name'];
         }
         return $topics;
-    }
-
-    public function countPRFileTypes(string $org, string $repository, int $prId): array
-    {
-        $files = $this->client->api('pull_request')->files($org, $repository, $prId);
-        $types = [];
-
-        foreach($files as $file) {
-            $extension = pathinfo($file['filename'], PATHINFO_EXTENSION);
-            if (!array_key_exists($extension, $types)) {
-                $types[$extension] = 0;
-            }
-            $types[$extension]++;
-        }
-        return $types;
     }
 }

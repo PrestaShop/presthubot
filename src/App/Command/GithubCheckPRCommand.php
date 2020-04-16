@@ -15,14 +15,51 @@ use Symfony\Component\Console\Output\OutputInterface;
  
 class GithubCheckPRCommand extends Command
 {
-    const LABEL_QA_OK = 'label:"QA ✔️"';
-    const LABEL_WAITING_FOR_AUTHOR = 'label:"waiting for author"';
-    const LABEL_WAITING_FOR_PM = 'label:"waiting for PM"';
-    const LABEL_WAITING_FOR_QA = 'label:"waiting for QA"';
-    const LABEL_WAITING_FOR_REBASE = 'label:"waiting for rebase"';
-    const LABEL_WAITING_FOR_UX = 'label:"waiting for UX"';
-    const LABEL_WAITING_FOR_WORDING = 'label:"waiting for Wording"';
+    const LABEL_QA_OK = 'label:\"QA ✔️\"';
+    const LABEL_WAITING_FOR_AUTHOR = 'label:\"waiting for author\"';
+    const LABEL_WAITING_FOR_PM = 'label:\"waiting for PM\"';
+    const LABEL_WAITING_FOR_QA = 'label:\"waiting for QA\"';
+    const LABEL_WAITING_FOR_REBASE = 'label:\"waiting for rebase\"';
+    const LABEL_WAITING_FOR_UX = 'label:\"waiting for UX\"';
+    const LABEL_WAITING_FOR_WORDING = 'label:\"waiting for Wording\"';
     const LABEL_WIP = 'label:WIP';
+
+    const GRAPHQL_REQUEST = '{
+        search(query: "%queryString%", type: ISSUE, last: 100%pageAfter%) {
+          issueCount
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+          edges {
+            node {
+              ... on PullRequest {
+                number
+                author {
+                  login
+                  url
+                }
+                url
+                title
+                body
+                createdAt
+                files(last: 100) {
+                  nodes {
+                    path
+                  }
+                }
+                milestone {
+                  title
+                }
+                repository {
+                  name
+                  url
+                }
+              }
+            }
+          }
+        }
+      }';
 
     /**
      * @var Github;
@@ -90,7 +127,6 @@ class GithubCheckPRCommand extends Command
                 .' -'.self::LABEL_WAITING_FOR_QA
                 .' -'.self::LABEL_WIP,
         ];
-        $requestCommon = 'org:PrestaShop is:pr ';
 
         $request = $input->getOption('request');
         if ($request) {
@@ -108,10 +144,10 @@ class GithubCheckPRCommand extends Command
         $filterFile = empty($filterFile) ? null : explode(',', $filterFile);
         $table = new Table($output);
         $table->setStyle('box');
-        $searchApi = $this->github->getClient()->api('search');
-        $paginator  = new ResultPager($this->github->getClient());
         foreach($requests as $title => $request) {
-            $result = $paginator->fetchAll($searchApi, 'issues', [$requestCommon . $request]);
+            $result = $this->github->search(self::GRAPHQL_REQUEST, [
+                '%queryString%' => 'org:PrestaShop is:pr ' . $request
+            ]);
             $hasRows = $this->checkPR(
                 $title,
                 $result,
@@ -138,33 +174,26 @@ class GithubCheckPRCommand extends Command
     ) {
         $rows = [];
         uasort($returnSearch, function($row1, $row2) {
-            $repoName1 = strtolower(str_replace('https://api.github.com/repos/PrestaShop/', '', $row1['repository_url']));
-            $repoName2 = strtolower(str_replace('https://api.github.com/repos/PrestaShop/', '', $row2['repository_url']));
-            $key = 0;
-            if ($repoName1 == $repoName2) {
-                if ($row1['number'] == $row2['number']) {
-                    return 0;
-                }
-                return $row1['number'] < $row2['number'] ? -1 : 1;
+            if ($row1['node']['number'] == $row2['node']['number']) {
+                return 0;
             }
-            return $repoName1 < $repoName2 ? -1 : 1;
+            return $row1['node']['number'] < $row2['node']['number'] ? -1 : 1;
         });
         foreach($returnSearch as $pullRequest) {
+            $pullRequest = $pullRequest['node'];
             $linkedIssue = $this->github->getLinkedIssue($pullRequest);
-            $repoName = str_replace('https://api.github.com/repos/PrestaShop/', '', $pullRequest['repository_url']);
+
             $pullRequestTitle = str_split($pullRequest['title'], 70);
             $pullRequestTitle = implode(PHP_EOL, $pullRequestTitle);
+            
             $countFilesTypeTitle = '';
             if ($needCountFilesType) {
                 $authFilterFileType = empty($fileTypeAuth);
-                $countFilesType = $this->github->countPRFileTypes('PrestaShop', $repoName, $pullRequest['number']);
-                ksort($countFilesType);
+                $countFilesType = $this->countFileType($pullRequest);
                 foreach ($countFilesType as $fileType => $count) {
                     $countFilesTypeTitle .= $fileType . ' (' . $count . ')' . PHP_EOL;
-                    if (!empty($fileTypeAuth)) {
-                        if (in_array($fileType, $fileTypeAuth)) {
-                            $authFilterFileType = true;
-                        }
+                    if (!empty($fileTypeAuth) && in_array($fileType, $fileTypeAuth)) {
+                        $authFilterFileType = true;
                     }
                 }
                 $countFilesTypeTitle = substr($countFilesTypeTitle, 0, -1);
@@ -176,13 +205,13 @@ class GithubCheckPRCommand extends Command
             }
             
             $currentRow = [
-                '<href=https://github.com/PrestaShop/'.$repoName.'>'.$repoName.'</>',
-                '<href='.$pullRequest['html_url'].'>#'.$pullRequest['number'].'</>',
-                $pullRequest['created_at'],
+                '<href='.$pullRequest['repository']['url'].'>'.$pullRequest['repository']['name'].'</>',
+                '<href='.$pullRequest['url'].'>#'.$pullRequest['number'].'</>',
+                $pullRequest['createdAt'],
                 $pullRequestTitle,
-                '<href='.$pullRequest['user']['html_url'].'>'.$pullRequest['user']['login'].'</>',
+                '<href='.$pullRequest['author']['url'].'>'.$pullRequest['author']['login'].'</>',
                 !empty($pullRequest['milestone']) ? '    <info>✓</info>' : '    <error>✗ </error>',
-                !is_null($linkedIssue) && $repoName == 'PrestaShop'
+                !is_null($linkedIssue) && $pullRequest['repository']['name'] == 'PrestaShop'
                     ? (!empty($linkedIssue['milestone']) ? '<info>✓ </info>' : '<error>✗ </error>') .' <href='.$linkedIssue['html_url'].'>#'.$linkedIssue['number'].'</>'
                     : '',
             ];
@@ -219,5 +248,21 @@ class GithubCheckPRCommand extends Command
         ]);
         $table->addRows($rows);
         return true;
+    }
+
+    protected function countFileType(array $pullRequest): array
+    {
+        $types = [];
+
+        foreach($pullRequest['files']['nodes'] as $file) {
+            $extension = pathinfo($file['path'], PATHINFO_EXTENSION);
+            if (!array_key_exists($extension, $types)) {
+                $types[$extension] = 0;
+            }
+            $types[$extension]++;
+        }
+        ksort($types);
+        
+        return $types;
     }
 }
