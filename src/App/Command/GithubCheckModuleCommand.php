@@ -55,6 +55,7 @@ class GithubCheckModuleCommand extends Command
         'ps_faviconnotificationbo',
         'ps_featuredproducts',
         'ps_googleanalytics',
+        'ps_healthcheck',
         'ps_imageslider',
         'ps_languageselector',
         'ps_linklist',
