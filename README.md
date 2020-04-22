@@ -38,7 +38,16 @@ php bin/console github:check:pr
 | ------------- | ------------- | ------------- |
 | `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
 | `--request=<request>` | No | Use the title of a search request or create your specific request |
+| `--exclude:author=<ghusername>` | No | Exclude for displaying PR created by <ghusername> |
+| `--exclude:reviewer=<ghusername>` | No | Exclude for displaying PR approved by <ghusername> |
 | `--filter:file=<ext>` | No | Filter on extensions file (one or many separated by comma) |
+| `--filter:numapproved=<ext>` | No | Filter on number of approved reviews (one or many separated by comma) |
+
+#### Samples
+
+* Fetch PR to review with 1 or 2 approved reviews, excluding Progi1984's PR and PR that Progi1984 has approved
+
+`php bin/console github:check:pr --request "PR Waiting for Review" --filter:numapproved=2,1 --exclude:reviewer=Progi1984 --exclude:author=Progi1984`
 
 ### Check Module
 Permits to check PrestaShop Modules

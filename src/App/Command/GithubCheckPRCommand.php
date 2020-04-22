@@ -55,16 +55,42 @@ class GithubCheckPRCommand extends Command
                   name
                   url
                 }
+                reviews(last: 100) {
+                  totalCount
+                  nodes {
+                    author {
+                      login
+                    }
+                    state
+                    createdAt
+                  }              
+                }
               }
             }
           }
         }
       }';
 
-    /**
+    private const MAINTAINER_MEMBERS = [
+        'atomiix',
+        'eternoendless',
+        'jolelievre',
+        'matks',
+        'matthieu-rolland',
+        'mickaelandrieu',
+        'NeOMakinG',
+        'PierreRambaud',
+        'Progi1984',
+        'Quetzacoalt91',
+        'rokaszygmantas',
+        'sowbiba',
+        'tomlev',
+    ];
+    
+      /**
      * @var Github;
      */
-    protected $github;
+     protected $github;
 
     protected function configure()
     {
@@ -86,6 +112,21 @@ class GithubCheckPRCommand extends Command
                 'filter:file',
                 null,
                 InputOption::VALUE_OPTIONAL
+            )
+            ->addOption(
+                'filter:numapproved',
+                null,
+                InputOption::VALUE_OPTIONAL
+            )
+            ->addOption(
+                'exclude:author',
+                null,
+                InputOption::VALUE_OPTIONAL
+            )
+            ->addOption(
+                'exclude:reviewer',
+                null,
+                InputOption::VALUE_OPTIONAL
             );
         
     }
@@ -101,31 +142,33 @@ class GithubCheckPRCommand extends Command
             // Check Merged PR (Milestone, Issue & Milestone)
             'Merged PR' => 'is:merged merged:>'.$date->format('Y-m-d'),
             // Check PR waiting for merge
-            'PR Waiting for Merge' => 'is:open ' . self::LABEL_QA_OK
-                .' -'.self::LABEL_WAITING_FOR_REBASE,
+            'PR Waiting for Merge' => 'is:open archived:false ' . self::LABEL_QA_OK
+                .' -'.self::LABEL_WAITING_FOR_REBASE
+                .' -'.self::LABEL_WAITING_FOR_AUTHOR,
             // Check PR waiting for QA
-            'PR Waiting for QA' => 'is:open ' . self::LABEL_WAITING_FOR_QA
+            'PR Waiting for QA' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_QA
                 .' -'.self::LABEL_WAITING_FOR_AUTHOR,
             // Check PR waiting for Rebase
-            'PR Waiting for Rebase' => 'is:open ' . self::LABEL_WAITING_FOR_REBASE,
+            'PR Waiting for Rebase' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_REBASE,
             // Check PR waiting for PM
-            'PR Waiting for PM' => 'is:open ' . self::LABEL_WAITING_FOR_PM .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+            'PR Waiting for PM' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_PM .' -'.self::LABEL_WAITING_FOR_AUTHOR,
             // Check PR waiting for UX
-            'PR Waiting for UX' => 'is:open ' . self::LABEL_WAITING_FOR_UX .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+            'PR Waiting for UX' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_UX .' -'.self::LABEL_WAITING_FOR_AUTHOR,
             // Check PR waiting for Wording
-            'PR Waiting for Wording' => 'is:open ' . self::LABEL_WAITING_FOR_WORDING .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+            'PR Waiting for Wording' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_WORDING .' -'.self::LABEL_WAITING_FOR_AUTHOR,
             // Check PR waiting for Author
-            'PR Waiting for Author' => 'is:open ' . self::LABEL_WAITING_FOR_AUTHOR,
+            'PR Waiting for Author' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_AUTHOR,
             // Check PR waiting for Review 
-            'PR Waiting for Review' => 'is:open review:required '
-                .' -'.self::LABEL_WAITING_FOR_AUTHOR
-                .' -'.self::LABEL_WAITING_FOR_PM
-                .' -'.self::LABEL_WAITING_FOR_QA
-                .' -'.self::LABEL_WAITING_FOR_REBASE
-                .' -'.self::LABEL_WAITING_FOR_UX
-                .' -'.self::LABEL_WAITING_FOR_WORDING
-                .' -'.self::LABEL_WAITING_FOR_QA
-                .' -'.self::LABEL_WIP,
+            'PR Waiting for Review' => 'is:open archived:false'
+                .' -' . self::LABEL_QA_OK
+                .' -' . self::LABEL_WAITING_FOR_AUTHOR
+                .' -' . self::LABEL_WAITING_FOR_PM
+                .' -' . self::LABEL_WAITING_FOR_QA
+                .' -' . self::LABEL_WAITING_FOR_REBASE
+                .' -' . self::LABEL_WAITING_FOR_UX
+                .' -' . self::LABEL_WAITING_FOR_WORDING
+                .' -' . self::LABEL_WAITING_FOR_QA
+                .' -' . self::LABEL_WIP,
         ];
 
         $request = $input->getOption('request');
@@ -142,6 +185,10 @@ class GithubCheckPRCommand extends Command
         }
         $filterFile = $input->getOption('filter:file');
         $filterFile = empty($filterFile) ? null : explode(',', $filterFile);
+        $filterNumApproved = $input->getOption('filter:numapproved');
+        $filterNumApproved = empty($filterNumApproved) ? null : explode(',', $filterNumApproved);
+        $filterExcludeAuthor = $input->getOption('exclude:author');
+        $filterExcludeReviewer = $input->getOption('exclude:reviewer');
         $table = new Table($output);
         $table->setStyle('box');
         foreach($requests as $title => $request) {
@@ -155,7 +202,10 @@ class GithubCheckPRCommand extends Command
                 $table,
                 $hasRows ?? false,
                 empty($filterFile) ? false : ($title == 'PR Waiting for Review' || count($requests) == 1 ? true : false),
-                $filterFile
+                $filterFile,
+                $filterNumApproved,
+                $filterExcludeAuthor,
+                $filterExcludeReviewer
             );
         }
 
@@ -170,22 +220,32 @@ class GithubCheckPRCommand extends Command
         Table $table,
         bool $hasRows,
         bool $needCountFilesType,
-        ?array $fileTypeAuth
+        ?array $fileTypeAuth,
+        ?array $filterNumApproved,
+        ?string $filterExcludeAuthor,
+        ?string $filterExcludeReviewer
     ) {
         $rows = [];
         uasort($returnSearch, function($row1, $row2) {
-            if ($row1['node']['number'] == $row2['node']['number']) {
-                return 0;
+            if ($row1['node']['repository']['name'] == $row2['node']['repository']['name']) {
+                if ($row1['node']['number'] == $row2['node']['number']) {
+                    return 0;
+                }
+                return $row1['node']['number'] < $row2['node']['number'] ? -1 : 1;
             }
-            return $row1['node']['number'] < $row2['node']['number'] ? -1 : 1;
+            return $row1['node']['repository']['name'] < $row2['node']['repository']['name'] ? -1 : 1;
         });
+        $countPR = 0;
         foreach($returnSearch as $pullRequest) {
             $pullRequest = $pullRequest['node'];
             $linkedIssue = $this->github->getLinkedIssue($pullRequest);
 
+            $pullRequestApproved = $this->getApproved($pullRequest);
             $pullRequestTitle = str_split($pullRequest['title'], 70);
             $pullRequestTitle = implode(PHP_EOL, $pullRequestTitle);
+            $pullRequestTitle = '('. count($pullRequestApproved) .'✓) '. $pullRequestTitle;
             
+            // Filter File Type
             $countFilesTypeTitle = '';
             if ($needCountFilesType) {
                 $authFilterFileType = empty($fileTypeAuth);
@@ -203,6 +263,24 @@ class GithubCheckPRCommand extends Command
             if ($authFilterFileType === false) {
                 continue;
             }
+            // Filter Num Approved
+            if ($filterNumApproved) {
+                if (!in_array(count($pullRequestApproved), $filterNumApproved)) {
+                    continue;
+                }
+            }
+            // Filter Author
+            if ($filterExcludeAuthor) {
+                if ($pullRequest['author']['login'] == $filterExcludeAuthor) {
+                    continue;
+                }
+            }
+            // Filter Reviewer
+            if ($filterExcludeReviewer) {
+                if (in_array($filterExcludeReviewer, $pullRequestApproved)) {
+                    continue;
+                }
+            }
             
             $currentRow = [
                 '<href='.$pullRequest['repository']['url'].'>'.$pullRequest['repository']['name'].'</>',
@@ -219,8 +297,13 @@ class GithubCheckPRCommand extends Command
                 array_push($currentRow, $countFilesTypeTitle);
             }
 
-            $rows[] = $currentRow;
+            if (!isset($rows[count($pullRequestApproved)])) {
+                $rows[count($pullRequestApproved)] = [];
+            }
+            $rows[count($pullRequestApproved)][] = $currentRow;
+            $countPR++;
         }
+        krsort($rows);
         if (empty($rows)) {
             return $hasRows;
         }
@@ -241,12 +324,17 @@ class GithubCheckPRCommand extends Command
             array_push($headers, '<info>Files</info>');
         }
         $table->addRows([
-            [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' ('.count($rows).') </>', ['colspan' => 7])],
+            [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' ('.$countPR.') </>', ['colspan' => 7])],
             new TableSeparator(),
             new TableSeparator(),
             $headers
         ]);
-        $table->addRows($rows);
+        foreach($rows as $key => $rowsNumApproved) {
+            $table->addRows($rowsNumApproved);
+            if ($key !== array_key_last($rows)) {
+                $table->addRows([new TableSeparator()]);
+            }
+        }
         return true;
     }
 
@@ -264,5 +352,27 @@ class GithubCheckPRCommand extends Command
         ksort($types);
         
         return $types;
+    }
+
+    protected function getApproved(array $pullRequest): array
+    {
+        $approved = [];
+        foreach($pullRequest['reviews']['nodes'] as $node) {
+            $login = $node['author']['login'];
+            if (!in_array($login, self::MAINTAINER_MEMBERS)) {
+                continue;
+            }
+            if ($node['state'] == 'APPROVED') {
+                if (!in_array($login, $approved)) {
+                    $approved[] = $login;
+                }
+            } else {
+                if (in_array($login, $approved)) {
+                    $pos = array_search($login, $approved);
+                    unset($approved[$pos]);
+                }
+            }
+        }
+        return $approved;
     }
 }
