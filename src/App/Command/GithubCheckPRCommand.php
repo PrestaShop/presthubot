@@ -1,9 +1,9 @@
 <?php
 namespace Console\App\Command;
 
-use DateInterval;
-use DateTime;
 use Console\App\Service\Github;
+use Console\App\Service\Github\Filters;
+use Console\App\Service\Github\Query;
 use Github\ResultPager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -15,61 +15,14 @@ use Symfony\Component\Console\Output\OutputInterface;
  
 class GithubCheckPRCommand extends Command
 {
-    const LABEL_QA_OK = 'label:\"QA ✔️\"';
-    const LABEL_WAITING_FOR_AUTHOR = 'label:\"waiting for author\"';
-    const LABEL_WAITING_FOR_PM = 'label:\"waiting for PM\"';
-    const LABEL_WAITING_FOR_QA = 'label:\"waiting for QA\"';
-    const LABEL_WAITING_FOR_REBASE = 'label:\"waiting for rebase\"';
-    const LABEL_WAITING_FOR_UX = 'label:\"waiting for UX\"';
-    const LABEL_WAITING_FOR_WORDING = 'label:\"waiting for Wording\"';
-    const LABEL_WIP = 'label:WIP';
+    public const ORDERBY_PROJECT = 'projectName';
+    public const ORDERBY_ID = 'id';
+    public const ORDERBY_CREATEDDATE = 'createdAt';
 
-    const GRAPHQL_REQUEST = '{
-        search(query: "%queryString%", type: ISSUE, last: 100%pageAfter%) {
-          issueCount
-          pageInfo {
-            endCursor
-            hasNextPage
-          }
-          edges {
-            node {
-              ... on PullRequest {
-                number
-                author {
-                  login
-                  url
-                }
-                url
-                title
-                body
-                createdAt
-                files(last: 100) {
-                  nodes {
-                    path
-                  }
-                }
-                milestone {
-                  title
-                }
-                repository {
-                  name
-                  url
-                }
-                reviews(last: 100) {
-                  totalCount
-                  nodes {
-                    author {
-                      login
-                    }
-                    state
-                    createdAt
-                  }              
-                }
-              }
-            }
-          }
-        }
-      }';
+    private const DEFAULT_ORDERBY = [
+        self::ORDERBY_PROJECT,
+        self::ORDERBY_ID,
+    ];
 
     private const MAINTAINER_MEMBERS = [
         'atomiix',
@@ -87,10 +40,22 @@ class GithubCheckPRCommand extends Command
         'tomlev',
     ];
     
-      /**
+    /**
+     * @var Filters;
+     */
+    protected $filters;
+    /**
      * @var Github;
      */
-     protected $github;
+    protected $github;
+    /**
+     * @var array;
+     */
+    protected $orderBy;
+    /**
+     * @var OutputInterface;
+     */
+    protected $output;
 
     protected function configure()
     {
@@ -127,6 +92,13 @@ class GithubCheckPRCommand extends Command
                 'exclude:reviewer',
                 null,
                 InputOption::VALUE_OPTIONAL
+            )
+            ->addOption(
+                'orderBy',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Order By Column ('.implode(',', self::DEFAULT_ORDERBY).')',
+                implode(',', self::DEFAULT_ORDERBY)
             );
         
     }
@@ -134,48 +106,16 @@ class GithubCheckPRCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->github = new Github($input->getOption('ghtoken'));
-        $time = time();
+        $this->output = $output;
+        $this->orderBy = explode(',', $input->getOption('orderBy'));
 
-        $date = new DateTime();
-        $date->sub(new DateInterval('P1D'));
-        $requests = [
-            // Check Merged PR (Milestone, Issue & Milestone)
-            'Merged PR' => 'is:merged merged:>'.$date->format('Y-m-d'),
-            // Check PR waiting for merge
-            'PR Waiting for Merge' => 'is:open archived:false ' . self::LABEL_QA_OK
-                .' -'.self::LABEL_WAITING_FOR_REBASE
-                .' -'.self::LABEL_WAITING_FOR_AUTHOR,
-            // Check PR waiting for QA
-            'PR Waiting for QA' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_QA
-                .' -'.self::LABEL_WAITING_FOR_AUTHOR,
-            // Check PR waiting for Rebase
-            'PR Waiting for Rebase' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_REBASE,
-            // Check PR waiting for PM
-            'PR Waiting for PM' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_PM .' -'.self::LABEL_WAITING_FOR_AUTHOR,
-            // Check PR waiting for UX
-            'PR Waiting for UX' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_UX .' -'.self::LABEL_WAITING_FOR_AUTHOR,
-            // Check PR waiting for Wording
-            'PR Waiting for Wording' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_WORDING .' -'.self::LABEL_WAITING_FOR_AUTHOR,
-            // Check PR waiting for Author
-            'PR Waiting for Author' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_AUTHOR,
-            // Check PR waiting for Review 
-            'PR Waiting for Review' => 'is:open archived:false'
-                .' -' . self::LABEL_QA_OK
-                .' -' . self::LABEL_WAITING_FOR_AUTHOR
-                .' -' . self::LABEL_WAITING_FOR_PM
-                .' -' . self::LABEL_WAITING_FOR_QA
-                .' -' . self::LABEL_WAITING_FOR_REBASE
-                .' -' . self::LABEL_WAITING_FOR_UX
-                .' -' . self::LABEL_WAITING_FOR_WORDING
-                .' -' . self::LABEL_WAITING_FOR_QA
-                .' -' . self::LABEL_WIP,
-        ];
+        $time = time();
 
         $request = $input->getOption('request');
         if ($request) {
-            if (array_key_exists($request, $requests)) {
+            if (array_key_exists($request, Query::getRequests())) {
                 $requests = [
-                    $request => $requests[$request]
+                    $request => Query::getRequests()[$request]
                 ];
             } else {
                 $requests = [
@@ -183,105 +123,83 @@ class GithubCheckPRCommand extends Command
                 ];
             }
         }
+
+        $this->filters = new Filters();
+
         $filterFile = $input->getOption('filter:file');
-        $filterFile = empty($filterFile) ? null : explode(',', $filterFile);
         $filterNumApproved = $input->getOption('filter:numapproved');
-        $filterNumApproved = empty($filterNumApproved) ? null : explode(',', $filterNumApproved);
         $filterExcludeAuthor = $input->getOption('exclude:author');
         $filterExcludeReviewer = $input->getOption('exclude:reviewer');
-        $table = new Table($output);
+        if (!empty($filterFile)) {
+            $this->filters->addFilter(Filters::FILTER_FILE_EXTENSION, explode(',', $filterFile), true);
+        }
+        if (!empty($filterNumApproved)) {
+            $this->filters->addFilter(Filters::FILTER_NUM_APPROVED, explode(',', $filterNumApproved), true);
+        }
+        if (!empty($filterExcludeAuthor)) {
+            $this->filters->addFilter(Filters::FILTER_AUTHOR, explode(',', $filterExcludeAuthor), false);
+        }
+        if (!empty($filterExcludeReviewer)) {
+            $this->filters->addFilter(Filters::FILTER_REVIEWER, explode(',', $filterExcludeReviewer), false);
+        }
+        $table = new Table($this->output);
         $table->setStyle('box');
         foreach($requests as $title => $request) {
-            $result = $this->github->search(self::GRAPHQL_REQUEST, [
-                '%queryString%' => 'org:PrestaShop is:pr ' . $request
-            ]);
+            $graphQLQuery = new Query();
+            $graphQLQuery->setQuery('org:PrestaShop is:pr ' . $request);
             $hasRows = $this->checkPR(
-                $title,
-                $result,
-                $output,
                 $table,
+                $title,
+                $this->github->search($graphQLQuery),
                 $hasRows ?? false,
-                empty($filterFile) ? false : ($title == 'PR Waiting for Review' || count($requests) == 1 ? true : false),
-                $filterFile,
-                $filterNumApproved,
-                $filterExcludeAuthor,
-                $filterExcludeReviewer
+                empty($filterFile) ? false : ($title == 'PR Waiting for Review' || count($requests) == 1 ? true : false)
             );
         }
 
         $table->render();
-        $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
+        $this->output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
     }
 
     private function checkPR(
-        string $title,
-        array $returnSearch,
-        OutputInterface $output,
         Table $table,
+        string $title,
+        array $resultAPI,
         bool $hasRows,
-        bool $needCountFilesType,
-        ?array $fileTypeAuth,
-        ?array $filterNumApproved,
-        ?string $filterExcludeAuthor,
-        ?string $filterExcludeReviewer
+        bool $needCountFilesType
     ) {
         $rows = [];
-        uasort($returnSearch, function($row1, $row2) {
-            if ($row1['node']['repository']['name'] == $row2['node']['repository']['name']) {
-                if ($row1['node']['number'] == $row2['node']['number']) {
-                    return 0;
+        uasort($resultAPI, function($row1, $row2) {
+            $projectName1 = $row1['node']['repository']['name'];
+            $projectName2 = $row2['node']['repository']['name'];
+            $id1 = $row1['node']['number'];
+            $id2 = $row2['node']['number'];
+            $createdAt1 = $row1['node']['createdAt'];
+            $createdAt2 = $row2['node']['createdAt'];
+
+            $return = 0;
+            foreach($this->orderBy as $orderKey) {
+                if (isset(${$orderKey.'1'}, ${$orderKey.'2'})) {
+                    if (${$orderKey.'1'} == ${$orderKey.'2'}) {
+                        continue;
+                    }
+                    return ${$orderKey.'1'} < ${$orderKey.'2'} ? -1 : 1;
                 }
-                return $row1['node']['number'] < $row2['node']['number'] ? -1 : 1;
             }
-            return $row1['node']['repository']['name'] < $row2['node']['repository']['name'] ? -1 : 1;
+            return $return;
         });
         $countPR = 0;
-        foreach($returnSearch as $pullRequest) {
+        foreach($resultAPI as $pullRequest) {
             $pullRequest = $pullRequest['node'];
-            $linkedIssue = $this->github->getLinkedIssue($pullRequest);
+            $pullRequest['approved'] = $this->getApproved($pullRequest);
+            if (!$this->isPRValid($pullRequest, $this->filters)) {
+                continue;
+            }            
 
-            $pullRequestApproved = $this->getApproved($pullRequest);
             $pullRequestTitle = str_split($pullRequest['title'], 70);
             $pullRequestTitle = implode(PHP_EOL, $pullRequestTitle);
-            $pullRequestTitle = '('. count($pullRequestApproved) .'✓) '. $pullRequestTitle;
+            $pullRequestTitle = '('. count($pullRequest['approved']) .'✓) '. $pullRequestTitle;
             
-            // Filter File Type
-            $countFilesTypeTitle = '';
-            if ($needCountFilesType) {
-                $authFilterFileType = empty($fileTypeAuth);
-                $countFilesType = $this->countFileType($pullRequest);
-                foreach ($countFilesType as $fileType => $count) {
-                    $countFilesTypeTitle .= $fileType . ' (' . $count . ')' . PHP_EOL;
-                    if (!empty($fileTypeAuth) && in_array($fileType, $fileTypeAuth)) {
-                        $authFilterFileType = true;
-                    }
-                }
-                $countFilesTypeTitle = substr($countFilesTypeTitle, 0, -1);
-            } else {
-                $authFilterFileType = true;
-            }
-            if ($authFilterFileType === false) {
-                continue;
-            }
-            // Filter Num Approved
-            if ($filterNumApproved) {
-                if (!in_array(count($pullRequestApproved), $filterNumApproved)) {
-                    continue;
-                }
-            }
-            // Filter Author
-            if ($filterExcludeAuthor) {
-                if ($pullRequest['author']['login'] == $filterExcludeAuthor) {
-                    continue;
-                }
-            }
-            // Filter Reviewer
-            if ($filterExcludeReviewer) {
-                if (in_array($filterExcludeReviewer, $pullRequestApproved)) {
-                    continue;
-                }
-            }
-            
+            $linkedIssue = $this->github->getLinkedIssue($pullRequest);
             $currentRow = [
                 '<href='.$pullRequest['repository']['url'].'>'.$pullRequest['repository']['name'].'</>',
                 '<href='.$pullRequest['url'].'>#'.$pullRequest['number'].'</>',
@@ -297,10 +215,10 @@ class GithubCheckPRCommand extends Command
                 array_push($currentRow, $countFilesTypeTitle);
             }
 
-            if (!isset($rows[count($pullRequestApproved)])) {
-                $rows[count($pullRequestApproved)] = [];
+            if (!isset($rows[count($pullRequest['approved'])])) {
+                $rows[count($pullRequest['approved'])] = [];
             }
-            $rows[count($pullRequestApproved)][] = $currentRow;
+            $rows[count($pullRequest['approved'])][] = $currentRow;
             $countPR++;
         }
         krsort($rows);
@@ -335,6 +253,77 @@ class GithubCheckPRCommand extends Command
                 $table->addRows([new TableSeparator()]);
             }
         }
+        return true;
+    }
+
+    protected function isPRValid(array $pullRequest, Filters $filters): bool
+    {
+        // FIX : Some merged PR are displayed in open search
+        if ($pullRequest['merged']) {
+            return false;
+        }
+
+        // Filter Author
+        if ($filters->hasFilter(Filters::FILTER_AUTHOR)) {
+            if ($filters->isFilterIncluded(Filters::FILTER_AUTHOR) 
+                && !in_array($pullRequest['author']['login'], $filters->getFilterData(Filters::FILTER_AUTHOR))) {
+                return false;
+            }
+            if (!$filters->isFilterIncluded(Filters::FILTER_AUTHOR) 
+                && in_array($pullRequest['author']['login'], $filters->getFilterData(Filters::FILTER_AUTHOR))) {
+                return false;
+            }
+        }
+
+        // Filter File Extensions
+        if ($filters->hasFilter(Filters::FILTER_FILE_EXTENSION)) {
+            $countFilesType = $this->countFileType($pullRequest);
+            if ($filters->isFilterIncluded(Filters::FILTER_FILE_EXTENSION)) {
+                foreach ($filters->getFilterData(Filters::FILTER_FILE_EXTENSION) as $fileExt) {
+                    if (!in_array($fileExt, array_keys($countFilesType))) {
+                        return false;
+                    }
+                }
+            }
+            if (!$filters->isFilterIncluded(Filters::FILTER_FILE_EXTENSION)) {
+                foreach ($filters->getFilterData(Filters::FILTER_FILE_EXTENSION) as $fileExt) {
+                    if (in_array($fileExt, array_keys($countFilesType))) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // Filter Num Approved
+        if ($filters->hasFilter(Filters::FILTER_NUM_APPROVED)) {
+            if ($filters->isFilterIncluded(Filters::FILTER_NUM_APPROVED) 
+                && !in_array(count($pullRequest['approved']), $filters->getFilterData(Filters::FILTER_NUM_APPROVED), true)) {
+                return false;
+            }
+            if (!$filters->isFilterIncluded(Filters::FILTER_NUM_APPROVED) 
+                && in_array(count($pullRequest['approved']), $filters->getFilterData(Filters::FILTER_NUM_APPROVED), true)) {
+                return false;
+            }
+        }
+
+        // Filter Reviewer
+        if ($filters->hasFilter(Filters::FILTER_REVIEWER)) {
+            if ($filters->isFilterIncluded(Filters::FILTER_REVIEWER)) {
+                foreach ($filters->getFilterData(Filters::FILTER_REVIEWER) as $reviewer) {
+                    if (!in_array($reviewer, $pullRequest['approved'])) {
+                        return false;
+                    }
+                }
+            }
+            if (!$filters->isFilterIncluded(Filters::FILTER_REVIEWER)) {
+                foreach ($filters->getFilterData(Filters::FILTER_REVIEWER) as $reviewer) {
+                    if (in_array($reviewer, $pullRequest['approved'])) {
+                        return false;
+                    }
+                }
+            }
+        }
+
         return true;
     }
 

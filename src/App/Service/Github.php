@@ -33,20 +33,15 @@ class Github
         return $this->client;
     }
 
-    public function search(string $queryString, array $params): array
+    public function search(Github\Query $graphQLQuery): array
     {
-        $requestBase = str_replace(array_keys($params), array_values($params), $queryString);
-        $request = str_replace('%pageAfter%', '', $requestBase);
         $result = [];
         do {
-            $resultPage = $this->client->api('graphql')->execute($request, []);
+            $resultPage = $this->client->api('graphql')->execute((string) $graphQLQuery, []);
             $result = array_merge($result, $resultPage['data']['search']['edges']);
-            $request = str_replace(
-                '%pageAfter%',
-                ', after: "' . $resultPage['data']['search']['pageInfo']['endCursor'] . '"',
-                $requestBase
-            );
-            
+            if (!empty($resultPage['data']['search']['pageInfo']['endCursor'])) {
+                $graphQLQuery->setPageAfter($resultPage['data']['search']['pageInfo']['endCursor']); 
+            }
         } while($resultPage['data']['search']['pageInfo']['hasNextPage']);
         return $result;
     }

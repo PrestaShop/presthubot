@@ -42,6 +42,7 @@ php bin/console github:check:pr
 | `--exclude:reviewer=<ghusername>` | No | Exclude for displaying PR approved by <ghusername> |
 | `--filter:file=<ext>` | No | Filter on extensions file (one or many separated by comma) |
 | `--filter:numapproved=<ext>` | No | Filter on number of approved reviews (one or many separated by comma) |
+| `--orderBy=<order>` | No | Order by columns (one or many separated by comma : projectName, id, createdAt) |
 
 #### Samples
 
