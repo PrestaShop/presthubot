@@ -134,7 +134,9 @@ class GithubCheckPRCommand extends Command
             $this->filters->addFilter(Filters::FILTER_FILE_EXTENSION, explode(',', $filterFile), true);
         }
         if (!empty($filterNumApproved)) {
-            $this->filters->addFilter(Filters::FILTER_NUM_APPROVED, explode(',', $filterNumApproved), true);
+            $filterNumApproved = explode(',', $filterNumApproved);
+            $filterNumApproved = array_map('intval', $filterNumApproved);
+            $this->filters->addFilter(Filters::FILTER_NUM_APPROVED, $filterNumApproved, true);
         }
         if (!empty($filterExcludeAuthor)) {
             $this->filters->addFilter(Filters::FILTER_AUTHOR, explode(',', $filterExcludeAuthor), false);
