@@ -217,13 +217,13 @@ class GithubCheckModuleCommand extends Command
 
         $checkBranch = 'Branch : ';
         $checkBranch .= $report['branch']['develop'] ? '<info>✓ </info>' . ' (' . $report['branch']['develop'] . ')' : '<error>✗ </error>';
-        $checkBranch .= $report['branch']['develop'] ? PHP_EOL . 'Status : ' . ($report['branch']['hasDiffMaster'] ? '<info>✓ </info>' : '<error>✗ </error>') : ''; 
+        $checkBranch .= $report['branch']['develop'] ? PHP_EOL . 'Status : ' . ($report['branch']['hasDiffMaster'] ? '<error>✗ </error>' : '<info>✓ </info>') : ''; 
         if (!empty($report['branch']['status']) && $report['branch']['status']['ahead'] > 0) {
-            $checkBranch .= PHP_EOL . sprintf('- master > dev by %d commits', $report['branch']['status']['ahead']) . PHP_EOL;
+            $checkBranch .= PHP_EOL . sprintf('- dev < master by %d commits', $report['branch']['status']['ahead']) . PHP_EOL;
+            $checkBranch .= sprintf('THIS MODULE NEEDS A RELEASE');
         }
         if (!empty($report['branch']['status']) && $report['branch']['status']['behind'] > 0) {
-            $checkBranch .= sprintf('- dev < master by %d commits', $report['branch']['status']['behind']) . PHP_EOL;
-            $checkBranch .= sprintf('THIS MODULE NEEDS A RELEASE');
+            $checkBranch .= PHP_EOL . sprintf('- master > dev by %d commits', $report['branch']['status']['behind']) . PHP_EOL;
         }
 
         $checkFiles = '';

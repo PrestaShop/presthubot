@@ -156,8 +156,8 @@ class SlackNotifierCommand extends Command
         $modulesNeedRelease = [];
         foreach (GithubCheckModuleCommand::REPOSITORIES as $repository) {
             $checkBranches = $this->moduleChecker->checkBranches('PrestaShop', $repository);
-            if (!empty($checkBranches['status']) && $checkBranches['status']['behind'] > 0) {
-                $modulesNeedRelease[$repository] = $checkBranches['status']['behind'];
+            if ($checkBranches['hasDiffMaster']) {
+                $modulesNeedRelease[$repository] = $checkBranches['status']['ahead'];
             }
         }
         arsort($modulesNeedRelease);

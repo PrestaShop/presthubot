@@ -244,7 +244,7 @@ class ModuleChecker
         $this->report['branch'] = [];
         $this->report['branch']['develop'] = (array_key_exists('dev', $branches) ? 'dev' : (array_key_exists('develop', $branches) ? 'develop' : ''));
         $this->report['branch']['status'] = $this->report['branch']['develop'] === '' ? null :$this->findReleaseStatus($references, $org, $repository);
-        $this->report['branch']['hasDiffMaster'] = (!empty($report['branch']['status']) && $report['branch']['status']['behind'] > 0);
+        $this->report['branch']['hasDiffMaster'] = (!empty($this->report['branch']['status']) && $this->report['branch']['status']['ahead'] > 0);
         
         $this->rating[self::RATING_BRANCH] +=  ($this->report['branch']['develop'] ? 1 : 0) + (!$this->report['branch']['hasDiffMaster'] ? 1 : 0);
 
