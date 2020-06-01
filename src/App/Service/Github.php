@@ -2,6 +2,7 @@
 
 namespace Console\App\Service;
 
+use Console\App\Service\Github\Filters;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;
 use Cache\Adapter\Filesystem\FilesystemCachePool;
@@ -13,6 +14,20 @@ class Github
      * @var Client;
      */
     protected $client;
+
+    private const MAINTAINER_MEMBERS = [
+        'atomiix',
+        'eternoendless',
+        'jolelievre',
+        'matks',
+        'matthieu-rolland',
+        'NeOMakinG',
+        'PierreRambaud',
+        'Progi1984',
+        'Quetzacoalt91',
+        'rokaszygmantas',
+        'sowbiba',
+    ];
 
     public function __construct(string $ghToken = null)
     {
@@ -109,5 +124,98 @@ class Github
             $topics[] = $edge['node']['topic']['name'];
         }
         return $topics;
+    }
+
+    public function isPRValid(array $pullRequest, Filters $filters): bool
+    {
+        // FIX : Some merged PR are displayed in open search
+        if ($pullRequest['merged']) {
+            return false;
+        }
+
+        // Filter Author
+        if ($filters->hasFilter(Filters::FILTER_AUTHOR)) {
+            if ($filters->isFilterIncluded(Filters::FILTER_AUTHOR) 
+                && !in_array($pullRequest['author']['login'], $filters->getFilterData(Filters::FILTER_AUTHOR))) {
+                return false;
+            }
+            if (!$filters->isFilterIncluded(Filters::FILTER_AUTHOR) 
+                && in_array($pullRequest['author']['login'], $filters->getFilterData(Filters::FILTER_AUTHOR))) {
+                return false;
+            }
+        }
+
+        // Filter File Extensions
+        if ($filters->hasFilter(Filters::FILTER_FILE_EXTENSION)) {
+            $countFilesType = $this->countFileType($pullRequest);
+            if ($filters->isFilterIncluded(Filters::FILTER_FILE_EXTENSION)) {
+                foreach ($filters->getFilterData(Filters::FILTER_FILE_EXTENSION) as $fileExt) {
+                    if (!in_array($fileExt, array_keys($countFilesType))) {
+                        return false;
+                    }
+                }
+            }
+            if (!$filters->isFilterIncluded(Filters::FILTER_FILE_EXTENSION)) {
+                foreach ($filters->getFilterData(Filters::FILTER_FILE_EXTENSION) as $fileExt) {
+                    if (in_array($fileExt, array_keys($countFilesType))) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // Filter Num Approved
+        if ($filters->hasFilter(Filters::FILTER_NUM_APPROVED)) {
+            if ($filters->isFilterIncluded(Filters::FILTER_NUM_APPROVED) 
+                && !in_array(count($pullRequest['approved']), $filters->getFilterData(Filters::FILTER_NUM_APPROVED), true)) {
+                return false;
+            }
+            if (!$filters->isFilterIncluded(Filters::FILTER_NUM_APPROVED) 
+                && in_array(count($pullRequest['approved']), $filters->getFilterData(Filters::FILTER_NUM_APPROVED), true)) {
+                return false;
+            }
+        }
+
+        // Filter Reviewer
+        if ($filters->hasFilter(Filters::FILTER_REVIEWER)) {
+            if ($filters->isFilterIncluded(Filters::FILTER_REVIEWER)) {
+                foreach ($filters->getFilterData(Filters::FILTER_REVIEWER) as $reviewer) {
+                    if (!in_array($reviewer, $pullRequest['approved'])) {
+                        return false;
+                    }
+                }
+            }
+            if (!$filters->isFilterIncluded(Filters::FILTER_REVIEWER)) {
+                foreach ($filters->getFilterData(Filters::FILTER_REVIEWER) as $reviewer) {
+                    if (in_array($reviewer, $pullRequest['approved'])) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public function extractApproved(array $pullRequest): array
+    {
+        $approved = [];
+        foreach($pullRequest['reviews']['nodes'] as $node) {
+            $login = $node['author']['login'];
+            if (!in_array($login, self::MAINTAINER_MEMBERS)) {
+                continue;
+            }
+            if ($node['state'] == 'APPROVED') {
+                if (!in_array($login, $approved)) {
+                    $approved[] = $login;
+                }
+            } else {
+                if (in_array($login, $approved)) {
+                    $pos = array_search($login, $approved);
+                    unset($approved[$pos]);
+                }
+            }
+        }
+        return $approved;
     }
 }

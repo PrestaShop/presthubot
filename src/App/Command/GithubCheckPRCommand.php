@@ -23,22 +23,6 @@ class GithubCheckPRCommand extends Command
         self::ORDERBY_PROJECT,
         self::ORDERBY_ID,
     ];
-
-    private const MAINTAINER_MEMBERS = [
-        'atomiix',
-        'eternoendless',
-        'jolelievre',
-        'matks',
-        'matthieu-rolland',
-        'mickaelandrieu',
-        'NeOMakinG',
-        'PierreRambaud',
-        'Progi1984',
-        'Quetzacoalt91',
-        'rokaszygmantas',
-        'sowbiba',
-        'tomlev',
-    ];
     
     /**
      * @var Filters;
@@ -130,18 +114,18 @@ class GithubCheckPRCommand extends Command
         $filterNumApproved = $input->getOption('filter:numapproved');
         $filterExcludeAuthor = $input->getOption('exclude:author');
         $filterExcludeReviewer = $input->getOption('exclude:reviewer');
-        if (!empty($filterFile)) {
+        if (!is_null($filterFile)) {
             $this->filters->addFilter(Filters::FILTER_FILE_EXTENSION, explode(',', $filterFile), true);
         }
-        if (!empty($filterNumApproved)) {
+        if (!is_null($filterNumApproved)) {
             $filterNumApproved = explode(',', $filterNumApproved);
             $filterNumApproved = array_map('intval', $filterNumApproved);
             $this->filters->addFilter(Filters::FILTER_NUM_APPROVED, $filterNumApproved, true);
         }
-        if (!empty($filterExcludeAuthor)) {
+        if (!is_null($filterExcludeAuthor)) {
             $this->filters->addFilter(Filters::FILTER_AUTHOR, explode(',', $filterExcludeAuthor), false);
         }
-        if (!empty($filterExcludeReviewer)) {
+        if (!is_null($filterExcludeReviewer)) {
             $this->filters->addFilter(Filters::FILTER_REVIEWER, explode(',', $filterExcludeReviewer), false);
         }
         $table = new Table($this->output);
@@ -192,8 +176,8 @@ class GithubCheckPRCommand extends Command
         $countPR = 0;
         foreach($resultAPI as $pullRequest) {
             $pullRequest = $pullRequest['node'];
-            $pullRequest['approved'] = $this->getApproved($pullRequest);
-            if (!$this->isPRValid($pullRequest, $this->filters)) {
+            $pullRequest['approved'] = $this->github->extractApproved($pullRequest);
+            if (!$this->github->isPRValid($pullRequest, $this->filters)) {
                 continue;
             }            
 
@@ -258,77 +242,6 @@ class GithubCheckPRCommand extends Command
         return true;
     }
 
-    protected function isPRValid(array $pullRequest, Filters $filters): bool
-    {
-        // FIX : Some merged PR are displayed in open search
-        if ($pullRequest['merged']) {
-            return false;
-        }
-
-        // Filter Author
-        if ($filters->hasFilter(Filters::FILTER_AUTHOR)) {
-            if ($filters->isFilterIncluded(Filters::FILTER_AUTHOR) 
-                && !in_array($pullRequest['author']['login'], $filters->getFilterData(Filters::FILTER_AUTHOR))) {
-                return false;
-            }
-            if (!$filters->isFilterIncluded(Filters::FILTER_AUTHOR) 
-                && in_array($pullRequest['author']['login'], $filters->getFilterData(Filters::FILTER_AUTHOR))) {
-                return false;
-            }
-        }
-
-        // Filter File Extensions
-        if ($filters->hasFilter(Filters::FILTER_FILE_EXTENSION)) {
-            $countFilesType = $this->countFileType($pullRequest);
-            if ($filters->isFilterIncluded(Filters::FILTER_FILE_EXTENSION)) {
-                foreach ($filters->getFilterData(Filters::FILTER_FILE_EXTENSION) as $fileExt) {
-                    if (!in_array($fileExt, array_keys($countFilesType))) {
-                        return false;
-                    }
-                }
-            }
-            if (!$filters->isFilterIncluded(Filters::FILTER_FILE_EXTENSION)) {
-                foreach ($filters->getFilterData(Filters::FILTER_FILE_EXTENSION) as $fileExt) {
-                    if (in_array($fileExt, array_keys($countFilesType))) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        // Filter Num Approved
-        if ($filters->hasFilter(Filters::FILTER_NUM_APPROVED)) {
-            if ($filters->isFilterIncluded(Filters::FILTER_NUM_APPROVED) 
-                && !in_array(count($pullRequest['approved']), $filters->getFilterData(Filters::FILTER_NUM_APPROVED), true)) {
-                return false;
-            }
-            if (!$filters->isFilterIncluded(Filters::FILTER_NUM_APPROVED) 
-                && in_array(count($pullRequest['approved']), $filters->getFilterData(Filters::FILTER_NUM_APPROVED), true)) {
-                return false;
-            }
-        }
-
-        // Filter Reviewer
-        if ($filters->hasFilter(Filters::FILTER_REVIEWER)) {
-            if ($filters->isFilterIncluded(Filters::FILTER_REVIEWER)) {
-                foreach ($filters->getFilterData(Filters::FILTER_REVIEWER) as $reviewer) {
-                    if (!in_array($reviewer, $pullRequest['approved'])) {
-                        return false;
-                    }
-                }
-            }
-            if (!$filters->isFilterIncluded(Filters::FILTER_REVIEWER)) {
-                foreach ($filters->getFilterData(Filters::FILTER_REVIEWER) as $reviewer) {
-                    if (in_array($reviewer, $pullRequest['approved'])) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
-
     protected function countFileType(array $pullRequest): array
     {
         $types = [];
@@ -343,27 +256,5 @@ class GithubCheckPRCommand extends Command
         ksort($types);
         
         return $types;
-    }
-
-    protected function getApproved(array $pullRequest): array
-    {
-        $approved = [];
-        foreach($pullRequest['reviews']['nodes'] as $node) {
-            $login = $node['author']['login'];
-            if (!in_array($login, self::MAINTAINER_MEMBERS)) {
-                continue;
-            }
-            if ($node['state'] == 'APPROVED') {
-                if (!in_array($login, $approved)) {
-                    $approved[] = $login;
-                }
-            } else {
-                if (in_array($login, $approved)) {
-                    $pos = array_search($login, $approved);
-                    unset($approved[$pos]);
-                }
-            }
-        }
-        return $approved;
     }
 }

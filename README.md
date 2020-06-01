@@ -110,3 +110,21 @@ php bin/console github:stats:repository
 | `--repository=<repository>` | No | Just a repository in PS Organization or all the org if it is not defined |
 | `--pr:date:created=<date>` | No | Filter on creation date for PR |
 | `--pr:date:merged=<date>` | No | Filter on merge date for PR |
+
+### Slack Notifier
+Notify on Slack :
+- If PR are needed to merge
+- PR to review
+- Modules releases
+- Modules improvements
+
+```bash
+php bin/console slack:notifier
+```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--slacktoken=<slacktoken>` | Yes/No | Use it or use .env |
+| `--slackchannel=<slackchannel>` | Yes/No | Use it or use .env |

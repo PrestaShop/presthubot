@@ -7,20 +7,21 @@ use DateTime;
 
 class Query
 {
-      protected const LABEL_QA_OK = 'label:\"QA ✔️\"';
-      protected const LABEL_WAITING_FOR_AUTHOR = 'label:\"waiting for author\"';
-      protected const LABEL_WAITING_FOR_PM = 'label:\"waiting for PM\"';
-      protected const LABEL_WAITING_FOR_QA = 'label:\"waiting for QA\"';
-      protected const LABEL_WAITING_FOR_REBASE = 'label:\"waiting for rebase\"';
-      protected const LABEL_WAITING_FOR_UX = 'label:\"waiting for UX\"';
-      protected const LABEL_WAITING_FOR_WORDING = 'label:\"waiting for Wording\"';
-      protected const LABEL_WIP = 'label:WIP';
+    protected const LABEL_ON_HOLD = 'label:\"On hold\"';
+    protected const LABEL_QA_OK = 'label:\"QA ✔️\"';
+    protected const LABEL_WAITING_FOR_AUTHOR = 'label:\"waiting for author\"';
+    protected const LABEL_WAITING_FOR_PM = 'label:\"waiting for PM\"';
+    protected const LABEL_WAITING_FOR_QA = 'label:\"waiting for QA\"';
+    protected const LABEL_WAITING_FOR_REBASE = 'label:\"waiting for rebase\"';
+    protected const LABEL_WAITING_FOR_UX = 'label:\"waiting for UX\"';
+    protected const LABEL_WAITING_FOR_WORDING = 'label:\"waiting for Wording\"';
+    protected const LABEL_WIP = 'label:WIP';
 
-      protected const REQUESTS = [
+    protected const REQUESTS = [
         // Check Merged PR (Milestone, Issue & Milestone)
         'Merged PR' => 'is:merged merged:>%dateYesterday%',
         // Check PR waiting for merge
-        'PR Waiting for Merge' => 'is:open archived:false ' . self::LABEL_QA_OK
+        self::REQUEST_PR_WAITING_FOR_MERGE => 'is:open archived:false ' . self::LABEL_QA_OK
             .' -'.self::LABEL_WAITING_FOR_REBASE
             .' -'.self::LABEL_WAITING_FOR_AUTHOR,
         // Check PR waiting for QA
@@ -37,7 +38,8 @@ class Query
         // Check PR waiting for Author
         'PR Waiting for Author' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_AUTHOR,
         // Check PR waiting for Review 
-        'PR Waiting for Review' => 'is:open archived:false'
+        self::REQUEST_PR_WAITING_FOR_REVIEW => 'is:open archived:false'
+            .' -' . self::LABEL_ON_HOLD
             .' -' . self::LABEL_QA_OK
             .' -' . self::LABEL_WAITING_FOR_AUTHOR
             .' -' . self::LABEL_WAITING_FOR_PM
@@ -48,6 +50,8 @@ class Query
             .' -' . self::LABEL_WAITING_FOR_QA
             .' -' . self::LABEL_WIP,
     ]; 
+    public const REQUEST_PR_WAITING_FOR_MERGE = 'PR Waiting for Merge';
+    public const REQUEST_PR_WAITING_FOR_REVIEW = 'PR Waiting for Review';
 
     /**
      * @var string
