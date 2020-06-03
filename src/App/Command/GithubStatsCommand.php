@@ -64,6 +64,12 @@ class GithubStatsCommand extends Command
             $rows[] = new TableSeparator();
             $rows[] = [new TableCell('<info> @'.$input->getOption('username'). '</info>', ['colspan' => 2])];
             $rows[] = new TableSeparator();
+
+            $ranking = $this->getRankingContributors($input->getOption('username'));
+            if (!empty($ranking)) {
+                $rows[] = ['# Ranking', $ranking];
+                $rows[] = new TableSeparator();
+            }
     
             $openPullRequests = $this->github->getClient()->api('search')->issues('repo:PrestaShop/PrestaShop is:pr is:open author:'.$input->getOption('username'));
             $rows[] = ['# PR Open', $openPullRequests['total_count']];
@@ -90,5 +96,23 @@ class GithubStatsCommand extends Command
         $table->setRows($rows);
         $table->setStyle('box-double');
         $table->render();
+    }
+
+    protected function getRankingContributors($username): ?int
+    {
+        $contributors = \file_get_contents('http://contributors.prestashop.com/static/contributors.js');
+        if (empty($contributors)) {
+            return null;
+        }
+        $contributors = \json_decode($contributors, true);
+        if (empty($contributors)) {
+            return null;
+        }
+        foreach ($contributors as $ranking => $data) {
+            if ($data['login'] == $username) {
+                return $ranking + 1;
+            }
+        }
+        return null;
     }
 }
