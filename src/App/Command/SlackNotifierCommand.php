@@ -121,6 +121,7 @@ class SlackNotifierCommand extends Command
         // 2nd PR without review
         foreach ([5,4,3,2,1,0] as $numApproved) {
             $filters->addFilter(Filters::FILTER_NUM_APPROVED, [$numApproved], true);
+            $filters->addFilter(Filters::FILTER_REPOSITORY_PRIVATE, [false], true);
             foreach ($prReviews as $pullRequest) {
                 $pullRequest = $pullRequest['node'];
                 $pullRequest['approved'] = $this->github->extractApproved($pullRequest);

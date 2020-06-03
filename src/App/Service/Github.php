@@ -133,6 +133,18 @@ class Github
             return false;
         }
 
+        // Filter Repository PRovaite
+        if ($filters->hasFilter(Filters::FILTER_REPOSITORY_PRIVATE)) {
+            if ($filters->isFilterIncluded(Filters::FILTER_REPOSITORY_PRIVATE)
+                && !in_array($pullRequest['repository']['isPrivate'], $filters->getFilterData(Filters::FILTER_REPOSITORY_PRIVATE), true)) {
+                    return false;
+            }
+            if (!$filters->isFilterIncluded(Filters::FILTER_REPOSITORY_PRIVATE)
+                && in_array($pullRequest['repository']['isPrivate'], $filters->getFilterData(Filters::FILTER_REPOSITORY_PRIVATE), true)) {
+                    return false;
+            }
+        }
+
         // Filter Author
         if ($filters->hasFilter(Filters::FILTER_AUTHOR)) {
             if ($filters->isFilterIncluded(Filters::FILTER_AUTHOR) 

@@ -153,6 +153,7 @@ class Query
                     repository {
                       name
                       url
+                      isPrivate
                     }
                     reviews(last: 100) {
                       totalCount
