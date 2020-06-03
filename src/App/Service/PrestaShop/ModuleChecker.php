@@ -282,10 +282,15 @@ class ModuleChecker
             $masterLastCommitSha,
             $devLastCommitSha
         );
+        $numPRMerged = 0;
+        foreach($comparison['commits'] as $commit) {
+            $numPRMerged += (strpos($commit['commit']['message'], 'Merge pull request #') === 0 ? 1 : 0);
+        }
 
         return [
             'behind' => $comparison['behind_by'],
             'ahead' => $comparison['ahead_by'],
+            'numPRMerged' => $numPRMerged,
         ];
     }
 }

@@ -158,15 +158,21 @@ class SlackNotifierCommand extends Command
         foreach (GithubCheckModuleCommand::REPOSITORIES as $repository) {
             $checkBranches = $this->moduleChecker->checkBranches('PrestaShop', $repository);
             if ($checkBranches['hasDiffMaster']) {
-                $modulesNeedRelease[$repository] = $checkBranches['status']['ahead'];
+                $modulesNeedRelease[$repository] = $checkBranches['status'];
             }
+            }
+        uasort($modulesNeedRelease, function($a, $b) {
+            if ($a['ahead'] == $b['ahead']) {
+                return 0;
         }
-        arsort($modulesNeedRelease);
+            return ($a['ahead'] > $b['ahead']) ? -1 : 1;
+        });
         if (!empty($modulesNeedRelease)) {
             $modulesNeedRelease = array_slice($modulesNeedRelease, 0, 10);
             $slackMessage = ':rocket: Modules need some release :rocket:' . PHP_EOL;
-            foreach ($modulesNeedRelease as $repository => $numCommits) {
-                $slackMessage .= ' - <https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> ('.$numCommits.' commits)';
+            foreach ($modulesNeedRelease as $repository => $status) {
+                $slackMessage .= ' - <https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> ';
+                $slackMessage .= '('.$status['ahead'].' commits / '.$status['numPRMerged'].' PR'.($status['numPRMerged'] > 1 ? 's': '').')';
                 $slackMessage .= PHP_EOL;
             }
             return $slackMessage;
