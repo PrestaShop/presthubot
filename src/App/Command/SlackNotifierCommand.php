@@ -117,11 +117,11 @@ class SlackNotifierCommand extends Command
         $prReviews = $this->github->search($graphQLQuery);
         $prReadyToReview = [];
         $filters = new Filters();
+        $filters->addFilter(Filters::FILTER_REPOSITORY_PRIVATE, [false], true);
         // 1st PR with already a review (indicate who has ever)
         // 2nd PR without review
         foreach ([5,4,3,2,1,0] as $numApproved) {
             $filters->addFilter(Filters::FILTER_NUM_APPROVED, [$numApproved], true);
-            $filters->addFilter(Filters::FILTER_REPOSITORY_PRIVATE, [false], true);
             foreach ($prReviews as $pullRequest) {
                 $pullRequest = $pullRequest['node'];
                 $pullRequest['approved'] = $this->github->extractApproved($pullRequest);
@@ -147,6 +147,7 @@ class SlackNotifierCommand extends Command
                 $slackMessage .= PHP_EOL;
                 $slackMessage .= PHP_EOL;
             }
+            $slackMessage = $this->slack->linkGithubUsername($slackMessage);
             return $slackMessage;
         }
         return '';
@@ -160,11 +161,11 @@ class SlackNotifierCommand extends Command
             if ($checkBranches['hasDiffMaster']) {
                 $modulesNeedRelease[$repository] = $checkBranches['status'];
             }
-            }
+        }
         uasort($modulesNeedRelease, function($a, $b) {
             if ($a['ahead'] == $b['ahead']) {
                 return 0;
-        }
+            }
             return ($a['ahead'] > $b['ahead']) ? -1 : 1;
         });
         if (!empty($modulesNeedRelease)) {
