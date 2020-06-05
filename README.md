@@ -83,6 +83,18 @@ php bin/console github:check:repository
 | `--public` | No | Filter only on public repositories |
 | `--private` | No | Filter only on private repositories |
 
+### Get Notifications
+Get Github Notifications
+
+```bash
+php bin/console github:notifications
+```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+
 ### Get Stats
 Get some stats
 
