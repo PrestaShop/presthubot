@@ -4,9 +4,9 @@ php:
   - 7.3
 
 before_script:
-  - echo 'GH_TOKEN='$GH_TOKEN > .env
-  - echo 'SLACK_TOKEN='$SLACK_TOKEN >> .env
-  - echo 'SLACK_CHANNEL='$SLACK_CHANNEL >> .env
+  - echo 'GH_TOKEN='$GHTOKEN > .env
+  - echo 'SLACK_TOKEN='$SLACKTOKEN >> .env
+  - echo 'SLACK_CHANNEL='$SLACKCHANNEL >> .env
   - composer install
 
 script:
