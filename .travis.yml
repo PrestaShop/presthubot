@@ -3,9 +3,6 @@ language: php
 php:
   - 7.3
 
-env:
-  global:
-
 before_script:
   - composer install
 
