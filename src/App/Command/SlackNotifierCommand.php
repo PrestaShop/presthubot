@@ -36,6 +36,7 @@ class SlackNotifierCommand extends Command
 
     protected function configure()
     {
+        var_dump($_ENV['SLACK_CHANNEL']);
         $this->setName('slack:notifier')
             ->setDescription('Check Github Module')
             ->addOption(
