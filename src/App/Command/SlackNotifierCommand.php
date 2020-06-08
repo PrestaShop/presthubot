@@ -36,7 +36,6 @@ class SlackNotifierCommand extends Command
 
     protected function configure()
     {
-        var_dump($_ENV);
         $this->setName('slack:notifier')
             ->setDescription('Check Github Module')
             ->addOption(
@@ -44,21 +43,21 @@ class SlackNotifierCommand extends Command
                 null,
                 InputOption::VALUE_OPTIONAL,
                 '',
-                $_ENV['GH_TOKEN']
+                $_ENV['GH_TOKEN'] ?? null
             )
             ->addOption(
                 'slacktoken',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 '',
-                $_ENV['SLACK_TOKEN']
+                $_ENV['SLACK_TOKEN'] ?? null
             )
             ->addOption(
                 'slackchannel',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 '',
-                $_ENV['SLACK_CHANNEL']
+                $_ENV['SLACK_CHANNEL'] ?? null
             );   
     }
  

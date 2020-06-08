@@ -24,7 +24,7 @@ class GithubStatsRepositoryCommand extends Command
                 null,
                 InputOption::VALUE_OPTIONAL,
                 '',
-                $_ENV['GH_TOKEN']
+                $_ENV['GH_TOKEN'] ?? null
             )
             ->addOption(
                 'repository',
