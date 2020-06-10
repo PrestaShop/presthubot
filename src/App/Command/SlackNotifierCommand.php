@@ -244,7 +244,7 @@ class SlackNotifierCommand extends Command
                 $topics = '';
                 foreach ($report['githubTopics'] as $key => $value) {
                     if (!$value) {
-                        $topics .= (empty($topics) ? $value : ', ' . $value);
+                        $topics .= (empty($topics) ? $key : ', ' . $key);
                     }
                 }
                 $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Please add missings topics on Github (' . $topics . ')';
