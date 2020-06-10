@@ -62,6 +62,7 @@ php bin/console github:check:module
 | ------------- | ------------- | ------------- |
 | `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
 | `--module=<module>` | No | Filter only one module |
+| `--branch=<branch>` | No | Branch for searching files (default: master) |
 
 
 #### Informations

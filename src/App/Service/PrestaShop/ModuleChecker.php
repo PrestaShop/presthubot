@@ -120,7 +120,7 @@ class ModuleChecker
         return $this;
     }
 
-    public function checkRepository(string $org, string $repository)
+    public function checkRepository(string $org, string $repository, string $branch = 'master')
     {
         $repositoryInfo = $this->github->getClient()->api('repo')->show($org, $repository);
         $this->report['archived'] = $repositoryInfo['archived'];
@@ -167,7 +167,7 @@ class ModuleChecker
         $this->checkBranches($org, $repository);
 
         // Files
-        $this->checkFiles($org, $repository);
+        $this->checkFiles($org, $repository, $branch);
 
         // GH Topics
         $this->checkTopics($org, $repository);
@@ -192,7 +192,7 @@ class ModuleChecker
         return $this->report;
     }
 
-    protected function checkFiles(string $org, string $repository)
+    protected function checkFiles(string $org, string $repository, string $branch)
     {
         $this->report['files'] = [];
         foreach (self::CHECK_FILES as $path => $checks) {
@@ -200,13 +200,13 @@ class ModuleChecker
             foreach ($checks as $checkType => $checkData) {
                 switch($checkType) {
                     case self::CHECK_FILES_EXIST:
-                        $isExist = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, $path, 'refs/heads/master');
+                        $isExist = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, $path, 'refs/heads/' .  $branch);
                         $this->report['files'][$path][$checkType] = ($isExist == $checkData);
                         $this->rating[self::RATING_FILES] += ($isExist == $checkData) ? 1 : 0;
                     break;
                     case self::CHECK_FILES_CONTAIN:
                         $contents = $this->report['files'][$path][self::CHECK_FILES_EXIST]
-                            ? $this->github->getClient()->api('repo')->contents()->download($org, $repository, $path, 'refs/heads/master')
+                            ? $this->github->getClient()->api('repo')->contents()->download($org, $repository, $path, 'refs/heads/' .  $branch)
                             : '';
                         $allContains = true;
                         foreach ($checkData as $value) {

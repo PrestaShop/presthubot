@@ -134,6 +134,13 @@ class GithubCheckModuleCommand extends Command
                 'module',
                 null,
                 InputOption::VALUE_OPTIONAL
+            )
+            ->addOption(
+                'branch',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                '',
+                'master'
             );   
     }
  
@@ -142,6 +149,7 @@ class GithubCheckModuleCommand extends Command
         $this->github = new Github($input->getOption('ghtoken'));
         $this->moduleChecker = new ModuleChecker($this->github);
         $module = $input->getOption('module');
+        $branch = $input->getOption('branch');
         $time = time();
 
         $sectionProgressBar = $output->section();
@@ -171,7 +179,7 @@ class GithubCheckModuleCommand extends Command
         $progressBar->start();
 
         foreach($arrayRepositories as $key => $repository) {
-            $this->checkRepository('PrestaShop', $repository, $table);
+            $this->checkRepository('PrestaShop', $repository, $table, $branch);
             if (count($arrayRepositories) > 1) {
                 $table->addRows([new TableSeparator()]);
             }
@@ -196,10 +204,10 @@ class GithubCheckModuleCommand extends Command
         $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
     }
 
-    private function checkRepository(string $org, string $repository, Table $table)
+    private function checkRepository(string $org, string $repository, Table $table, string $branch)
     {
         $this->moduleChecker->resetChecker();
-        $this->moduleChecker->checkRepository($org, $repository);
+        $this->moduleChecker->checkRepository($org, $repository, $branch);
         $report = $this->moduleChecker->getReport();
         if ($report['archived'] || $report['moved']) {
             echo 'Please remove `' . $org . '/'.$repository.'`for the Presthubot analysis' . PHP_EOL;
