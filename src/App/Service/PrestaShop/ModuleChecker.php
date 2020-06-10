@@ -105,13 +105,32 @@ class ModuleChecker
     public function resetChecker(): self
     {
         $this->rating = self::RATING_DEFAULT;
-        $this->report = [];
+        $this->report = [
+            'archived' => null,
+            'moved' => null,
+            'url' => null,
+            'numStargazers' => null,
+            'numPROpened' => null,
+            'numFiles' => null,
+            'hasIssuesOpened' => null,
+            'numIssuesOpened' => null,
+            'license' => null,
+
+        ];
         return $this;
     }
 
     public function checkRepository(string $org, string $repository)
     {
         $repositoryInfo = $this->github->getClient()->api('repo')->show($org, $repository);
+        $this->report['archived'] = $repositoryInfo['archived'];
+        if ($this->report['archived']) {
+            return;
+        }
+        $this->report['moved'] = ($repositoryInfo['owner']['login'] !== $org);
+        if ($this->report['moved']) {
+            return;
+        }
         $this->report['url'] = $repositoryInfo['html_url'];
 
         // Title

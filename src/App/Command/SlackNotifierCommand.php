@@ -185,12 +185,20 @@ class SlackNotifierCommand extends Command
     {
         $improvements = [];
         foreach (GithubCheckModuleCommand::REPOSITORIES as $repository) {
+            if (count($improvements) > 10) {
+                break;
+            }
             $this->moduleChecker->resetChecker();
             $this->moduleChecker->checkRepository('PrestaShop', $repository);
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_GLOBAL) == ModuleChecker::RATING_GLOBAL_MAX) {
                 continue;
             }
             $report = $this->moduleChecker->getReport();
+            if ($report['archived'] || $report['moved']) {
+                $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Please remove for the Presthubot analysis';
+                continue;
+            }
+            
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_BRANCH) != ModuleChecker::RATING_BRANCH_MAX) {
                 // Needs release (cf. checkModuleReadyToRelease)
             }
@@ -240,9 +248,6 @@ class SlackNotifierCommand extends Command
                     }
                 }
                 $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Please add missings topics on Github (' . $topics . ')';
-            }
-            if (count($improvements) > 10) {
-                break;
             }
         }
         if (!empty($improvements)) {
