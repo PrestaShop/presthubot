@@ -26,7 +26,6 @@ class GithubCheckModuleCommand extends Command
      * @var array<string>
      */
     public const REPOSITORIES = [
-        'bankwire',
         'blockreassurance',
         'contactform',
         'cronjobs',
@@ -35,7 +34,6 @@ class GithubCheckModuleCommand extends Command
         'dashproducts',
         'dashtrends',
         'dateofdelivery',
-        'gadwords',
         'gamification',
         'graphnvd3',
         'gridhtml',
@@ -203,6 +201,10 @@ class GithubCheckModuleCommand extends Command
         $this->moduleChecker->resetChecker();
         $this->moduleChecker->checkRepository($org, $repository);
         $report = $this->moduleChecker->getReport();
+        if ($report['archived'] || $report['moved']) {
+            echo 'Please remove `' . $org . '/'.$repository.'`for the Presthubot analysis' . PHP_EOL;
+            return;
+        }
 
         $nums = 'Stars : '. $report['numStargazers'] . PHP_EOL
             . 'PR : ' . $report['numPROpened']  . PHP_EOL
