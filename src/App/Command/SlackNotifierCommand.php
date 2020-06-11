@@ -163,10 +163,13 @@ class SlackNotifierCommand extends Command
             }
         }
         uasort($modulesNeedRelease, function($a, $b) {
-            if ($a['ahead'] == $b['ahead']) {
-                return 0;
+            if ($a['numPRMerged'] == $b['numPRMerged']) {
+                if ($a['ahead'] == $b['ahead']) {
+                    return 0;
+                }
+                return ($a['ahead'] > $b['ahead']) ? -1 : 1;
             }
-            return ($a['ahead'] > $b['ahead']) ? -1 : 1;
+            return ($a['numPRMerged'] > $b['numPRMerged']) ? -1 : 1;
         });
         if (!empty($modulesNeedRelease)) {
             $modulesNeedRelease = array_slice($modulesNeedRelease, 0, 10);
