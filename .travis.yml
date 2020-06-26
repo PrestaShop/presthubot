@@ -10,4 +10,5 @@ before_script:
   - composer install
 
 script:
-  - php bin/console slack:notifier
+  - DAYOFWEEK=$(date +"%u")
+  - if [ "${DAYOFWEEK}" -gt 5 ];  then php bin/console slack:notifier; fi
