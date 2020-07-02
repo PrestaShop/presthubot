@@ -8,7 +8,8 @@ use Console\App\Command\GithubCheckRepositoryCommand;
 use Console\App\Command\GithubNotificationsCommand;
 use Console\App\Command\GithubStatsCommand;
 use Console\App\Command\GithubStatsRepositoryCommand;
-use Console\App\Command\SlackNotifierCommand;
+use Console\App\Command\SlackNotifierCoreCommand;
+use Console\App\Command\SlackNotifierQACommand;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Dotenv\Dotenv;
 
@@ -24,5 +25,6 @@ $app->add(new GithubCheckRepositoryCommand());
 $app->add(new GithubNotificationsCommand());
 $app->add(new GithubStatsCommand());
 $app->add(new GithubStatsRepositoryCommand());
-$app->add(new SlackNotifierCommand());
+$app->add(new SlackNotifierCoreCommand());
+$app->add(new SlackNotifierQACommand());
 $app->run();

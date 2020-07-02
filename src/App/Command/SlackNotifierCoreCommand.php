@@ -16,7 +16,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
  
-class SlackNotifierCommand extends Command
+class SlackNotifierCoreCommand extends Command
 {
     /**
      * @var Github;
@@ -41,8 +41,8 @@ class SlackNotifierCommand extends Command
 
     protected function configure()
     {
-        $this->setName('slack:notifier')
-            ->setDescription('Check Github Module')
+        $this->setName('slack:notifier:core')
+            ->setDescription('Notify Core Team on Slack every day')
             ->addOption(
                 'ghtoken',
                 null,
@@ -62,7 +62,7 @@ class SlackNotifierCommand extends Command
                 null,
                 InputOption::VALUE_OPTIONAL,
                 '',
-                $_ENV['SLACK_CHANNEL'] ?? null
+                $_ENV['SLACK_CHANNEL_CORE'] ?? null
             );   
     }
  
