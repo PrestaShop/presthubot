@@ -12,5 +12,4 @@ before_script:
 
 script:
   - DAYOFWEEK=$(date +"%u")
-  - if [ "${DAYOFWEEK}" -le 5 ];  then php bin/console slack:notifier:core; fi
-  - if [ "${DAYOFWEEK}" -le 5 ];  then php bin/console slack:notifier:qa; fi
+  - if [ "${DAYOFWEEK}" -le 5 ];  then php bin/console slack:notifier; fi

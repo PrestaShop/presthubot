@@ -16,7 +16,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
  
-class SlackNotifierCoreCommand extends Command
+class SlackNotifierCommand extends Command
 {
     /**
      * @var Github;
@@ -37,12 +37,16 @@ class SlackNotifierCoreCommand extends Command
     /**
      * @var string;
      */
-    protected $slackChannel;
+    protected $slackChannelCore;
+    /**
+     * @var string;
+     */
+    protected $slackChannelQA;
 
     protected function configure()
     {
-        $this->setName('slack:notifier:core')
-            ->setDescription('Notify Core Team on Slack every day')
+        $this->setName('slack:notifier')
+            ->setDescription('Notify Teams on Slack every day')
             ->addOption(
                 'ghtoken',
                 null,
@@ -58,45 +62,59 @@ class SlackNotifierCoreCommand extends Command
                 $_ENV['SLACK_TOKEN'] ?? null
             )
             ->addOption(
-                'slackchannel',
+                'slackchannelCore',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 '',
                 $_ENV['SLACK_CHANNEL_CORE'] ?? null
+            )
+            ->addOption(
+                'slackchannelQA',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                '',
+                $_ENV['SLACK_CHANNEL_QA'] ?? null
             );   
     }
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Local Variable
-        $slackMessage = [];
+        $slackMessageCore = $slackMessageQA = [];
 
         $this->github = new Github($input->getOption('ghtoken'));
         $this->moduleChecker = new ModuleChecker($this->github);
         $this->nightlyBoard = new NightlyBoard();
         $this->slack = new Slack($input->getOption('slacktoken'));
-        $this->slackChannel = $input->getOption('slackchannel');
-        $slackMessage[] = ':preston::date: Welcome to the PrestHubot Report of the day :date:';
+        $this->slackChannelCore = $input->getOption('slackchannelCore');
+        $this->slackChannelQA = $input->getOption('slackchannelQA');
+
+        $title = ':preston::date: Welcome to the PrestHubot Report of the day :date:';
+        $slackMessageCore[] = $title;
+        $slackMessageQA[] = $title;
         
         // Check Status
-        $slackMessage[] = $this->checkStatusNightly();
+        $statusNightly = $this->checkStatusNightly();
+        $slackMessageCore[] = $statusNightly;
+        $slackMessageQA[] = $statusNightly;
 
         // Check if PR are need to merge
-        $slackMessage[] = $this->checkPRReadyToMerge();
+        $slackMessageCore[] = $this->checkPRReadyToMerge();
 
         // Check PR to review
-        $slackMessage[] = $this->checkPRReadyToReview();
+        $slackMessageCore[] = $this->checkPRReadyToReview();
 
         // Need module releases
-        $slackMessage[] = $this->checkModuleReadyToRelease();
+        $slackMessageCore[] = $this->checkModuleReadyToRelease();
 
         // Need module improvements
-        $slackMessage[] = $this->checkModuleImprovements();
+        $slackMessageCore[] = $this->checkModuleImprovements();
 
-        foreach ($slackMessage as $message) {
-            if (!empty($message)) {
-                $this->slack->sendNotification($this->slackChannel, $message);
-            }
+        foreach ($slackMessageCore as $message) {
+            $this->slack->sendNotification($this->slackChannelCore, $message);
+        }
+        foreach ($slackMessageQA as $message) {
+            $this->slack->sendNotification($this->slackChannelQA, $message);
         }
     }
 

@@ -39,6 +39,9 @@ class Slack
      */
     public function sendNotification(string $channel, string $message = 'test')
     {
+        if (empty($message)) {
+            return true;
+        }
         $ch = curl_init('https://slack.com/api/chat.postMessage');
         $data = http_build_query([
             'token' => $this->slackToken,
