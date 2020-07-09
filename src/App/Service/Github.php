@@ -29,6 +29,10 @@ class Github
         'sowbiba',
     ];
 
+    public const REPOSITORIES_IGNORED = [
+        'PrestaShop-1.6',
+    ];
+
     public function __construct(string $ghToken = null)
     {
         $filesystemAdapter = new Local(__DIR__ . '/../../../var/');
@@ -130,6 +134,10 @@ class Github
     {
         // FIX : Some merged PR are displayed in open search
         if ($pullRequest['merged']) {
+            return false;
+        }
+        // Filter ignored repositories
+        if (in_array($pullRequest['repository']['name'], self::REPOSITORIES_IGNORED)) {
             return false;
         }
 
