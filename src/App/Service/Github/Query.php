@@ -7,15 +7,15 @@ use DateTime;
 
 class Query
 {
-    protected const LABEL_ON_HOLD = 'label:\"On hold\"';
-    protected const LABEL_QA_OK = 'label:\"QA ✔️\"';
-    protected const LABEL_WAITING_FOR_AUTHOR = 'label:\"waiting for author\"';
-    protected const LABEL_WAITING_FOR_PM = 'label:\"waiting for PM\"';
-    protected const LABEL_WAITING_FOR_QA = 'label:\"waiting for QA\"';
-    protected const LABEL_WAITING_FOR_REBASE = 'label:\"waiting for rebase\"';
-    protected const LABEL_WAITING_FOR_UX = 'label:\"waiting for UX\"';
-    protected const LABEL_WAITING_FOR_WORDING = 'label:\"waiting for Wording\"';
-    protected const LABEL_WIP = 'label:WIP';
+    public const LABEL_ON_HOLD = 'label:\"On hold\"';
+    public const LABEL_QA_OK = 'label:\"QA ✔️\"';
+    public const LABEL_WAITING_FOR_AUTHOR = 'label:\"waiting for author\"';
+    public const LABEL_WAITING_FOR_PM = 'label:\"waiting for PM\"';
+    public const LABEL_WAITING_FOR_QA = 'label:\"waiting for QA\"';
+    public const LABEL_WAITING_FOR_REBASE = 'label:\"waiting for rebase\"';
+    public const LABEL_WAITING_FOR_UX = 'label:\"waiting for UX\"';
+    public const LABEL_WAITING_FOR_WORDING = 'label:\"waiting for Wording\"';
+    public const LABEL_WIP = 'label:WIP';
 
     protected const REQUESTS = [
         // Check Merged PR (Milestone, Issue & Milestone)

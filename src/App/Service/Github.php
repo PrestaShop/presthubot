@@ -65,6 +65,12 @@ class Github
         return $result;
     }
 
+    public function countSearch(Github\Query $graphQLQuery): int
+    {
+        $resultPage = $this->client->api('graphql')->execute((string) $graphQLQuery, []);
+        return $resultPage['data']['search']['issueCount'];
+    }
+
     public function countRepoFiles(string $org, string $repository, string $path = null): int
     {
         $numFiles = 0;

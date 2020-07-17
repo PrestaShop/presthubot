@@ -110,6 +110,9 @@ class SlackNotifierCommand extends Command
         // Need module improvements
         $slackMessageCore[] = $this->checkModuleImprovements();
 
+        // Check QA Stats
+        $slackMessageQA[] = $this->checkPRForQA();
+
         foreach ($slackMessageCore as $message) {
             $this->slack->sendNotification($this->slackChannelCore, $message);
         }
@@ -327,5 +330,41 @@ class SlackNotifierCommand extends Command
             return $slackMessage;
         }
         return '';
+    }
+
+    protected function checkPRForQA(): string
+    {
+        $graphQLQuery = new Query();
+        $slackMessage = ':chart_with_upwards_trend: PR Stats for QA :chart_with_upwards_trend:' . PHP_EOL;
+
+        $searchPR176 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.6.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $graphQLQuery->setQuery($searchPR176);
+        $countPR176 = $this->github->countSearch($graphQLQuery);
+
+        $searchPR177 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.7.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $graphQLQuery->setQuery($searchPR177);
+        $countPR177 = $this->github->countSearch($graphQLQuery);
+
+        $searchPRDevelop = 'repo:PrestaShop/PrestaShop is:pr is:open -label:1.7.7.x -label:1.7.6.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $graphQLQuery->setQuery($searchPRDevelop);
+        $countDevelop = $this->github->countSearch($graphQLQuery);
+
+        $searchPRModules = 'org:PrestaShop -repo:PrestaShop/PrestaShop is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $graphQLQuery->setQuery($searchPRModules);
+        $countModules = $this->github->countSearch($graphQLQuery);
+
+        $searchPRWaitingForAuthor = 'org:PrestaShop is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' '.Query::LABEL_WAITING_FOR_AUTHOR;
+        $graphQLQuery->setQuery($searchPRWaitingForAuthor);
+        $countWaitingForAuthor = $this->github->countSearch($graphQLQuery);
+
+        // Number of PR with the label "Waiting for QA", without the label "Waiting for author", filtered by branch
+        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPR176)).'|PR 1.7.6.x> : *' . $countPR176 . '*' . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPR177)).'|PR 1.7.7.x> : *' . $countPR177 . '*' . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRDevelop)).'|PR Develop> : *' . $countDevelop . '*' . PHP_EOL;
+        // Number of PR for Modules
+        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRModules)).'|PR Modules> : *' . $countModules . '*' . PHP_EOL;
+        // Number of PR with the label "Waiting for QA" AND with the label "Waiting for author"
+        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRWaitingForAuthor)).'|PR Waiting for Author> : *' . $countWaitingForAuthor . '*' . PHP_EOL;
+        return $slackMessage;
     }
 }

@@ -52,6 +52,8 @@ class Slack
             'link_names' => true,
             // Slack markup parsing
             'mrkdwn' => true,
+            // Not unfurling of primarily text-based content
+            'unfurl_links' => false
         ]);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
