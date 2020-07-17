@@ -3,6 +3,11 @@ language: php
 php:
   - 7.3
 
+cache:
+  directories:
+    ## Expiration : 45 days (https://docs.travis-ci.com/user/caching/#caches-expiration)
+    - .cache
+
 before_script:
   - echo 'GH_TOKEN='$GHTOKEN > .env
   - echo 'SLACK_TOKEN='$SLACKTOKEN >> .env
