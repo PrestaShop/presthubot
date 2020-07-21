@@ -383,20 +383,25 @@ class SlackNotifierCommand extends Command
         // Stats
         $dateJSub1 = date('D') == 'Mon' ? date('Y-m-d', strtotime('-3 days')) : date('Y-m-d', strtotime('-1 day'));
         
+        $diff = $countPR176 - $cache[$dateJSub1]['176'];
         $countPR176Diff = isset($cache[$dateJSub1], $cache[$dateJSub1]['176'])
-            ? ' ('.(($cache[$dateJSub1]['176'] - $countPR176) == 0 ? '=' : $cache[$dateJSub1]['176'] - $countPR176) .')'
+            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
             : '';
+        $diff = $countPR177 - $cache[$dateJSub1]['177'];
         $countPR177Diff = isset($cache[$dateJSub1], $cache[$dateJSub1]['177'])
-            ? ' ('.(($cache[$dateJSub1]['177'] - $countPR177) == 0 ? '=' : $cache[$dateJSub1]['177'] - $countPR177) .')'
+            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
             : '';
+        $diff = $countDevelop - $cache[$dateJSub1]['Develop'];
         $countDevelopDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Develop'])
-            ? ' ('.(($cache[$dateJSub1]['Develop'] - $countDevelop) == 0 ? '=' : $cache[$dateJSub1]['Develop'] - $countDevelop) .')'
+            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
             : '';
+        $diff = $countModules - $cache[$dateJSub1]['Modules'];
         $countModulesDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Modules'])
-            ? ' ('.(($cache[$dateJSub1]['Modules'] - $countModules) == 0 ? '=' : $cache[$dateJSub1]['Modules'] - $countModules) .')'
+            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
             : '';
+        $diff = $countWaitingForAuthor - $cache[$dateJSub1]['WaitingForAuthor'];
         $countWaitingForAuthorDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['WaitingForAuthor'])
-            ? '('.(($cache[$dateJSub1]['WaitingForAuthor'] - $countWaitingForAuthor) == 0 ? '=' : $cache[$dateJSub1]['WaitingForAuthor'] - $countWaitingForAuthor) .')'
+            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
             : '';
 
         // Number of PR with the label "Waiting for QA", without the label "Waiting for author", filtered by branch
