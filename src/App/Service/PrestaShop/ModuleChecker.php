@@ -50,6 +50,15 @@ class ModuleChecker
         '.github/release-drafter.yml' => [
             self::CHECK_FILES_EXIST => true
         ],
+        '.github/workflows/build-release.yml' => [
+            self::CHECK_FILES_EXIST => true
+        ],
+        '.github/workflows/php.yml' => [
+            self::CHECK_FILES_EXIST => true
+        ],
+        '.github/workflows/phpstan.yml' => [
+            self::CHECK_FILES_EXIST => true
+        ],
         '.github/PULL_REQUEST_TEMPLATE.md' => [
             self::CHECK_FILES_EXIST => true
         ],
