@@ -47,13 +47,19 @@ class ModuleChecker
         'logo.png' => [
             self::CHECK_FILES_EXIST => true
         ],
+        '.github/dependabot.yml' => [
+            self::CHECK_FILES_EXIST => true
+        ],
         '.github/release-drafter.yml' => [
             self::CHECK_FILES_EXIST => true
         ],
         '.github/workflows/build-release.yml' => [
             self::CHECK_FILES_EXIST => true
         ],
-        '.github/workflows/php.yml' => [
+        '.github/workflows/js.yml' => [
+            self::CHECK_FILES_EXIST => true
+        ],
+        '.github/workflows/phpcs.yml' => [
             self::CHECK_FILES_EXIST => true
         ],
         '.github/workflows/phpstan.yml' => [
