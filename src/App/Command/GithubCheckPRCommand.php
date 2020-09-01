@@ -18,9 +18,11 @@ class GithubCheckPRCommand extends Command
     public const ORDERBY_PROJECT = 'projectName';
     public const ORDERBY_ID = 'id';
     public const ORDERBY_CREATEDDATE = 'createdAt';
+    public const ORDERBY_NUMAPPROVED = 'numApproved';
 
     private const DEFAULT_ORDERBY = [
         self::ORDERBY_PROJECT,
+        self::ORDERBY_NUMAPPROVED,
         self::ORDERBY_ID,
     ];
     
@@ -154,13 +156,19 @@ class GithubCheckPRCommand extends Command
         bool $needCountFilesType
     ) {
         $rows = [];
+        foreach($resultAPI as &$pullRequest) {
+            $pullRequest = $pullRequest['node'];
+            $pullRequest['approved'] = $this->github->extractApproved($pullRequest);
+        }
         uasort($resultAPI, function($row1, $row2) {
-            $projectName1 = $row1['node']['repository']['name'];
-            $projectName2 = $row2['node']['repository']['name'];
-            $id1 = $row1['node']['number'];
-            $id2 = $row2['node']['number'];
-            $createdAt1 = $row1['node']['createdAt'];
-            $createdAt2 = $row2['node']['createdAt'];
+            $projectName1 = $row1['repository']['name'];
+            $projectName2 = $row2['repository']['name'];
+            $id1 = $row1['number'];
+            $id2 = $row2['number'];
+            $createdAt1 = $row1['createdAt'];
+            $createdAt2 = $row2['createdAt'];
+            $numApproved1 = count($row1['approved']);
+            $numApproved2 = count($row2['approved']);
 
             $return = 0;
             foreach($this->orderBy as $orderKey) {
@@ -175,8 +183,6 @@ class GithubCheckPRCommand extends Command
         });
         $countPR = 0;
         foreach($resultAPI as $pullRequest) {
-            $pullRequest = $pullRequest['node'];
-            $pullRequest['approved'] = $this->github->extractApproved($pullRequest);
             if (!$this->github->isPRValid($pullRequest, $this->filters)) {
                 continue;
             }            
@@ -201,13 +207,9 @@ class GithubCheckPRCommand extends Command
                 array_push($currentRow, $countFilesTypeTitle);
             }
 
-            if (!isset($rows[count($pullRequest['approved'])])) {
-                $rows[count($pullRequest['approved'])] = [];
-            }
-            $rows[count($pullRequest['approved'])][] = $currentRow;
+            $rows[] = $currentRow;
             $countPR++;
         }
-        krsort($rows);
         if (empty($rows)) {
             return $hasRows;
         }
@@ -230,15 +232,9 @@ class GithubCheckPRCommand extends Command
         $table->addRows([
             [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' ('.$countPR.') </>', ['colspan' => 7])],
             new TableSeparator(),
-            new TableSeparator(),
             $headers
         ]);
-        foreach($rows as $key => $rowsNumApproved) {
-            $table->addRows($rowsNumApproved);
-            if ($key !== array_key_last($rows)) {
-                $table->addRows([new TableSeparator()]);
-            }
-        }
+        $table->addRows($rows);
         return true;
     }
 
