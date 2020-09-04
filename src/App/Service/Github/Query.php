@@ -10,6 +10,7 @@ class Query
     public const LABEL_ON_HOLD = 'label:\"On hold\"';
     public const LABEL_QA_OK = 'label:\"QA ✔️\"';
     public const LABEL_WAITING_FOR_AUTHOR = 'label:\"waiting for author\"';
+    public const LABEL_WAITING_FOR_DEV = 'label:\"waiting for dev\"';
     public const LABEL_WAITING_FOR_PM = 'label:\"waiting for PM\"';
     public const LABEL_WAITING_FOR_QA = 'label:\"waiting for QA\"';
     public const LABEL_WAITING_FOR_REBASE = 'label:\"waiting for rebase\"';
@@ -35,6 +36,8 @@ class Query
         'PR Waiting for UX' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_UX .' -'.self::LABEL_WAITING_FOR_AUTHOR,
         // Check PR waiting for Wording
         'PR Waiting for Wording' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_WORDING .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+        // Check PR waiting for dev
+        self::REQUEST_PR_WAITING_FOR_DEV => 'is:open archived:false ' . self::LABEL_WAITING_FOR_DEV,
         // Check PR waiting for Author
         'PR Waiting for Author' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_AUTHOR,
         // Check PR waiting for Review 
@@ -50,6 +53,7 @@ class Query
             .' -' . self::LABEL_WAITING_FOR_QA
             .' -' . self::LABEL_WIP,
     ]; 
+    public const REQUEST_PR_WAITING_FOR_DEV = 'PR Waiting for Dev';
     public const REQUEST_PR_WAITING_FOR_MERGE = 'PR Waiting for Merge';
     public const REQUEST_PR_WAITING_FOR_REVIEW = 'PR Waiting for Review';
 
