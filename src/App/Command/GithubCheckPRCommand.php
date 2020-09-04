@@ -108,6 +108,8 @@ class GithubCheckPRCommand extends Command
                     $request => $request
                 ];
             }
+        } else {
+            $requests = Query::getRequests();
         }
 
         $this->filters = new Filters();
