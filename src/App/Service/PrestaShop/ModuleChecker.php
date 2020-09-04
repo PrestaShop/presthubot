@@ -59,10 +59,7 @@ class ModuleChecker
         '.github/workflows/js.yml' => [
             self::CHECK_FILES_EXIST => true
         ],
-        '.github/workflows/phpcs.yml' => [
-            self::CHECK_FILES_EXIST => true
-        ],
-        '.github/workflows/phpstan.yml' => [
+        '.github/workflows/php.yml' => [
             self::CHECK_FILES_EXIST => true
         ],
         '.github/PULL_REQUEST_TEMPLATE.md' => [
