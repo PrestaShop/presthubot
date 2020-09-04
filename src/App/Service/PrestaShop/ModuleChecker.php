@@ -70,8 +70,7 @@ class ModuleChecker
             self::CHECK_FILES_CONTAIN => ['vendor'],
         ],
         '.travis.yml' => [
-            self::CHECK_FILES_EXIST => true,
-            self::CHECK_FILES_CONTAIN => ['before_deploy:', 'deploy:'],
+            self::CHECK_FILES_EXIST => false,
         ],
     ];
     public const CHECK_FILES_EXIST = 1;
