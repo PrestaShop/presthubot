@@ -48,6 +48,11 @@ class SlackNotifierCommand extends Command
      */
     private const CACHE_CHECKSTATSQA = '.cache/slacknotifier_checkStatsQA.json';
 
+    /**
+     * @var int
+     */
+    private const NUM_PR_FOR_MAINTAINERS = 5;
+
     protected function configure()
     {
         $this->setName('slack:notifier')
@@ -118,12 +123,18 @@ class SlackNotifierCommand extends Command
         // Check QA Stats
         $slackMessageQA[] = $this->checkStatsQA();
 
+        // Get PR to Review for Core Team
+        $slackMessageCoreMembers = $this->checkPRReadyToReviewForCoreTeam();
+
         foreach ($slackMessageCore as $message) {
             $this->slack->sendNotification($this->slackChannelCore, $message);
         }
         foreach ($slackMessageQA as $message) {
             $this->slack->sendNotification($this->slackChannelQA, $message);
         }
+        foreach ($slackMessageCoreMembers as $slackChannelPrivateMaintainer => $message) {
+            $this->slack->sendNotification($slackChannelPrivateMaintainer, $message);
+    }
     }
 
     protected function checkStatusNightly(): string
@@ -207,7 +218,9 @@ class SlackNotifierCommand extends Command
                 break;
             }
         }
-        if (!empty($prReadyToReview)) {
+        if (empty($prReadyToReview)) {
+            return '';
+        }
             $prReadyToReview = array_slice($prReadyToReview, 0, 10);
             $slackMessage = ':eyes: PR Ready to Review :eyes:' . PHP_EOL;
             foreach ($prReadyToReview as $pullRequest) {
@@ -223,7 +236,108 @@ class SlackNotifierCommand extends Command
             $slackMessage = $this->slack->linkGithubUsername($slackMessage);
             return $slackMessage;
         }
-        return '';
+
+    protected function checkPRReadyToReviewForCoreTeam(): array
+    {
+        $requests = Query::getRequests();
+        $graphQLQuery = new Query();
+        $graphQLQuery->setQuery('org:PrestaShop is:pr ' . $requests[Query::REQUEST_PR_WAITING_FOR_REVIEW]);
+        $prReviews = $this->github->search($graphQLQuery);
+        $prReadyToReview = [];
+        $filters = new Filters();
+        $filters->addFilter(Filters::FILTER_REPOSITORY_PRIVATE, [false], true);
+        // 1st PR with already a review (indicate who has ever)
+        // 2nd PR without review
+        foreach ([5,4,3,2,1,0] as $numApproved) {
+            $filters->addFilter(Filters::FILTER_NUM_APPROVED, [$numApproved], true);
+            foreach ($prReviews as $pullRequest) {
+                $pullRequest = $pullRequest['node'];
+                $pullRequest['approved'] = $this->github->extractApproved($pullRequest);
+                if (!$this->github->isPRValid($pullRequest, $filters)) {
+                    continue;
+                }
+                $prReadyToReview[] = $pullRequest;
+            }
+        }
+        if (empty($prReadyToReview)) {
+            return [];
+        }
+
+        $arrayTeamPR = [];
+        foreach (Slack::MAINTAINER_MEMBERS as $key => $value) {
+            if ($key == $value) {
+                continue;
+            }
+            $arrayTeamPR[$key] = [];
+        }
+        unset($arrayTeamPR[Slack::MAINTAINER_LEAD]);
+
+        // Check PR for each
+        foreach ($prReadyToReview as $pullRequest) {
+            // Add PR to two maintainers
+            $isAdded = 0;
+            foreach (array_keys($arrayTeamPR) as $maintainer) {
+                // Has the maintainer already self::NUM_PR_FOR_MAINTAINERS PR ?
+                if (count($arrayTeamPR[$maintainer]) == self::NUM_PR_FOR_MAINTAINERS) {
+                    continue;
+                }
+                // Is the maintainer the author ?
+                if ($maintainer === $pullRequest['author']['login']) {
+                    continue;
+                }
+                // Has the maintainer already approved ?
+                if (in_array($maintainer, $pullRequest['approved'])) {
+                    continue;
+                }
+                $arrayTeamPR[$maintainer][] = $pullRequest;
+                $isAdded++;
+    
+                if ($isAdded == 2) {
+                    break;
+                }
+            }
+
+            // Check PR For maintainers
+            $isFullForMaintainers = array_reduce($arrayTeamPR, function($carry, $item) {
+                if (!$carry) {
+                    return false;
+                }
+
+                foreach ($item as $value) {
+                    if (count($value) < self::NUM_PR_FOR_MAINTAINERS) {
+                        return false;
+                    }
+                }
+                return true;
+            }, false);
+            if ($isFullForMaintainers) {
+                break;
+            }
+        }
+
+        // Slack Messages
+        $arrayMessage = [];
+        $slackMessageTitle = ':pray: Could you review these PRs ? :pray:' . PHP_EOL;
+        foreach ($arrayTeamPR as $maintainer => $arrayPullRequest) {
+            $slackMessage = $slackMessageTitle;
+            foreach($arrayPullRequest as $pullRequest) {
+                $slackMessage .= ' - <'.$pullRequest['url'].'|:preston: '.$pullRequest['repository']['name'].'#'.$pullRequest['number'] .'>'
+                    .' : '.$pullRequest['title'];
+                if (!empty($pullRequest['approved'])) {
+                    $slackMessage .= PHP_EOL;
+                    $slackMessage .= '    - :heavy_check_mark: ' . implode(', ', $pullRequest['approved']);
+                }
+                $slackMessage .= PHP_EOL;
+                $slackMessage .= PHP_EOL;
+            }
+            $slackMessage = $this->slack->linkGithubUsername($slackMessage);
+            $slackChannel = Slack::MAINTAINER_MEMBERS[$maintainer];
+            $slackChannel = str_replace(['<@', '>'], '', $slackChannel);
+
+            $arrayMessage[$slackChannel] = $slackMessage;
+        }
+
+        return $arrayMessage;
     }
 
     protected function checkModuleReadyToRelease(): string

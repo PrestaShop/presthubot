@@ -9,7 +9,7 @@ class Slack
      */
     protected $slackToken;
 
-    private const MAINTAINER_MEMBERS = [
+    public const MAINTAINER_MEMBERS = [
         'atomiix' => '<@UPBLRHWCU>',
         'eternoendless' => '<@U5GRYPEUC>',
         'jolelievre' => '<@UC4KB9BJS>',
@@ -22,6 +22,8 @@ class Slack
         'rokaszygmantas' => 'rokaszygmantas',
         'sowbiba' => '<@USKJT4C4Q>',
     ];
+
+    public const MAINTAINER_LEAD = 'eternoendless';
 
     public function __construct(string $slackToken = null)
     {
