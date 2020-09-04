@@ -33,6 +33,8 @@ class Github
         'PrestaShop-1.6',
     ];
 
+    protected $tryAgain = 0;
+
     public function __construct(string $ghToken = null)
     {
         $filesystemAdapter = new Local(__DIR__ . '/../../../var/');
@@ -56,7 +58,7 @@ class Github
     {
         $result = [];
         do {
-            $resultPage = $this->client->api('graphql')->execute((string) $graphQLQuery, []);
+            $resultPage = $this->apiSearchGraphQL((string) $graphQLQuery);
             $result = array_merge($result, $resultPage['data']['search']['edges']);
             if (!empty($resultPage['data']['search']['pageInfo']['endCursor'])) {
                 $graphQLQuery->setPageAfter($resultPage['data']['search']['pageInfo']['endCursor']); 
@@ -67,7 +69,7 @@ class Github
 
     public function countSearch(Github\Query $graphQLQuery): int
     {
-        $resultPage = $this->client->api('graphql')->execute((string) $graphQLQuery, []);
+        $resultPage = $this->apiSearchGraphQL((string) $graphQLQuery);
         return $resultPage['data']['search']['issueCount'];
     }
 
@@ -128,7 +130,7 @@ class Github
             }
           }';
 
-        $repositoryInfoGraphQL = $this->client->api('graphql')->execute($query, []);
+        $repositoryInfoGraphQL = $this->apiSearchGraphQL($query);
         $topics = [];
         foreach($repositoryInfoGraphQL['data']['repository']['repositoryTopics']['edges'] as $edge) {
             $topics[] = $edge['node']['topic']['name'];
@@ -243,5 +245,19 @@ class Github
             }
         }
         return $approved;
+    }
+
+    private function apiSearchGraphQL(string $graphQLQuery): array
+    {
+        $this->tryAgain = 0;
+        do {
+            try {
+                $resultPage = $this->client->api('graphql')->execute($graphQLQuery, []);
+            } catch(\RuntimeException $e) {
+                $this->tryAgain++;
+            }
+        } while ($this->tryAgain <= 3 && !isset($resultPage));
+
+        return $resultPage ?? [];
     }
 }
