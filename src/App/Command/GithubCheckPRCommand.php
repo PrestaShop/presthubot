@@ -42,6 +42,10 @@ class GithubCheckPRCommand extends Command
      * @var OutputInterface;
      */
     protected $output;
+    /**
+     * @var int;
+     */
+    protected $countRows = 0;
 
     protected function configure()
     {
@@ -147,7 +151,7 @@ class GithubCheckPRCommand extends Command
         }
 
         $table->render();
-        $this->output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
+        $this->output->writeLn(['', 'Output generated in ' . (time() - $time) . 's for ' . $this->countRows. ' rows.']);
     }
 
     private function checkPR(
@@ -158,9 +162,9 @@ class GithubCheckPRCommand extends Command
         bool $needCountFilesType
     ) {
         $rows = [];
-        foreach($resultAPI as &$pullRequest) {
-            $pullRequest = $pullRequest['node'];
-            $pullRequest['approved'] = $this->github->extractApproved($pullRequest);
+        foreach($resultAPI as $key => $pullRequest) {
+            $resultAPI[$key] = $pullRequest['node'];
+            $resultAPI[$key]['approved'] = $this->github->extractApproved($resultAPI[$key]);
         }
         uasort($resultAPI, function($row1, $row2) {
             $projectName1 = $row1['repository']['name'];
@@ -237,6 +241,8 @@ class GithubCheckPRCommand extends Command
             $headers
         ]);
         $table->addRows($rows);
+
+        $this->countRows += $countPR;
         return true;
     }
 
