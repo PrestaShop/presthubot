@@ -114,6 +114,31 @@ class Github
         return $issue;
     }
 
+    public function getRepoTags(string $org, string $repository, bool $withPreRelease = true): array
+    {
+        $query = '{
+            repository(owner: "'.$org.'", name: "'.$repository.'") {
+                releases(first:100) {
+                  nodes {
+                    tagName 
+                    updatedAt
+                  }
+                }
+            }
+          }';
+
+        $repositoryInfoGraphQL = $this->apiSearchGraphQL($query);
+        $tags = [];
+        foreach($repositoryInfoGraphQL['data']['repository']['releases']['nodes'] as $node) {
+            $nameTag = $node['tagName'];
+            if (!$withPreRelease && (strpos($nameTag, 'alpha') !== false || strpos($nameTag, 'beta') !== false || strpos($nameTag, 'rc') !== false)) {
+                continue;
+            }
+            $tags[$node['updatedAt']] = $nameTag;
+        }
+        return $tags;
+    }
+
     public function getRepoTopics(string $org, string $repository): array
     {
         $query = '{

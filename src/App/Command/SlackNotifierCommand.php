@@ -53,6 +53,51 @@ class SlackNotifierCommand extends Command
      */
     private const NUM_PR_FOR_MAINTAINERS = 5;
 
+    /**
+     * @var string
+     */
+    private const ERROR_INVALID_CATEGORY = 'Invalid category';
+
+    /**
+     * @var string
+     */
+    private const ERROR_INVALID_TYPE = 'Invalid type';
+
+    /**
+     * @var string
+     */
+    private const ERROR_TITLE_FORMAT = 'Pull Request title does not start with an uppercase letter';
+
+    /**
+     * @var string
+     */
+    private const ERROR_NO_MILESTONE = 'No milestone defined';
+
+    /**
+     * @var array<string,string>
+     */
+    private const ACCEPTED_CATEGORIES = [
+        'FO' => 'Front office',
+        'CO' => 'Core',
+        'BO' => 'Back office',
+        'WS' => 'Web services',
+        'IN' => 'Installer',
+        'TE' => 'Tests',
+        'LO' => 'Localization',
+        'ME' => 'Merge',
+        'PM' => 'Project management',
+    ];
+
+    /**
+     * @var array<string>
+     */
+    private const ACCEPTED_TYPES = [
+        'bug fix',
+        'improvement',
+        'refacto',
+        'new feature'
+    ];
+
     protected function configure()
     {
         $this->setName('slack:notifier')
@@ -90,7 +135,7 @@ class SlackNotifierCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Local Variable
-        $slackMessageCore = $slackMessageQA = [];
+        $slackMessageCore = $slackMessageQA = $slackMessageCoreMembers = [];
 
         $this->github = new Github($input->getOption('ghtoken'));
         $this->moduleChecker = new ModuleChecker($this->github);
@@ -124,7 +169,10 @@ class SlackNotifierCommand extends Command
         $slackMessageQA[] = $this->checkStatsQA();
 
         // Get PR to Review for Core Team
-        $slackMessageCoreMembers = $this->checkPRReadyToReviewForCoreTeam();
+        $slackMessageCoreMembers[] = $this->checkPRReadyToReviewForCoreTeam();
+
+        // Get PR to Check Naming for CoreTeam
+        $slackMessageCoreMembers[] = $this->checkPRNaming();
 
         foreach ($slackMessageCore as $message) {
             $this->slack->sendNotification($this->slackChannelCore, $message);
@@ -132,8 +180,10 @@ class SlackNotifierCommand extends Command
         foreach ($slackMessageQA as $message) {
             $this->slack->sendNotification($this->slackChannelQA, $message);
         }
-        foreach ($slackMessageCoreMembers as $slackChannelPrivateMaintainer => $message) {
-            $this->slack->sendNotification($slackChannelPrivateMaintainer, $message);
+        foreach($slackMessageCoreMembers as $messages) {
+            foreach ($messages as $slackChannelPrivateMaintainer => $message) {
+                $this->slack->sendNotification($slackChannelPrivateMaintainer, $message);
+    }
     }
     }
 
@@ -173,6 +223,102 @@ class SlackNotifierCommand extends Command
         $slackMessage .= $hasDevelopPending ? '⏸️ ' . $reportDevelop['tests']['pending'] : '';
         $slackMessage .= PHP_EOL;
         return $slackMessage;
+    }
+
+    protected function checkPRNaming(): array
+    {
+        $tags = $this->github->getRepoTags('PrestaShop', 'PrestaShop', true);
+        $lastTag = array_reduce($tags, function($carry, $item) {
+            return version_compare($carry, $item) < 0 ? $item : $carry;
+        }, '');
+        $graphQLQuery = new Query();
+        $graphQLQuery->setQuery('repo:PrestaShop/PrestaShop is:pr is:merged sort:created');
+        $arrayPullRequest = $this->github->search($graphQLQuery);
+        
+        $arrayTeamPR = [];
+        foreach (Slack::MAINTAINER_MEMBERS as $key => $value) {
+            if ($key == $value) {
+                continue;
+            }
+            $arrayTeamPR[$key] = [];
+        }
+        unset($arrayTeamPR[Slack::MAINTAINER_LEAD]);
+
+        $buildPattern = "/^(?:\\s*\\|?\\s*)%propertyName%\\??\\s*\\|\\s*(?%captureGroup%)(?:\\s*\\|?\\s*)$/im";
+        foreach($arrayPullRequest as $pullRequest) {
+            $pullRequest = $pullRequest['node'];
+            // Category
+            $category = '';
+            if (preg_match(
+                    str_replace(['%propertyName%', '%captureGroup%'], ['Category', '<category>[a-z]{2}'], $buildPattern),
+                    $pullRequest['body'],
+                    $matches
+            )) {
+                $category = trim(strtoupper($matches['category']));
+            }
+            // Type
+            $type = '';
+            if (preg_match(
+                    str_replace(['%propertyName%', '%captureGroup%'], ['Type', '<type>[a-zA-Z\\s]+'], $buildPattern),
+                    $pullRequest['body'],
+                    $matches
+            )) {
+                $type = trim(strtolower($matches['type']));
+            }
+
+            // Search errors
+            $errors = [];
+            if (!in_array($category, array_keys(self::ACCEPTED_CATEGORIES))) {
+                $errors[] = self::ERROR_INVALID_CATEGORY;
+            }
+            if (!in_array($type, self::ACCEPTED_TYPES)) {
+                $errors[] = self::ERROR_INVALID_TYPE;
+            }
+            if (preg_match("/^[^A-Z]/", $pullRequest['title'])) {
+                $errors[] = self::ERROR_TITLE_FORMAT;
+            }
+            if (empty($pullRequest['milestone'])) {
+                $errors[] = self::ERROR_NO_MILESTONE;
+            }
+            if (empty($errors)) {
+                continue;
+            }
+            foreach (array_keys($arrayTeamPR) as $maintainer) {
+                // Has the maintainer already self::NUM_PR_FOR_MAINTAINERS PR ?
+                if (count($arrayTeamPR[$maintainer]) == self::NUM_PR_FOR_MAINTAINERS) {
+                    continue;
+                }
+                $slackMessage = ' - <'.$pullRequest['url'].'|:preston: '.$pullRequest['repository']['name'].'#'.$pullRequest['number'] .'>'
+                    .' : '.$pullRequest['title'] . PHP_EOL;
+                foreach ($errors as $error) {
+                    $slackMessage .= '    - :red_circle: ' . $error . PHP_EOL;
+                }
+                $slackMessage .= PHP_EOL;
+                $slackMessage .= PHP_EOL;
+                $arrayTeamPR[$maintainer][] = $slackMessage;
+                break 1;
+            }
+        }
+
+        // Slack Messages
+        $arrayMessage = [];
+        $slackMessageTitle = ':pray: Could you fix these PRs ? :pray:' . PHP_EOL;
+        foreach ($arrayTeamPR as $maintainer => $messages) {
+            if (empty($messages)) {
+                continue;
+            }
+            $slackMessage = $slackMessageTitle;
+            foreach($messages as $message) {
+                $slackMessage .= $message;
+            }
+            $slackMessage = $this->slack->linkGithubUsername($slackMessage);
+            $slackChannel = Slack::MAINTAINER_MEMBERS[$maintainer];
+            $slackChannel = str_replace(['<@', '>'], '', $slackChannel);
+
+            $arrayMessage[$slackChannel] = $slackMessage;
+        }
+
+        return $arrayMessage;
     }
 
     protected function checkPRReadyToMerge(): string
