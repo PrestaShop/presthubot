@@ -26,8 +26,9 @@ class Query
             .' -'.self::LABEL_WAITING_FOR_REBASE
             .' -'.self::LABEL_WAITING_FOR_AUTHOR,
         // Check PR waiting for QA
-        'PR Waiting for QA' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_QA
-            .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+        self::REQUEST_PR_WAITING_FOR_QA => 'is:open archived:false ' . self::LABEL_WAITING_FOR_QA
+          .' -'.self::LABEL_WAITING_FOR_AUTHOR
+          .' -'.self::LABEL_WAITING_FOR_DEV,
         // Check PR waiting for Rebase
         'PR Waiting for Rebase' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_REBASE,
         // Check PR waiting for PM
@@ -55,6 +56,7 @@ class Query
     ]; 
     public const REQUEST_PR_WAITING_FOR_DEV = 'PR Waiting for Dev';
     public const REQUEST_PR_WAITING_FOR_MERGE = 'PR Waiting for Merge';
+    public const REQUEST_PR_WAITING_FOR_QA = 'PR Waiting for QA';
     public const REQUEST_PR_WAITING_FOR_REVIEW = 'PR Waiting for Review';
 
     /**
