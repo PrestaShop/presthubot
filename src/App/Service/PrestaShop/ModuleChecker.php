@@ -11,9 +11,9 @@ class ModuleChecker
     public const RATING_DESCRIPTION = 'rating_description';
     public const RATING_DESCRIPTION_MAX = 1;
     public const RATING_FILES = 'rating_files';
-    public const RATING_FILES_MAX = 13;
+    public const RATING_FILES_MAX = 16;
     public const RATING_GLOBAL = 'rating_global';
-    public const RATING_GLOBAL_MAX = 28;
+    public const RATING_GLOBAL_MAX = 31;
     public const RATING_ISSUES = 'rating_issues';
     public const RATING_ISSUES_MAX = 1;
     public const RATING_LABELS = 'rating_labels';
