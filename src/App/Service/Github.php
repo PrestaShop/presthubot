@@ -281,7 +281,7 @@ class Github
             } catch(\RuntimeException $e) {
                 $this->tryAgain++;
             }
-        } while ($this->tryAgain <= 3 && !isset($resultPage));
+        } while ($this->tryAgain <= 5 && !isset($resultPage));
 
         return $resultPage ?? [];
     }
