@@ -174,6 +174,9 @@ class SlackNotifierCommand extends Command
         // Get PR to Check Naming for CoreTeam
         $slackMessageCoreMembers[] = $this->checkPRNaming();
 
+        // Send Message to Merge to Develop for CoreTeam
+        $slackMessageCoreMembers[] = $this->needMergeToDevelop();
+
         foreach ($slackMessageCore as $message) {
             $this->slack->sendNotification($this->slackChannelCore, $message);
         }
@@ -227,10 +230,6 @@ class SlackNotifierCommand extends Command
 
     protected function checkPRNaming(): array
     {
-        $tags = $this->github->getRepoTags('PrestaShop', 'PrestaShop', true);
-        $lastTag = array_reduce($tags, function($carry, $item) {
-            return version_compare($carry, $item) < 0 ? $item : $carry;
-        }, '');
         $graphQLQuery = new Query();
         $graphQLQuery->setQuery('repo:PrestaShop/PrestaShop is:pr is:merged sort:created');
         $arrayPullRequest = $this->github->search($graphQLQuery);
@@ -673,5 +672,41 @@ class SlackNotifierCommand extends Command
         // Number of PR with the label "Waiting for QA" AND with the label "Waiting for author"
         $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRWaitingForAuthor)).'|PR Waiting for Author> : *' . $countWaitingForAuthor . '*' . $countWaitingForAuthorDiff . PHP_EOL;
         return $slackMessage;
+    }
+
+    protected function needMergeToDevelop(): array
+    {
+        if (date('D') !== 'Mon') {
+            return [];
+        }
+
+        $arrayTeamPR = [];
+        foreach (Slack::MAINTAINER_MEMBERS as $key => $value) {
+            if ($key == $value) {
+                continue;
+            }
+            $arrayTeamPR[$key] = [];
+        }
+        unset($arrayTeamPR[Slack::MAINTAINER_LEAD]);
+
+        $branches = $this->github->getRepoBranches('PrestaShop', 'PrestaShop', false);
+        $lastBranch = array_reduce($branches, function($carry, $item) {
+            return version_compare($carry, $item) < 0 ? $item : $carry;
+        }, '');
+
+        // Slack Messages
+        $arrayMessage = [];
+        $slackMessageTitle = ':arrow_right: We are Monday. Don\'t forget to merge `'.$lastBranch.'` in `develop`! :muscle: ' . PHP_EOL;
+        foreach ($arrayTeamPR as $maintainer => $arrayPullRequest) {
+            $slackMessage = $slackMessageTitle;
+            
+            $slackMessage = $this->slack->linkGithubUsername($slackMessage);
+            $slackChannel = Slack::MAINTAINER_MEMBERS[$maintainer];
+            $slackChannel = str_replace(['<@', '>'], '', $slackChannel);
+
+            $arrayMessage[$slackChannel] = $slackMessage;
+        }
+
+        return $arrayMessage;
     }
 }
