@@ -416,6 +416,7 @@ class SlackNotifierCommand extends Command
             $arrayTeamPR[$key] = [];
         }
         unset($arrayTeamPR[Slack::MAINTAINER_LEAD]);
+        unset($arrayTeamPR['PierreRambaud']);
 
         // Check PR for each
         foreach ($prReadyToReview as $pullRequest) {
