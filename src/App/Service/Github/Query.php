@@ -23,8 +23,9 @@ class Query
         'Merged PR' => 'is:merged merged:>%dateYesterday%',
         // Check PR waiting for merge
         self::REQUEST_PR_WAITING_FOR_MERGE => 'is:open archived:false ' . self::LABEL_QA_OK
-            .' -'.self::LABEL_WAITING_FOR_REBASE
-            .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+            .' -'.self::LABEL_WAITING_FOR_AUTHOR
+            .' -'.self::LABEL_WAITING_FOR_PM
+            .' -'.self::LABEL_WAITING_FOR_REBASE,
         // Check PR waiting for QA
         self::REQUEST_PR_WAITING_FOR_QA => 'is:open archived:false ' . self::LABEL_WAITING_FOR_QA
           .' -'.self::LABEL_WAITING_FOR_AUTHOR
