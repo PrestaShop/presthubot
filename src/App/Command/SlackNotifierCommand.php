@@ -689,6 +689,7 @@ class SlackNotifierCommand extends Command
             $arrayTeamPR[$key] = [];
         }
         unset($arrayTeamPR[Slack::MAINTAINER_LEAD]);
+        unset($arrayTeamPR['PierreRambaud']);
 
         $branches = $this->github->getRepoBranches('PrestaShop', 'PrestaShop', false);
         $lastBranch = array_reduce($branches, function($carry, $item) {
