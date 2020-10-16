@@ -20,7 +20,7 @@ class GithubStatsCommand extends Command
     protected function configure()
     {
         $this->setName('github:stats')
-            ->setDescription('Stats Github')
+            ->setDescription('Stats Github Personal')
             ->addOption(
                 'ghtoken',
                 null,
@@ -50,7 +50,7 @@ class GithubStatsCommand extends Command
 
     private function getStats(InputInterface $input, OutputInterface $output)
     {
-        $rows[] = [new TableCell('<info> Stats </info>', ['colspan' => 2])];
+        $rows[] = [new TableCell('<info> Stats PrestaShop/PrestaShop</info>', ['colspan' => 2])];
         $rows[] = new TableSeparator();
         $repository = $this->github->getClient()->api('repo')->show('PrestaShop', 'PrestaShop');
 
@@ -62,12 +62,12 @@ class GithubStatsCommand extends Command
 
         if ($input->getOption('username')) {
             $rows[] = new TableSeparator();
-            $rows[] = [new TableCell('<info> @'.$input->getOption('username'). '</info>', ['colspan' => 2])];
+            $rows[] = [new TableCell('<info> Stats @'.$input->getOption('username'). '</info>', ['colspan' => 2])];
             $rows[] = new TableSeparator();
 
             $ranking = $this->getRankingContributors($input->getOption('username'));
             if (!empty($ranking)) {
-                $rows[] = ['# Ranking', $ranking];
+                $rows[] = ['# Ranking Contributors', $ranking];
                 $rows[] = new TableSeparator();
             }
     
