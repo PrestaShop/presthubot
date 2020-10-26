@@ -41,7 +41,7 @@ class Slack
      * @param string $channel
      * @param string $message
      */
-    public function sendNotification(string $channel, string $message = 'test')
+    public function sendNotification(string $channel, string $message)
     {
         if (empty($message)) {
             return true;

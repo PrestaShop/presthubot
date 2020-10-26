@@ -168,6 +168,9 @@ class SlackNotifierCommand extends Command
         // Check QA Stats
         $slackMessageQA[] = $this->checkStatsQA();
 
+        // Check PR Priority to Test
+        $slackMessageQA[] = $this->checkPRReadyToTest();
+
         // Get PR to Review for Core Team
         $slackMessageCoreMembers[] = $this->checkPRReadyToReviewForCoreTeam();
 
@@ -484,6 +487,110 @@ class SlackNotifierCommand extends Command
         }
 
         return $arrayMessage;
+    }
+
+    protected function checkPRReadyToTest(): string
+    {
+        // Next version
+        $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'PrestaShop', 'app/AppKernel.php', 'refs/heads/develop');
+        preg_match("#const VERSION = \'([0-9\.]+)\'#", $content, $matches);
+        $nextVersion = $matches[1] ?? 'develop';
+
+        $requests = Query::getRequests();
+        $graphQLQuery = new Query();
+        $graphQLQuery->setQuery('org:PrestaShop is:pr ' . $requests[Query::REQUEST_PR_WAITING_FOR_QA]);
+        $results = $this->github->search($graphQLQuery);
+        foreach($results as &$result) {
+            // Issue
+            $result['linkedIssue'] = $this->github->getLinkedIssue($result['node']);
+            // Labels
+            $issueLabels = array_map(function($value) {
+                return $value['name'];
+            }, is_array($result['linkedIssue']['labels']) ? $result['linkedIssue']['labels'] : []);
+            // Priority
+            $result['priority'] = array_reduce($issueLabels, function($carry, $item) {
+                if ($carry < 2 && $item === 'Must-have') {
+                    return 2;
+                }
+                if ($carry < 1 && $item === 'Nice to have') {
+                    return 1;
+                }
+                return $carry;
+            }, 0);
+            // Milestone
+            $result['milestone'] = '';
+            if ($result['node']['repository']['name'] == 'PrestaShop') {
+                $result['milestone'] = $result['node']['milestone'];
+                $result['milestone'] = !empty($result['milestone']) ? $result['milestone']['title'] : $nextVersion; 
+            }
+        }
+
+        // Sort PR
+        usort($results, function($a, $b) {
+            $aRepoName = $a['node']['repository']['name'];
+            $bRepoName = $b['node']['repository']['name'];
+            $aMilestone = $a['node']['milestone'];
+            $aMilestone = $a['milestone']; 
+            $bMilestone = $b['milestone'];
+            $aCreatedAt = $a['node']['createdAt'];
+            $bCreatedAt = $b['node']['createdAt'];
+            $aLinkedIssue = $a['linkedIssue'];
+            $bLinkedIssue = $b['linkedIssue'];
+            $aPriority = $a['priority'];
+            $bPriority = $b['priority'];
+
+            // #1 : Core, Modules
+            if ($aRepoName === 'PrestaShop' && $bRepoName !== 'PrestaShop') {
+                return -1;
+            }
+            if ($bRepoName === 'PrestaShop' && $aRepoName !== 'PrestaShop') {
+                return 1;
+            }
+            if ($aRepoName === 'PrestaShop') {
+                // #2 : Milestone
+                if ($aMilestone !== $bMilestone) {
+                    return ($aMilestone < $bMilestone) ? -1 : 1;
+                }
+                // #3 : Must Have / Nice To Have / etc...
+                if ($aPriority !== $bPriority) {
+                    return ($aPriority > $bPriority) ? -1 : 1;
+                }
+            }
+            // #4 : old to new
+            return ($aCreatedAt < $bCreatedAt) ? -1 : 1;
+        });
+
+        // Extract PR per milestone
+        $slackMessage = ':eyes: PR Ready to Test *(' . count($results) . ')* :eyes:' . PHP_EOL;
+        $milestone = null;
+        $milestoneCount = 0;
+        foreach ($results as $key => $pullRequest) {
+            if (empty($milestone)) {
+                $milestone = $pullRequest['milestone'];
+            }
+            if ($milestoneCount == 3) {
+                if ($milestone == $pullRequest['milestone']) {
+                    continue;
+                }
+                $milestone = $pullRequest['milestone'];
+                $milestoneCount = 0;
+                $slackMessage .= PHP_EOL;
+            }
+
+            $slackMessage .= ' - '
+                . '*[' . (empty($pullRequest['milestone']) ? 'Modules' : $pullRequest['milestone']) . ']* '
+                . ($pullRequest['priority'] > 0 ?
+                    ('*_[' . ($pullRequest['priority'] === 2 ? 'Must Have' : 'Nice to Have') .']_* ')
+                    : ''
+                )
+                . '<'.$pullRequest['node']['url'].'|:preston: '.$pullRequest['node']['repository']['name'].'#'.$pullRequest['node']['number'] .'>'
+                .' : '.$pullRequest['node']['title'];
+            $slackMessage .= PHP_EOL;
+
+            $milestoneCount++;
+        }
+
+        return $slackMessage;
     }
 
     protected function checkModuleReadyToRelease(): string
