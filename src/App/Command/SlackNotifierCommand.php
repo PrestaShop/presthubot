@@ -500,18 +500,19 @@ class SlackNotifierCommand extends Command
         $graphQLQuery = new Query();
         $graphQLQuery->setQuery('org:PrestaShop is:pr ' . $requests[Query::REQUEST_PR_WAITING_FOR_QA]);
         $results = $this->github->search($graphQLQuery);
-        foreach($results as $key => $result) {
+        foreach($results as $key => &$result) {
             if ($result['node']['repository']['name'] == 'prestashop-specs') {
                 unset($results[$key]);
+                continue;
             }
             // Issue
-            $results[$key]['linkedIssue'] = $this->github->getLinkedIssue($result['node']);
+            $result['linkedIssue'] = $this->github->getLinkedIssue($result['node']);
             // Labels
             $issueLabels = array_map(function($value) {
                 return $value['name'];
             }, is_array($result['linkedIssue']['labels']) ? $result['linkedIssue']['labels'] : []);
             // Priority
-            $results[$key]['priority'] = array_reduce($issueLabels, function($carry, $item) {
+            $result['priority'] = array_reduce($issueLabels, function($carry, $item) {
                 if ($carry < 2 && $item === 'Must-have') {
                     return 2;
                 }
@@ -521,10 +522,10 @@ class SlackNotifierCommand extends Command
                 return $carry;
             }, 0);
             // Milestone
-            $results[$key]['milestone'] = '';
+            $result['milestone'] = '';
             if ($result['node']['repository']['name'] == 'PrestaShop') {
-                $results[$key]['milestone'] = $result['node']['milestone'];
-                $results[$key]['milestone'] = !empty($results[$key]['milestone']) ? $results[$key]['milestone']['title'] : $nextVersion; 
+                $result['milestone'] = $result['node']['milestone'];
+                $result['milestone'] = !empty($result['milestone']) ? $result['milestone']['title'] : $nextVersion; 
             }
         }
 
