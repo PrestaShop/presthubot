@@ -725,13 +725,17 @@ class SlackNotifierCommand extends Command
         $graphQLQuery->setQuery($searchPRDevelop);
         $countDevelop = $this->github->countSearch($graphQLQuery);
 
-        $searchPRModules = 'org:PrestaShop -repo:PrestaShop/PrestaShop is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $searchPRModules = 'org:PrestaShop -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
         $graphQLQuery->setQuery($searchPRModules);
         $countModules = $this->github->countSearch($graphQLQuery);
 
         $searchPRWaitingForAuthor = 'org:PrestaShop is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' '.Query::LABEL_WAITING_FOR_AUTHOR;
         $graphQLQuery->setQuery($searchPRWaitingForAuthor);
         $countWaitingForAuthor = $this->github->countSearch($graphQLQuery);
+
+        $searchPRSpecs = 'repo:PrestaShop/prestashop-specs is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $graphQLQuery->setQuery($searchPRSpecs);
+        $countSpecs = $this->github->countSearch($graphQLQuery);
 
         // Cache
         $cache = [];
@@ -744,6 +748,7 @@ class SlackNotifierCommand extends Command
             '177' => $countPR177,
             'Develop' => $countDevelop,
             'Modules' => $countModules,
+            'Specs' => $countSpecs,
             'WaitingForAuthor' => $countWaitingForAuthor,
         ];
         if(!is_dir(\dirname(self::CACHE_CHECKSTATSQA))) {
@@ -770,6 +775,10 @@ class SlackNotifierCommand extends Command
         $countModulesDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Modules'])
             ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
             : '';
+        $diff = $countSpecs - $cache[$dateJSub1]['Specs'];
+        $countSpecsDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Specs'])
+            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
+            : '';
         $diff = $countWaitingForAuthor - $cache[$dateJSub1]['WaitingForAuthor'];
         $countWaitingForAuthorDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['WaitingForAuthor'])
             ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
@@ -781,6 +790,8 @@ class SlackNotifierCommand extends Command
         $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRDevelop)).'|PR Develop> : *' . $countDevelop . '*' . $countDevelopDiff . PHP_EOL;
         // Number of PR for Modules
         $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRModules)).'|PR Modules> : *' . $countModules . '*' . $countModulesDiff . PHP_EOL;
+        // Number of PR for Specs
+        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRSpecs)).'|PR Specs> : *' . $countSpecs . '*' . $countSpecsDiff . PHP_EOL;
         // Number of PR with the label "Waiting for QA" AND with the label "Waiting for author"
         $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRWaitingForAuthor)).'|PR Waiting for Author> : *' . $countWaitingForAuthor . '*' . $countWaitingForAuthorDiff . PHP_EOL;
         return $slackMessage;
