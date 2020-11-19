@@ -169,7 +169,9 @@ class SlackNotifierCommand extends Command
         $slackMessageQA[] = $this->checkStatsQA();
 
         // Check PR Priority to Test
-        $slackMessageQA[] = $this->checkPRReadyToTest();
+        $prReadyToTest = $this->checkPRReadyToTest();
+        $slackMessageQA[] = $prReadyToTest;
+        $slackMessageCore[] = $prReadyToTest;
 
         // Get PR to Review for Core Team
         $slackMessageCoreMembers[] = $this->checkPRReadyToReviewForCoreTeam();
@@ -572,7 +574,7 @@ class SlackNotifierCommand extends Command
             if (empty($milestone)) {
                 $milestone = $pullRequest['milestone'];
             }
-            if ($milestoneCount == 3) {
+            if ($milestone !== $pullRequest['milestone'] || $milestoneCount == 3) {
                 if ($milestone == $pullRequest['milestone']) {
                     continue;
                 }
