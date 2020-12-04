@@ -28,7 +28,6 @@ class GithubCheckModuleCommand extends Command
     public const REPOSITORIES = [
         'blockreassurance',
         'contactform',
-        'cronjobs',
         'dashactivity',
         'dashgoals',
         'dashproducts',
@@ -179,6 +178,7 @@ class GithubCheckModuleCommand extends Command
         $progressBar->start();
 
         foreach($arrayRepositories as $key => $repository) {
+            var_dump($repository);
             $this->checkRepository('PrestaShop', $repository, $table, $branch);
             if (count($arrayRepositories) > 1) {
                 $table->addRows([new TableSeparator()]);
