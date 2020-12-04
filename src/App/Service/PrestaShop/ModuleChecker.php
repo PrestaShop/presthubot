@@ -3,6 +3,7 @@
 namespace Console\App\Service\PrestaShop;
 
 use Console\App\Service\Github;
+use Symfony\Component\Yaml\Yaml;
 
 class ModuleChecker
 {
@@ -11,9 +12,9 @@ class ModuleChecker
     public const RATING_DESCRIPTION = 'rating_description';
     public const RATING_DESCRIPTION_MAX = 1;
     public const RATING_FILES = 'rating_files';
-    public const RATING_FILES_MAX = 16;
+    public const RATING_FILES_MAX = 21;
     public const RATING_GLOBAL = 'rating_global';
-    public const RATING_GLOBAL_MAX = 31;
+    public const RATING_GLOBAL_MAX = 36;
     public const RATING_ISSUES = 'rating_issues';
     public const RATING_ISSUES_MAX = 1;
     public const RATING_LABELS = 'rating_labels';
@@ -48,22 +49,30 @@ class ModuleChecker
             self::CHECK_FILES_EXIST => true
         ],
         '.github/dependabot.yml' => [
-            self::CHECK_FILES_EXIST => true
+            self::CHECK_FILES_EXIST => true,
+            self::CHECK_FILES_TEMPLATE => 'var/data/templates/.github/dependabot.yml',
         ],
         '.github/release-drafter.yml' => [
-            self::CHECK_FILES_EXIST => true
+            self::CHECK_FILES_EXIST => true,
+            self::CHECK_FILES_TEMPLATE => 'var/data/templates/.github/release-drafter.yml',
         ],
         '.github/workflows/build-release.yml' => [
-            self::CHECK_FILES_EXIST => true
+            self::CHECK_FILES_EXIST => true,
+            self::CHECK_FILES_TEMPLATE => 'var/data/templates/.github/workflows/build-release.yml',
         ],
         '.github/workflows/js.yml' => [
             self::CHECK_FILES_EXIST => true
         ],
         '.github/workflows/php.yml' => [
-            self::CHECK_FILES_EXIST => true
+            self::CHECK_FILES_EXIST => true,
+            self::CHECK_FILES_TEMPLATE => [
+                'var/data/templates/.github/workflows/php_with_tests.yml',
+                'var/data/templates/.github/workflows/php_without_tests.yml',
+            ],
         ],
         '.github/PULL_REQUEST_TEMPLATE.md' => [
-            self::CHECK_FILES_EXIST => true
+            self::CHECK_FILES_EXIST => true,
+            self::CHECK_FILES_TEMPLATE => 'var/data/templates/.github/PULL_REQUEST_TEMPLATE.md',
         ],
         '.gitignore' => [
             self::CHECK_FILES_EXIST => true,
@@ -75,6 +84,7 @@ class ModuleChecker
     ];
     public const CHECK_FILES_EXIST = 1;
     public const CHECK_FILES_CONTAIN = 2;
+    public const CHECK_FILES_TEMPLATE = 3;
 
     public const CHECK_LABELS = [
         'waiting for QA' => 'fbca04',
@@ -228,6 +238,35 @@ class ModuleChecker
                         }
                         $this->report['files'][$path][$checkType] = $allContains;
                         $this->rating[self::RATING_FILES] += $allContains ? 1 : 0;
+                    break;
+                    case self::CHECK_FILES_TEMPLATE:
+                        // File available on the repository
+                        $contents = $this->github->getClient()->api('repo')->contents()->download($org, $repository, $path, 'refs/heads/' .  $branch);
+                        // Template
+                        $checkData = \is_array($checkData) ? $checkData : [$checkData];
+                        foreach ($checkData as $checkDataPath) {
+                            $template = file_get_contents($checkDataPath);
+    
+                            if (pathinfo($checkDataPath, PATHINFO_EXTENSION) === 'yml') {
+                                $yaml = Yaml::parse($contents);
+                                $prestaVersions = $yaml['jobs']['phpstan']['strategy']['matrix']['presta-versions'] ?? [];
+                                $prestaVersions = array_map(function($value) {
+                                    return "'". $value . "'";
+                                }, $prestaVersions);
+                                $prestaVersions = implode(', ', $prestaVersions);
+                            
+                                $template = str_replace('%module%', $repository, $template);
+                                $template = str_replace('%presta-versions%', $prestaVersions, $template);
+                            }
+                            
+                            $status = $contents === $template;
+                            if ($status) {
+                                break;
+                            }
+                        }
+
+                        $this->report['files'][$path][$checkType] = $status;
+                        $this->rating[self::RATING_FILES] += $status ? 1 : 0;
                     break;
                 }
             }

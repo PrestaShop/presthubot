@@ -238,18 +238,19 @@ class GithubCheckModuleCommand extends Command
 
         $checkFiles = '';
         foreach ($report['files'] as $path => $check) {
-            $checkFiles .= ($check[ModuleChecker::CHECK_FILES_EXIST] ? '<info>✓ </info>' : '<error>✗ </error>') . ' ' . $path;
+            $status = $check[ModuleChecker::CHECK_FILES_EXIST];
             if (isset($check[ModuleChecker::CHECK_FILES_CONTAIN])) {
-                $remainingCheck = true;
                 foreach ($check as $key => $value) {
                     if ($check == ModuleChecker::CHECK_FILES_EXIST) {
                         continue;
                     }
-                    $remainingCheck = $remainingCheck && $value;
+                    $status = $status && $value;
                 }
-                $checkFiles .= '('.($remainingCheck ? '<info>✓ </info>' : '<error>✗ </error>') . ')';
             }
-            $checkFiles .= PHP_EOL;
+            if (isset($check[ModuleChecker::CHECK_FILES_TEMPLATE])) {
+                $status = $status && $check[ModuleChecker::CHECK_FILES_TEMPLATE];
+            }
+            $checkFiles .= ((bool) $status ? '<info>✓ </info>' : '<error>✗ </error>') . ' ' . $path . PHP_EOL;
         }
         $checkTopics = '';
         foreach ($report['githubTopics'] as $topicName => $hasTopic) {
