@@ -240,28 +240,34 @@ class ModuleChecker
                         $this->rating[self::RATING_FILES] += $allContains ? 1 : 0;
                     break;
                     case self::CHECK_FILES_TEMPLATE:
-                        // File available on the repository
-                        $contents = $this->github->getClient()->api('repo')->contents()->download($org, $repository, $path, 'refs/heads/' .  $branch);
-                        // Template
-                        $checkData = \is_array($checkData) ? $checkData : [$checkData];
-                        foreach ($checkData as $checkDataPath) {
-                            $template = file_get_contents($checkDataPath);
-    
-                            if (pathinfo($checkDataPath, PATHINFO_EXTENSION) === 'yml') {
-                                $yaml = Yaml::parse($contents);
-                                $prestaVersions = $yaml['jobs']['phpstan']['strategy']['matrix']['presta-versions'] ?? [];
-                                $prestaVersions = array_map(function($value) {
-                                    return "'". $value . "'";
-                                }, $prestaVersions);
-                                $prestaVersions = implode(', ', $prestaVersions);
-                            
-                                $template = str_replace('%module%', $repository, $template);
-                                $template = str_replace('%presta-versions%', $prestaVersions, $template);
-                            }
-                            
-                            $status = $contents === $template;
-                            if ($status) {
-                                break;
+                        $status = false;
+                        if ($this->report['files'][$path][self::CHECK_FILES_EXIST]) {
+                            // File available on the repository
+                            $contents = $this->github->getClient()->api('repo')->contents()->download($org, $repository, $path, 'refs/heads/' .  $branch);
+                            // Template
+                            $checkData = \is_array($checkData) ? $checkData : [$checkData];
+                            foreach ($checkData as $checkDataPath) {
+                                $template = file_get_contents($checkDataPath);
+        
+                                if (pathinfo($checkDataPath, PATHINFO_EXTENSION) === 'yml') {
+                                    $yaml = Yaml::parse($contents);
+                                    $prestaVersions = $yaml['jobs']['phpstan']['strategy']['matrix']['presta-versions'] ?? [];
+                                    $prestaVersions = array_map(function($value) {
+                                        return "'". $value . "'";
+                                    }, $prestaVersions);
+                                    $prestaVersions = implode(', ', $prestaVersions);
+                                    $dirPHPStan = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'tests/php/phpstan', 'refs/heads/' .  $branch)
+                                        ? 'tests/php/phpstan' : 'tests/phpstan';
+                                
+                                    $template = str_replace('%module%', $repository, $template);
+                                    $template = str_replace('%prestaVersions%', $prestaVersions, $template);
+                                    $template = str_replace('%dirPHPStan%', $dirPHPStan, $template);
+                                }
+                                
+                                $status = $contents === $template;
+                                if ($status) {
+                                    break;
+                                }
                             }
                         }
 
