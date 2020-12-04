@@ -35,8 +35,6 @@ class Github
         'PrestaShop-1.6',
     ];
 
-    protected $tryAgain = 0;
-
     public function __construct(string $ghToken = null)
     {
         $filesystemAdapter = new Local(__DIR__ . '/../../../var/');
@@ -300,14 +298,12 @@ class Github
 
     private function apiSearchGraphQL(string $graphQLQuery): array
     {
-        $this->tryAgain = 0;
         do {
             try {
                 $resultPage = $this->client->api('graphql')->execute($graphQLQuery, []);
             } catch(\RuntimeException $e) {
-                $this->tryAgain++;
             }
-        } while ($this->tryAgain <= 5 && !isset($resultPage));
+        } while (!isset($resultPage));
 
         return $resultPage ?? [];
     }
