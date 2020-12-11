@@ -60,7 +60,10 @@ class ModuleChecker
         ],
         '.github/workflows/build-release.yml' => [
             self::CHECK_FILES_EXIST => true,
-            self::CHECK_FILES_TEMPLATE => 'var/data/templates/.github/workflows/build-release.yml',
+            self::CHECK_FILES_TEMPLATE => [
+                'var/data/templates/.github/workflows/build-release_with_js.yml',
+                'var/data/templates/.github/workflows/build-release_without_js.yml',
+            ],
         ],
         '.github/workflows/js.yml' => [
             self::CHECK_FILES_EXIST => true
