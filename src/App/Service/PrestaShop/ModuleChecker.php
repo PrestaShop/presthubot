@@ -13,9 +13,9 @@ class ModuleChecker
     public const RATING_DESCRIPTION = 'rating_description';
     public const RATING_DESCRIPTION_MAX = 1;
     public const RATING_FILES = 'rating_files';
-    public const RATING_FILES_MAX = 22;
+    public const RATING_FILES_MAX = 25;
     public const RATING_GLOBAL = 'rating_global';
-    public const RATING_GLOBAL_MAX = 37;
+    public const RATING_GLOBAL_MAX = 40;
     public const RATING_ISSUES = 'rating_issues';
     public const RATING_ISSUES_MAX = 1;
     public const RATING_LABELS = 'rating_labels';
@@ -54,6 +54,9 @@ class ModuleChecker
             self::CHECK_FILES_EXIST => true,
             self::CHECK_FILES_TEMPLATE => 'var/data/templates/.github/dependabot.yml',
         ],
+        '.github/mktp-metadata.json' => [
+            self::CHECK_FILES_EXIST => true,
+        ],
         '.github/release-drafter.yml' => [
             self::CHECK_FILES_EXIST => true,
             self::CHECK_FILES_TEMPLATE => 'var/data/templates/.github/release-drafter.yml',
@@ -74,6 +77,10 @@ class ModuleChecker
                 'var/data/templates/.github/workflows/php_with_tests.yml',
                 'var/data/templates/.github/workflows/php_without_tests.yml',
             ],
+        ],
+        '.github/workflows/publish-to-marketplace.yml' => [
+            self::CHECK_FILES_EXIST => true,
+            self::CHECK_FILES_TEMPLATE => 'var/data/templates/.github/workflows/publish-to-marketplace.yml',
         ],
         '.github/PULL_REQUEST_TEMPLATE.md' => [
             self::CHECK_FILES_EXIST => true,
