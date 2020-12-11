@@ -3,6 +3,7 @@
 namespace Console\App\Service\PrestaShop;
 
 use Console\App\Service\Github;
+use JsonSchema\Validator;
 use Symfony\Component\Yaml\Yaml;
 
 class ModuleChecker
@@ -12,9 +13,9 @@ class ModuleChecker
     public const RATING_DESCRIPTION = 'rating_description';
     public const RATING_DESCRIPTION_MAX = 1;
     public const RATING_FILES = 'rating_files';
-    public const RATING_FILES_MAX = 21;
+    public const RATING_FILES_MAX = 22;
     public const RATING_GLOBAL = 'rating_global';
-    public const RATING_GLOBAL_MAX = 36;
+    public const RATING_GLOBAL_MAX = 37;
     public const RATING_ISSUES = 'rating_issues';
     public const RATING_ISSUES_MAX = 1;
     public const RATING_LABELS = 'rating_labels';
@@ -37,7 +38,8 @@ class ModuleChecker
             self::CHECK_FILES_EXIST => true
         ],
         'composer.json' => [
-            self::CHECK_FILES_EXIST => true
+            self::CHECK_FILES_EXIST => true,
+            self::CHECK_COMPOSER_VALID => true,
         ],
         'composer.lock' => [
             self::CHECK_FILES_EXIST => true
@@ -85,6 +87,7 @@ class ModuleChecker
     public const CHECK_FILES_EXIST = 1;
     public const CHECK_FILES_CONTAIN = 2;
     public const CHECK_FILES_TEMPLATE = 3;
+    public const CHECK_COMPOSER_VALID = 4;
 
     public const CHECK_LABELS = [
         'waiting for QA' => 'fbca04',
@@ -220,6 +223,18 @@ class ModuleChecker
             $this->report['files'][$path] = [];
             foreach ($checks as $checkType => $checkData) {
                 switch($checkType) {
+                    case self::CHECK_COMPOSER_VALID:
+                        $status = false;
+                        if ($this->report['files'][$path][self::CHECK_FILES_EXIST]) {
+                            $data = $this->github->getClient()->api('repo')->contents()->download($org, $repository, 'composer.json', 'refs/heads/' .  $branch);
+                            $data = json_decode($data);
+                            $validator = new Validator();
+                            $validator->validate($data, (object)['$ref' => 'https://getcomposer.org/schema.json']);
+                            $status = $validator->isValid();
+                        }
+                        $this->report['files'][$path][$checkType] = $status;
+                        $this->rating[self::RATING_FILES] += $status ? 1 : 0;
+                    break;
                     case self::CHECK_FILES_EXIST:
                         $isExist = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, $path, 'refs/heads/' .  $branch);
                         $this->report['files'][$path][$checkType] = ($isExist == $checkData);

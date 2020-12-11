@@ -178,7 +178,6 @@ class GithubCheckModuleCommand extends Command
         $progressBar->start();
 
         foreach($arrayRepositories as $key => $repository) {
-            var_dump($repository);
             $this->checkRepository('PrestaShop', $repository, $table, $branch);
             if (count($arrayRepositories) > 1) {
                 $table->addRows([new TableSeparator()]);
@@ -239,6 +238,9 @@ class GithubCheckModuleCommand extends Command
         $checkFiles = '';
         foreach ($report['files'] as $path => $check) {
             $status = $check[ModuleChecker::CHECK_FILES_EXIST];
+            if (isset($check[ModuleChecker::CHECK_COMPOSER_VALID])) {
+                $status = $status && $check[ModuleChecker::CHECK_COMPOSER_VALID];
+            }
             if (isset($check[ModuleChecker::CHECK_FILES_CONTAIN])) {
                 foreach ($check as $key => $value) {
                     if ($check == ModuleChecker::CHECK_FILES_EXIST) {
