@@ -13,9 +13,9 @@ class ModuleChecker
     public const RATING_DESCRIPTION = 'rating_description';
     public const RATING_DESCRIPTION_MAX = 1;
     public const RATING_FILES = 'rating_files';
-    public const RATING_FILES_MAX = 25;
+    public const RATING_FILES_MAX = 27;
     public const RATING_GLOBAL = 'rating_global';
-    public const RATING_GLOBAL_MAX = 40;
+    public const RATING_GLOBAL_MAX = 42;
     public const RATING_ISSUES = 'rating_issues';
     public const RATING_ISSUES_MAX = 1;
     public const RATING_LABELS = 'rating_labels';
@@ -49,6 +49,10 @@ class ModuleChecker
         ],
         'logo.png' => [
             self::CHECK_FILES_EXIST => true
+        ],
+        '%dirPHPStan%.sh' => [
+            self::CHECK_FILES_EXIST => true,
+            self::CHECK_FILES_TEMPLATE => 'var/data/templates/tests/phpstan.sh',
         ],
         '.github/dependabot.yml' => [
             self::CHECK_FILES_EXIST => true,
@@ -230,6 +234,9 @@ class ModuleChecker
     {
         $this->report['files'] = [];
         foreach (self::CHECK_FILES as $path => $checks) {
+            $dirPHPStan = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'tests/php/phpstan', 'refs/heads/' .  $branch)
+                ? 'tests/php/phpstan' : 'tests/phpstan';
+            $path = str_replace('%dirPHPStan%', $dirPHPStan, $path);
             $this->report['files'][$path] = [];
             foreach ($checks as $checkType => $checkData) {
                 switch($checkType) {
@@ -274,15 +281,13 @@ class ModuleChecker
                             foreach ($checkData as $checkDataPath) {
                                 $template = file_get_contents($checkDataPath);
         
-                                if (pathinfo($checkDataPath, PATHINFO_EXTENSION) === 'yml') {
+                                if (\in_array(pathinfo($checkDataPath, PATHINFO_EXTENSION), ['yml', 'sh'])) {
                                     $yaml = Yaml::parse($contents);
                                     $prestaVersions = $yaml['jobs']['phpstan']['strategy']['matrix']['presta-versions'] ?? [];
                                     $prestaVersions = array_map(function($value) {
                                         return "'". $value . "'";
                                     }, $prestaVersions);
                                     $prestaVersions = implode(', ', $prestaVersions);
-                                    $dirPHPStan = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'tests/php/phpstan', 'refs/heads/' .  $branch)
-                                        ? 'tests/php/phpstan' : 'tests/phpstan';
                                 
                                     $template = str_replace('%module%', $repository, $template);
                                     $template = str_replace('%prestaVersions%', $prestaVersions, $template);
