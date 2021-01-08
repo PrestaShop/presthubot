@@ -760,6 +760,9 @@ class SlackNotifierCommand extends Command
         
         // Stats
         $dateJSub1 = date('D') == 'Mon' ? date('Y-m-d', strtotime('-3 days')) : date('Y-m-d', strtotime('-1 day'));
+        if (!isset($cache[$dateJSub1])) {
+            $cache[$dateJSub1] = $cache[date('Y-m-d')];
+        }
         
         $diff = $countPR176 - $cache[$dateJSub1]['176'];
         $countPR176Diff = isset($cache[$dateJSub1], $cache[$dateJSub1]['176'])
