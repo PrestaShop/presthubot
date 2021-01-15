@@ -371,21 +371,21 @@ class SlackNotifierCommand extends Command
         if (empty($prReadyToReview)) {
             return '';
         }
-            $prReadyToReview = array_slice($prReadyToReview, 0, 10);
-            $slackMessage = ':eyes: PR Ready to Review :eyes:' . PHP_EOL;
-            foreach ($prReadyToReview as $pullRequest) {
-                $slackMessage .= ' - <'.$pullRequest['url'].'|:preston: '.$pullRequest['repository']['name'].'#'.$pullRequest['number'] .'>'
-                    .' : '.$pullRequest['title'];
-                if (!empty($pullRequest['approved'])) {
-                    $slackMessage .= PHP_EOL;
-                    $slackMessage .= '    - :heavy_check_mark: ' . implode(', ', $pullRequest['approved']);
-                }
+        $prReadyToReview = array_slice($prReadyToReview, 0, 10);
+        $slackMessage = ':eyes: PR Ready to Review :eyes:' . PHP_EOL;
+        foreach ($prReadyToReview as $pullRequest) {
+            $slackMessage .= ' - <'.$pullRequest['url'].'|:preston: '.$pullRequest['repository']['name'].'#'.$pullRequest['number'] .'>'
+                .' : '.$pullRequest['title'];
+            if (!empty($pullRequest['approved'])) {
                 $slackMessage .= PHP_EOL;
-                $slackMessage .= PHP_EOL;
+                $slackMessage .= '    - :heavy_check_mark: ' . implode(', ', $pullRequest['approved']);
             }
-            $slackMessage = $this->slack->linkGithubUsername($slackMessage);
-            return $slackMessage;
+            $slackMessage .= PHP_EOL;
+            $slackMessage .= PHP_EOL;
         }
+        $slackMessage = $this->slack->linkGithubUsername($slackMessage);
+        return $slackMessage;
+    }
 
     protected function checkPRReadyToReviewForCoreTeam(): array
     {
@@ -518,7 +518,7 @@ class SlackNotifierCommand extends Command
                 if ($carry < 2 && $item === 'Must-have') {
                     return 2;
                 }
-                if ($carry < 1 && $item === 'Nice to have') {
+                if ($carry < 1 && $item === 'Nice-to-have') {
                     return 1;
                 }
                 return $carry;
@@ -557,7 +557,7 @@ class SlackNotifierCommand extends Command
                 if ($aMilestone !== $bMilestone) {
                     return ($aMilestone < $bMilestone) ? -1 : 1;
                 }
-                // #3 : Must Have / Nice To Have / etc...
+                // #3 : Must Have / Nice-to-have / etc...
                 if ($aPriority !== $bPriority) {
                     return ($aPriority > $bPriority) ? -1 : 1;
                 }
@@ -586,7 +586,7 @@ class SlackNotifierCommand extends Command
             $slackMessage .= ' - '
                 . '*[' . (empty($pullRequest['milestone']) ? 'Modules' : $pullRequest['milestone']) . ']* '
                 . ($pullRequest['priority'] > 0 ?
-                    ('*_[' . ($pullRequest['priority'] === 2 ? 'Must Have' : 'Nice to Have') .']_* ')
+                    ('*_[' . ($pullRequest['priority'] === 2 ? 'Must Have' : 'Nice-to-have') .']_* ')
                     : ''
                 )
                 . '<'.$pullRequest['node']['url'].'|:preston: '.$pullRequest['node']['repository']['name'].'#'.$pullRequest['node']['number'] .'>'
@@ -715,27 +715,27 @@ class SlackNotifierCommand extends Command
         $graphQLQuery = new Query();
         $slackMessage = ':chart_with_upwards_trend: PR Stats for QA :chart_with_upwards_trend:' . PHP_EOL;
 
-        $searchPR176 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.6.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $searchPR176 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.6.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPR176);
         $countPR176 = $this->github->countSearch($graphQLQuery);
 
-        $searchPR177 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.7.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $searchPR177 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.7.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPR177);
         $countPR177 = $this->github->countSearch($graphQLQuery);
 
-        $searchPRDevelop = 'repo:PrestaShop/PrestaShop is:pr is:open -label:1.7.7.x -label:1.7.6.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $searchPRDevelop = 'repo:PrestaShop/PrestaShop is:pr is:open -label:1.7.7.x -label:1.7.6.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRDevelop);
         $countDevelop = $this->github->countSearch($graphQLQuery);
 
-        $searchPRModules = 'org:PrestaShop -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $searchPRModules = 'org:PrestaShop -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRModules);
         $countModules = $this->github->countSearch($graphQLQuery);
 
-        $searchPRWaitingForAuthor = 'org:PrestaShop is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' '.Query::LABEL_WAITING_FOR_AUTHOR;
+        $searchPRWaitingForAuthor = 'org:PrestaShop is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' '.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRWaitingForAuthor);
         $countWaitingForAuthor = $this->github->countSearch($graphQLQuery);
 
-        $searchPRSpecs = 'repo:PrestaShop/prestashop-specs is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR;
+        $searchPRSpecs = 'repo:PrestaShop/prestashop-specs is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRSpecs);
         $countSpecs = $this->github->countSearch($graphQLQuery);
 
