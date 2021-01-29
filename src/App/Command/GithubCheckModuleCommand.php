@@ -134,6 +134,13 @@ class GithubCheckModuleCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 '',
                 'master'
+            )
+            ->addOption(
+                'limit',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                '',
+                '1'
             );   
     }
  
@@ -143,6 +150,8 @@ class GithubCheckModuleCommand extends Command
         $this->moduleChecker = new ModuleChecker($this->github);
         $module = $input->getOption('module');
         $branch = $input->getOption('branch');
+        $limit = $input->getOption('limit');
+        $limit = explode(',', $limit);
         $time = time();
 
         $sectionProgressBar = $output->section();
@@ -150,6 +159,10 @@ class GithubCheckModuleCommand extends Command
 
         $arrayRepositories = $module ? [$module] : self::REPOSITORIES;
         $numRepositories = count($arrayRepositories);
+        if ($numRepositories > 1) {
+            $arrayRepositories = array_slice($arrayRepositories, $limit[0], $limit[1] ?? null);
+            $numRepositories = count($arrayRepositories);
+        }
 
         // Table
         $table = new Table($sectionTable);
@@ -173,7 +186,7 @@ class GithubCheckModuleCommand extends Command
 
         foreach($arrayRepositories as $key => $repository) {
             $this->checkRepository('PrestaShop', $repository, $table, $branch);
-            if (count($arrayRepositories) > 1) {
+            if ($numRepositories > 1) {
                 $table->addRows([new TableSeparator()]);
             }
             $progressBar->advance();
