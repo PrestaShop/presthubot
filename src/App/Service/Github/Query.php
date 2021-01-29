@@ -174,6 +174,32 @@ class Query
                       }              
                     }
                   }
+                  ... on Issue {
+                    number
+                    state
+                    author {
+                      login
+                      url
+                    }
+                    url
+                    title
+                    body
+                    createdAt
+                    milestone {
+                      title
+                    }
+                    repository {
+                      name
+                      url
+                      isPrivate
+                    }
+                    labels(last: 100) {
+                      totalCount
+                      nodes {
+                        name
+                      }
+                    }
+                  }
                 }
               }
             }

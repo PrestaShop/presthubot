@@ -125,6 +125,21 @@ php bin/console github:stats:repository
 | `--pr:date:created=<date>` | No | Filter on creation date for PR |
 | `--pr:date:merged=<date>` | No | Filter on merge date for PR |
 
+### Generate Issues Report
+Permits to track all issues created in the last month (4 weeks) for the PrestaShop project
+
+```bash
+php bin/console github:issues:report
+```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--dateStart=<dateStart>` | Yes | Format date: `yyyy-mm-dd` |
+| `--dateEnd=<dateEnd>` | No | Format date: `yyyy-mm-dd`)` (default: dateStart + 28 days) |
+| `--outputDir=<outputDir>` | No | Output directory (default: `var/report`) |
+
 ### Slack Notifier for Core Team
 Notify on Slack :
 - Nightly Build Status
