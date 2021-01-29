@@ -233,6 +233,7 @@ class GithubCheckModuleCommand extends Command
 
         $checkBranch = 'Branch : ';
         $checkBranch .= $report['branch']['develop'] ? '<info>✓ </info>' . ' (' . $report['branch']['develop'] . ')' : '<error>✗ </error>';
+        $checkBranch .= $report['branch']['isDefault'] ? PHP_EOL . 'Default (dev) : ' . (!$report['branch']['isDefault'] ? '<error>✗ </error>' : '<info>✓ </info>') : ''; 
         $checkBranch .= $report['branch']['develop'] ? PHP_EOL . 'Status : ' . ($report['branch']['hasDiffMaster'] ? '<error>✗ </error>' : '<info>✓ </info>') : ''; 
         if (!empty($report['branch']['status']) && $report['branch']['status']['ahead'] > 0) {
             $checkBranch .= PHP_EOL . sprintf('- dev < master by %d commits', $report['branch']['status']['ahead']) . PHP_EOL;

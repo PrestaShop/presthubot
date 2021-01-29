@@ -649,6 +649,9 @@ class SlackNotifierCommand extends Command
             }
             
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_BRANCH) != ModuleChecker::RATING_BRANCH_MAX) {
+                if (!$this->report['branch']['isDefault']) {
+                    $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Please set the `dev` branch as main branch';
+                }
                 // Needs release (cf. checkModuleReadyToRelease)
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_DESCRIPTION) != ModuleChecker::RATING_DESCRIPTION_MAX) {

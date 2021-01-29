@@ -9,13 +9,13 @@ use Symfony\Component\Yaml\Yaml;
 class ModuleChecker
 {
     public const RATING_BRANCH = 'rating_branch';
-    public const RATING_BRANCH_MAX = 2;
+    public const RATING_BRANCH_MAX = 3;
     public const RATING_DESCRIPTION = 'rating_description';
     public const RATING_DESCRIPTION_MAX = 1;
     public const RATING_FILES = 'rating_files';
     public const RATING_FILES_MAX = 27;
     public const RATING_GLOBAL = 'rating_global';
-    public const RATING_GLOBAL_MAX = 42;
+    public const RATING_GLOBAL_MAX = 43;
     public const RATING_ISSUES = 'rating_issues';
     public const RATING_ISSUES_MAX = 1;
     public const RATING_LABELS = 'rating_labels';
@@ -263,7 +263,7 @@ class ModuleChecker
                             : '';
                         $allContains = true;
                         foreach ($checkData as $value) {
-                            $allContains = (strpos($contents, $value) === false);
+                            $allContains = (strpos($contents, $value) !== false);
                             if (!$allContains) {
                                 break;
                             }
@@ -338,6 +338,10 @@ class ModuleChecker
 
     public function checkBranches(string $org, string $repository): array
     {
+        // Fetch main branch from the repository
+        $repositoryInfo = $this->github->getClient()->api('repo')->show($org, $repository);
+        $mainBranch = $repositoryInfo['default_branch'];
+
         // Fetch branches from Github
         $references = $this->github->getClient()->api('gitData')->references()->branches($org, $repository);
         $branches = [];
@@ -347,11 +351,15 @@ class ModuleChecker
 
         // Name of develop branch
         $this->report['branch'] = [];
-        $this->report['branch']['develop'] = (array_key_exists('dev', $branches) ? 'dev' : (array_key_exists('develop', $branches) ? 'develop' : ''));
+        $this->report['branch']['develop'] = (array_key_exists('dev', $branches) ? 'dev' : '');
         $this->report['branch']['status'] = $this->report['branch']['develop'] === '' ? null :$this->findReleaseStatus($references, $org, $repository);
+        $this->report['branch']['isDefault'] = $mainBranch === 'dev';
         $this->report['branch']['hasDiffMaster'] = (!empty($this->report['branch']['status']) && $this->report['branch']['status']['ahead'] > 0);
         
-        $this->rating[self::RATING_BRANCH] +=  ($this->report['branch']['develop'] ? 1 : 0) + (!$this->report['branch']['hasDiffMaster'] ? 1 : 0);
+        $this->rating[self::RATING_BRANCH] +=  
+            ($this->report['branch']['develop'] ? 1 : 0) 
+            + (!$this->report['branch']['hasDiffMaster'] ? 1 : 0)
+            + ($this->report['branch']['isDefault'] ? 1 : 0);
 
         return $this->report['branch'];
     }
