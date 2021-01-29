@@ -3,6 +3,7 @@ namespace Console\App\Command;
 
 use Console\App\Service\Github;
 use Console\App\Service\PrestaShop\ModuleChecker;
+use Console\App\Service\PrestaShop\ModuleFetcher;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Helper\Table;
@@ -148,6 +149,8 @@ class GithubCheckModuleCommand extends Command
     {
         $this->github = new Github($input->getOption('ghtoken'));
         $this->moduleChecker = new ModuleChecker($this->github);
+        $moduleFetcher = new ModuleFetcher($this->github);
+
         $module = $input->getOption('module');
         $branch = $input->getOption('branch');
         $limit = $input->getOption('limit');
@@ -157,7 +160,7 @@ class GithubCheckModuleCommand extends Command
         $sectionProgressBar = $output->section();
         $sectionTable = $output->section();
 
-        $arrayRepositories = $module ? [$module] : self::REPOSITORIES;
+        $arrayRepositories = $module ? [$module] : $moduleFetcher->getModules();
         $numRepositories = count($arrayRepositories);
         if ($numRepositories > 1) {
             $arrayRepositories = array_slice($arrayRepositories, $limit[0], $limit[1] ?? null);

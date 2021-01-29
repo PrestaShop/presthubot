@@ -6,6 +6,7 @@ use Console\App\Service\Github;
 use Console\App\Service\Github\Filters;
 use Console\App\Service\Github\Query;
 use Console\App\Service\PrestaShop\ModuleChecker;
+use Console\App\Service\PrestaShop\ModuleFetcher;
 use Console\App\Service\PrestaShop\NightlyBoard;
 use Console\App\Service\Slack;
 use Symfony\Component\Console\Command\Command;
@@ -26,6 +27,10 @@ class SlackNotifierCommand extends Command
      * @var ModuleChecker;
      */
     protected $moduleChecker;
+    /**
+     * @var ModuleFetcher
+     */
+    protected $moduleFetcher;
     /**
      * @var NightlyBoard;
      */
@@ -139,6 +144,7 @@ class SlackNotifierCommand extends Command
 
         $this->github = new Github($input->getOption('ghtoken'));
         $this->moduleChecker = new ModuleChecker($this->github);
+        $this->moduleFetcher = new ModuleFetcher($this->github);
         $this->nightlyBoard = new NightlyBoard();
         $this->slack = new Slack($input->getOption('slacktoken'));
         $this->slackChannelCore = $input->getOption('slackchannelCore');
@@ -602,7 +608,7 @@ class SlackNotifierCommand extends Command
     protected function checkModuleReadyToRelease(): string
     {
         $modulesNeedRelease = [];
-        foreach (GithubCheckModuleCommand::REPOSITORIES as $repository) {
+        foreach ($this->moduleFetcher->getModules() as $repository) {
             $checkBranches = $this->moduleChecker->checkBranches('PrestaShop', $repository);
             if ($checkBranches['hasDiffMaster']) {
                 $modulesNeedRelease[$repository] = $checkBranches['status'];
@@ -633,7 +639,7 @@ class SlackNotifierCommand extends Command
     protected function checkModuleImprovements(): string
     {
         $improvements = [];
-        foreach (GithubCheckModuleCommand::REPOSITORIES as $repository) {
+        foreach ($this->moduleFetcher->getModules() as $repository) {
             if (count($improvements) > 10) {
                 break;
             }

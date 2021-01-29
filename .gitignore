@@ -1,6 +1,7 @@
 .cache
 .env
 .idea
+.phpunit.result.cache
 composer.phar
 vendor
 var/cache/*
