@@ -140,6 +140,21 @@ php bin/console github:issues:report
 | `--dateEnd=<dateEnd>` | No | Format date: `yyyy-mm-dd`)` (default: dateStart + 28 days) |
 | `--outputDir=<outputDir>` | No | Output directory (default: `var/report`) |
 
+### Generate Reviewers Report
+Permits to track all reviews
+
+```bash
+php bin/console github:review:report
+```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--dateStart=<dateStart>` | Yes | Format date: `yyyy-mm-dd` |
+| `--dateEnd=<dateEnd>` | No | Format date: `yyyy-mm-dd`)` (default: today) |
+| `--byDate=<0|1>` | No | Report by date or author |
+
 ### Slack Notifier for Core Team
 Notify on Slack :
 - Nightly Build Status
