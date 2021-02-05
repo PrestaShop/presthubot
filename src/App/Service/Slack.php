@@ -20,8 +20,6 @@ class Slack
         'PierreRambaud' => '<@UAC6UKKK8>',
         'Progi1984' => '<@UL16KUPC5>',
         'PululuK' => 'PululuK',
-        'Quetzacoalt91' => '<@U02FDSY43>',
-        'rokaszygmantas' => 'rokaszygmantas',
         'sowbiba' => '<@USKJT4C4Q>',
     ];
 

@@ -26,8 +26,6 @@ class Github
         'PierreRambaud',
         'Progi1984',
         'PululuK',
-        'Quetzacoalt91',
-        'rokaszygmantas',
         'sowbiba',
     ];
 
