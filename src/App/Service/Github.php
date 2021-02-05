@@ -187,6 +187,63 @@ class Github
         return $topics;
     }
 
+    public function getReviews(string $org, string $repository = ''): array
+    {
+        if (empty($repository)) {
+            $search = 'org:' . $org;
+        } else {
+            $search = 'repo:' . $org . '/' . $repository;
+        }
+        $graphQLQuery = '{
+            search(query: "org:PrestaShop is:pr archived:false", type: ISSUE, last: 100 %after%) {
+              issueCount
+              pageInfo {
+                endCursor
+                hasNextPage
+              }
+              nodes {
+                ... on PullRequest {
+                  number
+                  author {
+                    login
+                  }
+                  repository {
+                    name
+                  }
+                  title
+                  reviews(first: 100) {
+                    totalCount
+                    edges {
+                      node {
+                        state
+                        createdAt
+                        author {
+                          login
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }';
+
+        $result = [];
+        $query = str_replace('%after%', '', $graphQLQuery);
+        do {
+            $resultPage = $this->apiSearchGraphQL($query);
+            $result = array_merge($result, $resultPage['data']['search']['nodes']);
+            if (!empty($resultPage['data']['search']['pageInfo']['endCursor'])) {
+                $query = str_replace(
+                    '%after%',
+                    ', after: "' . $resultPage['data']['search']['pageInfo']['endCursor'] . '"',
+                    $graphQLQuery
+                );
+            }
+        } while($resultPage['data']['search']['pageInfo']['hasNextPage']);
+        return $result;
+    }
+
     public function isPRValid(array $pullRequest, Filters $filters): bool
     {
         // FIX : Some merged PR are displayed in open search
@@ -306,5 +363,13 @@ class Github
         } while (!isset($resultPage));
 
         return $resultPage ?? [];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getMaintainers(): array
+    {
+        return self::MAINTAINER_MEMBERS;
     }
 }
