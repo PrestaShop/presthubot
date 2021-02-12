@@ -146,7 +146,7 @@ class GithubCheckModuleCommand extends Command
             );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->github = new Github($input->getOption('ghtoken'));
         $this->moduleChecker = new ModuleChecker($this->github);
@@ -164,7 +164,7 @@ class GithubCheckModuleCommand extends Command
         $arrayRepositories = $module ? [$module] : $moduleFetcher->getModules();
         $numRepositories = count($arrayRepositories);
         if ($numRepositories > 1) {
-            $arrayRepositories = array_slice($arrayRepositories, $limit[0], $limit[1] ?? null);
+            $arrayRepositories = array_slice($arrayRepositories, (int) $limit[0], $limit[1] ? (int) $limit[1] : null);
             $numRepositories = count($arrayRepositories);
         }
 
@@ -212,6 +212,8 @@ class GithubCheckModuleCommand extends Command
         ]]);
         $table->render();
         $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
+
+        return 0;
     }
 
     private function checkRepository(string $org, string $repository, Table $table, string $branch)
@@ -238,7 +240,7 @@ class GithubCheckModuleCommand extends Command
 
         $checkBranch = 'Branch : ';
         $checkBranch .= $report['branch']['develop'] ? '<info>✓ </info>' . ' (' . $report['branch']['develop'] . ')' : '<error>✗ </error>';
-        $checkBranch .= $report['branch']['isDefault'] ? PHP_EOL . 'Default (dev) : ' . (!$report['branch']['isDefault'] ? '<error>✗ </error>' : '<info>✓ </info>') : '';
+        $checkBranch .= PHP_EOL . 'Default (dev) : ' . (!$report['branch']['isDefault'] ? '<error>✗ </error>' : '<info>✓ </info>');
         $checkBranch .= $report['branch']['develop'] ? PHP_EOL . 'Status : ' . ($report['branch']['hasDiffMaster'] ? '<error>✗ </error>' : '<info>✓ </info>') : '';
         if (!empty($report['branch']['status']) && $report['branch']['status']['ahead'] > 0) {
             $checkBranch .= PHP_EOL . sprintf('- dev < master by %d commits', $report['branch']['status']['ahead']) . PHP_EOL;
@@ -293,7 +295,7 @@ class GithubCheckModuleCommand extends Command
             $checkFiles,
             $checkTopics,
             number_format(
-                ($this->moduleChecker->getRating(ModuleChecker::RATING_GLOBAL) / $this->moduleChecker->getRating(ModuleChecker::RATING_GLOBAL_MAX)) * 100,
+                ($this->moduleChecker->getRating(ModuleChecker::RATING_GLOBAL) / ModuleChecker::RATING_GLOBAL_MAX) * 100,
                 2
             ) . '%',
         ]]);

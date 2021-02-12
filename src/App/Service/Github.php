@@ -52,6 +52,9 @@ class Github
         return $this->client;
     }
 
+    /**
+     * @return array<array<mixed>>
+     */
     public function search(Github\Query $graphQLQuery): array
     {
         $result = [];
@@ -377,5 +380,21 @@ class Github
     public function getMaintainers(): array
     {
         return self::MAINTAINER_MEMBERS;
+    }
+
+    public function countFileType(array $pullRequest): array
+    {
+        $types = [];
+
+        foreach ($pullRequest['files']['nodes'] as $file) {
+            $extension = pathinfo($file['path'], PATHINFO_EXTENSION);
+            if (!array_key_exists($extension, $types)) {
+                $types[$extension] = 0;
+            }
+            ++$types[$extension];
+        }
+        ksort($types);
+
+        return $types;
     }
 }

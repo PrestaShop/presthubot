@@ -92,7 +92,7 @@ class GithubCheckPRCommand extends Command
             );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->github = new Github($input->getOption('ghtoken'));
         $this->output = $output;
@@ -144,21 +144,21 @@ class GithubCheckPRCommand extends Command
                 $table,
                 $title,
                 $this->github->search($graphQLQuery),
-                $hasRows ?? false,
-                empty($filterFile) ? false : ($title == 'PR Waiting for Review' || count($requests) == 1 ? true : false)
+                $hasRows ?? false
             );
         }
 
         $table->render();
         $this->output->writeLn(['', 'Output generated in ' . (time() - $time) . 's for ' . $this->countRows . ' rows.']);
+
+        return 0;
     }
 
     private function checkPR(
         Table $table,
         string $title,
         array $resultAPI,
-        bool $hasRows,
-        bool $needCountFilesType
+        bool $hasRows
     ) {
         $rows = [];
         foreach ($resultAPI as $key => $pullRequest) {
@@ -210,9 +210,6 @@ class GithubCheckPRCommand extends Command
                     ? (!empty($linkedIssue['milestone']) ? '<info>✓ </info>' : '<error>✗ </error>') . ' <href=' . $linkedIssue['html_url'] . '>#' . $linkedIssue['number'] . '</>'
                     : '',
             ];
-            if ($needCountFilesType) {
-                array_push($currentRow, $countFilesTypeTitle);
-            }
 
             $rows[] = $currentRow;
             ++$countPR;
@@ -233,9 +230,6 @@ class GithubCheckPRCommand extends Command
             '<info>Milestone</info>',
             '<info>Issue</info>',
         ];
-        if ($needCountFilesType) {
-            array_push($headers, '<info>Files</info>');
-        }
         $table->addRows([
             [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' (' . $countPR . ') </>', ['colspan' => 7])],
             new TableSeparator(),
@@ -246,21 +240,5 @@ class GithubCheckPRCommand extends Command
         $this->countRows += $countPR;
 
         return true;
-    }
-
-    protected function countFileType(array $pullRequest): array
-    {
-        $types = [];
-
-        foreach ($pullRequest['files']['nodes'] as $file) {
-            $extension = pathinfo($file['path'], PATHINFO_EXTENSION);
-            if (!array_key_exists($extension, $types)) {
-                $types[$extension] = 0;
-            }
-            ++$types[$extension];
-        }
-        ksort($types);
-
-        return $types;
     }
 }

@@ -42,7 +42,7 @@ class GithubCheckRepositoryCommand extends Command
             );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $onlyPublic = $input->getOption('public');
         $onlyPrivate = $input->getOption('private');
@@ -50,12 +50,16 @@ class GithubCheckRepositoryCommand extends Command
         $this->github = new Github($input->getOption('ghtoken'));
         $time = time();
 
+        $type = '';
         if (($onlyPublic && $onlyPrivate) || (!$onlyPublic && !$onlyPrivate)) {
             $type = 'all';
         } elseif ($onlyPrivate) {
             $type = 'private';
         } elseif ($onlyPublic) {
             $type = 'public';
+        }
+        if (empty($type)) {
+            return 1;
         }
 
         $page = 1;
@@ -125,5 +129,7 @@ class GithubCheckRepositoryCommand extends Command
         ]]);
         $table->render();
         $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
+
+        return 0;
     }
 }

@@ -38,7 +38,7 @@ class GithubStatsCommand extends Command
             );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->github = new Github($input->getOption('ghtoken'));
 
@@ -46,6 +46,8 @@ class GithubStatsCommand extends Command
         $time = time();
         $this->getStats($input, $output);
         $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
+
+        return 0;
     }
 
     private function getStats(InputInterface $input, OutputInterface $output)

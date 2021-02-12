@@ -32,7 +32,7 @@ class GithubIssuesReportCommand extends Command
      */
     protected $dateEndFormatted;
     /**
-     * @var array<string, int|array>
+     * @var array{'open': int, 'closed': int, 'regressions_TE': int, 'regressions': array<int, array>, 'duplicates': array<int, array>}
      */
     protected $results = [
         'open' => 0,
@@ -74,7 +74,7 @@ class GithubIssuesReportCommand extends Command
             );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): void
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->github = new Github($input->getOption('ghtoken'));
 
@@ -86,6 +86,8 @@ class GithubIssuesReportCommand extends Command
             $this->generateReport($input, $output);
         }
         $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
+
+        return 0;
     }
 
     private function assertInput(InputInterface $input, OutputInterface $output): bool

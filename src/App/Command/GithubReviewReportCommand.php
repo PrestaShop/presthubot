@@ -49,13 +49,13 @@ class GithubReviewReportCommand extends Command
             )
             ->addOption(
                 'byDate',
-                0,
+                '0',
                 InputOption::VALUE_OPTIONAL,
                 ''
             );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): void
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->github = new Github($input->getOption('ghtoken'));
 
@@ -66,6 +66,8 @@ class GithubReviewReportCommand extends Command
             $this->generateReport($input, $output);
         }
         $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
+
+        return 0;
     }
 
     private function assertInput(InputInterface $input, OutputInterface $output): bool

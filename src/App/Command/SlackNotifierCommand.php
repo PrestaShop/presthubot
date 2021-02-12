@@ -134,7 +134,7 @@ class SlackNotifierCommand extends Command
             );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Local Variable
         $slackMessageCore = $slackMessageQA = $slackMessageCoreMembers = [];
@@ -195,6 +195,8 @@ class SlackNotifierCommand extends Command
             foreach ($messages as $slackChannelPrivateMaintainer => $message) {
             }
         }
+
+        return 0;
     }
 
     protected function checkStatusNightly(): string
@@ -661,13 +663,13 @@ class SlackNotifierCommand extends Command
             }
 
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_BRANCH) != ModuleChecker::RATING_BRANCH_MAX) {
-                if (!$this->report['branch']['isDefault']) {
+                if (!$report['branch']['isDefault']) {
                     $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please set the `dev` branch as main branch';
                 }
                 // Needs release (cf. checkModuleReadyToRelease)
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_DESCRIPTION) != ModuleChecker::RATING_DESCRIPTION_MAX) {
-                $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please description ' . $path;
+                $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please add a description';
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_FILES) != ModuleChecker::RATING_FILES_MAX) {
                 foreach ($report['files'] as $path => $check) {
@@ -699,7 +701,7 @@ class SlackNotifierCommand extends Command
                 $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please migrate issues to main repository and close issues on the module repository';
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_LABELS) != ModuleChecker::RATING_LABELS_MAX) {
-                $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please fix labels ' . $path;
+                $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please fix labels ';
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_LICENSE) != ModuleChecker::RATING_LICENSE_MAX) {
                 $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Invalid license (Check composer.json)';

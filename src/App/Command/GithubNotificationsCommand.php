@@ -30,7 +30,7 @@ class GithubNotificationsCommand extends Command
             );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->github = new Github($input->getOption('ghtoken'));
 
@@ -39,6 +39,8 @@ class GithubNotificationsCommand extends Command
         $this->processNotifications($output, $this->github->getClient()->notifications()->all());
 
         $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
+
+        return 0;
     }
 
     protected function processNotifications(OutputInterface $output, array $notifications)

@@ -220,9 +220,6 @@ class ModuleChecker
         if ($type == self::RATING_GLOBAL) {
             return \array_sum($this->rating);
         }
-        if ($type == self::RATING_GLOBAL_MAX) {
-            return self::RATING_GLOBAL_MAX;
-        }
 
         return isset($this->rating[$type]) ? $this->rating[$type] : 0;
     }
@@ -374,6 +371,7 @@ class ModuleChecker
      */
     private function findReleaseStatus(array $references, string $org, string $repository)
     {
+        $devBranchData = $masterBranchData = [];
         foreach ($references as $branchID => $branchData) {
             $branchName = $branchData['ref'];
 
