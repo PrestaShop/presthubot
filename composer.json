@@ -11,7 +11,10 @@
         "justinrainbow/json-schema": "^5.2"
     },
     "require-dev": {
-        "phpunit/phpunit": "^8.5"
+        "phpunit/phpunit": "^8.5",
+        "friendsofphp/php-cs-fixer": "^2.18",
+        "prestashop/php-coding-standards": "^3.14",
+        "phpstan/phpstan": "^0.12.75"
     },
     "autoload": {
          "psr-4": {
