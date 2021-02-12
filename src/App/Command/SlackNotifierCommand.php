@@ -736,11 +736,11 @@ class SlackNotifierCommand extends Command
         $graphQLQuery->setQuery($searchPRDevelop);
         $countDevelop = $this->github->countSearch($graphQLQuery);
 
-        $searchPRModules = 'org:PrestaShop -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
+        $searchPRModules = 'org:PrestaShop archived:false -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRModules);
         $countModules = $this->github->countSearch($graphQLQuery);
 
-        $searchPRWaitingForAuthor = 'org:PrestaShop is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' '.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
+        $searchPRWaitingForAuthor = 'org:PrestaShop archived:false is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' '.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRWaitingForAuthor);
         $countWaitingForAuthor = $this->github->countSearch($graphQLQuery);
 
