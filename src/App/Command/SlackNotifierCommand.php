@@ -1,7 +1,7 @@
 <?php
+
 namespace Console\App\Command;
 
-use Console\App\Command\GithubCheckModuleCommand;
 use Console\App\Service\Github;
 use Console\App\Service\Github\Filters;
 use Console\App\Service\Github\Query;
@@ -10,13 +10,10 @@ use Console\App\Service\PrestaShop\ModuleFetcher;
 use Console\App\Service\PrestaShop\NightlyBoard;
 use Console\App\Service\Slack;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
- 
+
 class SlackNotifierCommand extends Command
 {
     /**
@@ -100,7 +97,7 @@ class SlackNotifierCommand extends Command
         'bug fix',
         'improvement',
         'refacto',
-        'new feature'
+        'new feature',
     ];
 
     protected function configure()
@@ -134,9 +131,9 @@ class SlackNotifierCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 '',
                 $_ENV['SLACK_CHANNEL_QA'] ?? null
-            );   
+            );
     }
- 
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Local Variable
@@ -153,7 +150,7 @@ class SlackNotifierCommand extends Command
         $title = ':preston::date: Welcome to the PrestHubot Report of the day :date:';
         $slackMessageCore[] = $title;
         $slackMessageQA[] = $title;
-        
+
         // Check Status
         $statusNightly = $this->checkStatusNightly();
         $slackMessageCore[] = $statusNightly;
@@ -194,11 +191,10 @@ class SlackNotifierCommand extends Command
         foreach ($slackMessageQA as $message) {
             $this->slack->sendNotification($this->slackChannelQA, $message);
         }
-        foreach($slackMessageCoreMembers as $messages) {
+        foreach ($slackMessageCoreMembers as $messages) {
             foreach ($messages as $slackChannelPrivateMaintainer => $message) {
-                $this->slack->sendNotification($slackChannelPrivateMaintainer, $message);
-    }
-    }
+            }
+        }
     }
 
     protected function checkStatusNightly(): string
@@ -212,15 +208,15 @@ class SlackNotifierCommand extends Command
         $hasDevelopPassed = isset($reportDevelop['tests'], $reportDevelop['tests']['passed']);
         $hasDevelopFailed = isset($reportDevelop['tests'], $reportDevelop['tests']['failed']);
         $hasDevelopPending = isset($reportDevelop['tests'], $reportDevelop['tests']['pending']);
-        
+
         $status177X = ($has177XFailed && $report177x['tests']['failed'] == 0);
         $statusDevelop = ($hasDevelopFailed && $reportDevelop['tests']['failed'] == 0);
-        
+
         $emoji177X = $status177X ? ':greenlight:' : ':redlight:';
         $emojiDevelop = $statusDevelop ? ':greenlight:' : ':redlight:';
-        
+
         $slackMessage = ':notebook_with_decorative_cover: Nightly Board :notebook_with_decorative_cover:' . PHP_EOL;
-        $slackMessage .= ' - <https://nightly.prestashop.com/report/'.$report177x['id'].'|'.$emoji177X.' Report `1.7.7.x`>';
+        $slackMessage .= ' - <https://nightly.prestashop.com/report/' . $report177x['id'] . '|' . $emoji177X . ' Report `1.7.7.x`>';
         $slackMessage .= ' : ';
         $slackMessage .= $has177XPassed ? ':heavy_check_mark: ' . $report177x['tests']['passed'] : '';
         $slackMessage .= ($has177XPassed && ($has177XFailed || $has177XPending) ? ' - ' : '');
@@ -228,7 +224,7 @@ class SlackNotifierCommand extends Command
         $slackMessage .= (($has177XPassed || $has177XFailed) && ($has177XPending) ? ' - ' : '');
         $slackMessage .= $has177XPending ? '⏸️ ' . $report177x['tests']['pending'] : '';
         $slackMessage .= PHP_EOL;
-        $slackMessage .= ' - <https://nightly.prestashop.com/report/'.$reportDevelop['id'].'|'.$emojiDevelop.' Report `develop`>';
+        $slackMessage .= ' - <https://nightly.prestashop.com/report/' . $reportDevelop['id'] . '|' . $emojiDevelop . ' Report `develop`>';
         $slackMessage .= ' : ';
         $slackMessage .= $hasDevelopPassed ? ':heavy_check_mark: ' . $reportDevelop['tests']['passed'] : '';
         $slackMessage .= ($hasDevelopPassed && ($hasDevelopFailed || $hasDevelopPending) ? ' - ' : '');
@@ -236,6 +232,7 @@ class SlackNotifierCommand extends Command
         $slackMessage .= (($hasDevelopPassed || $hasDevelopFailed) && ($hasDevelopPending) ? ' - ' : '');
         $slackMessage .= $hasDevelopPending ? '⏸️ ' . $reportDevelop['tests']['pending'] : '';
         $slackMessage .= PHP_EOL;
+
         return $slackMessage;
     }
 
@@ -244,7 +241,7 @@ class SlackNotifierCommand extends Command
         $graphQLQuery = new Query();
         $graphQLQuery->setQuery('repo:PrestaShop/PrestaShop is:pr is:merged sort:created');
         $arrayPullRequest = $this->github->search($graphQLQuery);
-        
+
         $arrayTeamPR = [];
         foreach (Slack::MAINTAINER_MEMBERS as $key => $value) {
             if ($key == $value) {
@@ -254,8 +251,8 @@ class SlackNotifierCommand extends Command
         }
         unset($arrayTeamPR[Slack::MAINTAINER_LEAD]);
 
-        $buildPattern = "/^(?:\\s*\\|?\\s*)%propertyName%\\??\\s*\\|\\s*(?%captureGroup%)(?:\\s*\\|?\\s*)$/im";
-        foreach($arrayPullRequest as $pullRequest) {
+        $buildPattern = '/^(?:\\s*\\|?\\s*)%propertyName%\\??\\s*\\|\\s*(?%captureGroup%)(?:\\s*\\|?\\s*)$/im';
+        foreach ($arrayPullRequest as $pullRequest) {
             $pullRequest = $pullRequest['node'];
             // Category
             $category = '';
@@ -284,7 +281,7 @@ class SlackNotifierCommand extends Command
             if (!in_array($type, self::ACCEPTED_TYPES)) {
                 $errors[] = self::ERROR_INVALID_TYPE;
             }
-            if (preg_match("/^[^A-Z]/", $pullRequest['title'])) {
+            if (preg_match('/^[^A-Z]/', $pullRequest['title'])) {
                 $errors[] = self::ERROR_TITLE_FORMAT;
             }
             if (empty($pullRequest['milestone'])) {
@@ -298,15 +295,15 @@ class SlackNotifierCommand extends Command
                 if (count($arrayTeamPR[$maintainer]) == self::NUM_PR_FOR_MAINTAINERS) {
                     continue;
                 }
-                $slackMessage = ' - <'.$pullRequest['url'].'|:preston: '.$pullRequest['repository']['name'].'#'.$pullRequest['number'] .'>'
-                    .' : '.$pullRequest['title'] . PHP_EOL;
+                $slackMessage = ' - <' . $pullRequest['url'] . '|:preston: ' . $pullRequest['repository']['name'] . '#' . $pullRequest['number'] . '>'
+                    . ' : ' . $pullRequest['title'] . PHP_EOL;
                 foreach ($errors as $error) {
                     $slackMessage .= '    - :red_circle: ' . $error . PHP_EOL;
                 }
                 $slackMessage .= PHP_EOL;
                 $slackMessage .= PHP_EOL;
                 $arrayTeamPR[$maintainer][] = $slackMessage;
-                break 1;
+                break;
             }
         }
 
@@ -318,7 +315,7 @@ class SlackNotifierCommand extends Command
                 continue;
             }
             $slackMessage = $slackMessageTitle;
-            foreach($messages as $message) {
+            foreach ($messages as $message) {
                 $slackMessage .= $message;
             }
             $slackMessage = $this->slack->linkGithubUsername($slackMessage);
@@ -341,11 +338,13 @@ class SlackNotifierCommand extends Command
             $slackMessage = ':rocket: PR Ready to Merge :rocket:' . PHP_EOL;
             foreach ($prReadyToMerge as $pullRequest) {
                 $pullRequest = $pullRequest['node'];
-                $slackMessage .= ' - <'.$pullRequest['url'].'|:preston: '.$pullRequest['repository']['name'].'#'.$pullRequest['number'] .'>'
-                    .' : '.$pullRequest['title'] . PHP_EOL;
+                $slackMessage .= ' - <' . $pullRequest['url'] . '|:preston: ' . $pullRequest['repository']['name'] . '#' . $pullRequest['number'] . '>'
+                    . ' : ' . $pullRequest['title'] . PHP_EOL;
             }
+
             return $slackMessage;
         }
+
         return '';
     }
 
@@ -360,7 +359,7 @@ class SlackNotifierCommand extends Command
         $filters->addFilter(Filters::FILTER_REPOSITORY_PRIVATE, [false], true);
         // 1st PR with already a review (indicate who has ever)
         // 2nd PR without review
-        foreach ([5,4,3,2,1,0] as $numApproved) {
+        foreach ([5, 4, 3, 2, 1, 0] as $numApproved) {
             $filters->addFilter(Filters::FILTER_NUM_APPROVED, [$numApproved], true);
             foreach ($prReviews as $pullRequest) {
                 $pullRequest = $pullRequest['node'];
@@ -380,8 +379,8 @@ class SlackNotifierCommand extends Command
         $prReadyToReview = array_slice($prReadyToReview, 0, 10);
         $slackMessage = ':eyes: PR Ready to Review :eyes:' . PHP_EOL;
         foreach ($prReadyToReview as $pullRequest) {
-            $slackMessage .= ' - <'.$pullRequest['url'].'|:preston: '.$pullRequest['repository']['name'].'#'.$pullRequest['number'] .'>'
-                .' : '.$pullRequest['title'];
+            $slackMessage .= ' - <' . $pullRequest['url'] . '|:preston: ' . $pullRequest['repository']['name'] . '#' . $pullRequest['number'] . '>'
+                . ' : ' . $pullRequest['title'];
             if (!empty($pullRequest['approved'])) {
                 $slackMessage .= PHP_EOL;
                 $slackMessage .= '    - :heavy_check_mark: ' . implode(', ', $pullRequest['approved']);
@@ -390,6 +389,7 @@ class SlackNotifierCommand extends Command
             $slackMessage .= PHP_EOL;
         }
         $slackMessage = $this->slack->linkGithubUsername($slackMessage);
+
         return $slackMessage;
     }
 
@@ -404,7 +404,7 @@ class SlackNotifierCommand extends Command
         $filters->addFilter(Filters::FILTER_REPOSITORY_PRIVATE, [false], true);
         // 1st PR with already a review (indicate who has ever)
         // 2nd PR without review
-        foreach ([5,4,3,2,1,0] as $numApproved) {
+        foreach ([5, 4, 3, 2, 1, 0] as $numApproved) {
             $filters->addFilter(Filters::FILTER_NUM_APPROVED, [$numApproved], true);
             foreach ($prReviews as $pullRequest) {
                 $pullRequest = $pullRequest['node'];
@@ -447,15 +447,15 @@ class SlackNotifierCommand extends Command
                     continue;
                 }
                 $arrayTeamPR[$maintainer][] = $pullRequest;
-                $isAdded++;
-    
+                ++$isAdded;
+
                 if ($isAdded == 2) {
                     break;
                 }
             }
 
             // Check PR For maintainers
-            $isFullForMaintainers = array_reduce($arrayTeamPR, function($carry, $item) {
+            $isFullForMaintainers = array_reduce($arrayTeamPR, function ($carry, $item) {
                 if (!$carry) {
                     return false;
                 }
@@ -465,6 +465,7 @@ class SlackNotifierCommand extends Command
                         return false;
                     }
                 }
+
                 return true;
             }, false);
             if ($isFullForMaintainers) {
@@ -477,9 +478,9 @@ class SlackNotifierCommand extends Command
         $slackMessageTitle = ':pray: Could you review these PRs ? :pray:' . PHP_EOL;
         foreach ($arrayTeamPR as $maintainer => $arrayPullRequest) {
             $slackMessage = $slackMessageTitle;
-            foreach($arrayPullRequest as $pullRequest) {
-                $slackMessage .= ' - <'.$pullRequest['url'].'|:preston: '.$pullRequest['repository']['name'].'#'.$pullRequest['number'] .'>'
-                    .' : '.$pullRequest['title'];
+            foreach ($arrayPullRequest as $pullRequest) {
+                $slackMessage .= ' - <' . $pullRequest['url'] . '|:preston: ' . $pullRequest['repository']['name'] . '#' . $pullRequest['number'] . '>'
+                    . ' : ' . $pullRequest['title'];
                 if (!empty($pullRequest['approved'])) {
                     $slackMessage .= PHP_EOL;
                     $slackMessage .= '    - :heavy_check_mark: ' . implode(', ', $pullRequest['approved']);
@@ -508,7 +509,7 @@ class SlackNotifierCommand extends Command
         $graphQLQuery = new Query();
         $graphQLQuery->setQuery('org:PrestaShop is:pr ' . $requests[Query::REQUEST_PR_WAITING_FOR_QA]);
         $results = $this->github->search($graphQLQuery);
-        foreach($results as $key => &$result) {
+        foreach ($results as $key => &$result) {
             if ($result['node']['repository']['name'] == 'prestashop-specs') {
                 unset($results[$key]);
                 continue;
@@ -516,33 +517,34 @@ class SlackNotifierCommand extends Command
             // Issue
             $result['linkedIssue'] = $this->github->getLinkedIssue($result['node']);
             // Labels
-            $issueLabels = array_map(function($value) {
+            $issueLabels = array_map(function ($value) {
                 return $value['name'];
             }, is_array($result['linkedIssue']['labels']) ? $result['linkedIssue']['labels'] : []);
             // Priority
-            $result['priority'] = array_reduce($issueLabels, function($carry, $item) {
+            $result['priority'] = array_reduce($issueLabels, function ($carry, $item) {
                 if ($carry < 2 && $item === 'Must-have') {
                     return 2;
                 }
                 if ($carry < 1 && $item === 'Nice-to-have') {
                     return 1;
                 }
+
                 return $carry;
             }, 0);
             // Milestone
             $result['milestone'] = '';
             if ($result['node']['repository']['name'] == 'PrestaShop') {
                 $result['milestone'] = $result['node']['milestone'];
-                $result['milestone'] = !empty($result['milestone']) ? $result['milestone']['title'] : $nextVersion; 
+                $result['milestone'] = !empty($result['milestone']) ? $result['milestone']['title'] : $nextVersion;
             }
         }
 
         // Sort PR
-        usort($results, function($a, $b) {
+        usort($results, function ($a, $b) {
             $aRepoName = $a['node']['repository']['name'];
             $bRepoName = $b['node']['repository']['name'];
             $aMilestone = $a['node']['milestone'];
-            $aMilestone = $a['milestone']; 
+            $aMilestone = $a['milestone'];
             $bMilestone = $b['milestone'];
             $aCreatedAt = $a['node']['createdAt'];
             $bCreatedAt = $b['node']['createdAt'];
@@ -592,14 +594,14 @@ class SlackNotifierCommand extends Command
             $slackMessage .= ' - '
                 . '*[' . (empty($pullRequest['milestone']) ? 'Modules' : $pullRequest['milestone']) . ']* '
                 . ($pullRequest['priority'] > 0 ?
-                    ('*_[' . ($pullRequest['priority'] === 2 ? 'Must Have' : 'Nice-to-have') .']_* ')
+                    ('*_[' . ($pullRequest['priority'] === 2 ? 'Must Have' : 'Nice-to-have') . ']_* ')
                     : ''
                 )
-                . '<'.$pullRequest['node']['url'].'|:preston: '.$pullRequest['node']['repository']['name'].'#'.$pullRequest['node']['number'] .'>'
-                .' : '.$pullRequest['node']['title'];
+                . '<' . $pullRequest['node']['url'] . '|:preston: ' . $pullRequest['node']['repository']['name'] . '#' . $pullRequest['node']['number'] . '>'
+                . ' : ' . $pullRequest['node']['title'];
             $slackMessage .= PHP_EOL;
 
-            $milestoneCount++;
+            ++$milestoneCount;
         }
 
         return $slackMessage;
@@ -614,25 +616,29 @@ class SlackNotifierCommand extends Command
                 $modulesNeedRelease[$repository] = $checkBranches['status'];
             }
         }
-        uasort($modulesNeedRelease, function($a, $b) {
+        uasort($modulesNeedRelease, function ($a, $b) {
             if ($a['numPRMerged'] == $b['numPRMerged']) {
                 if ($a['ahead'] == $b['ahead']) {
                     return 0;
                 }
+
                 return ($a['ahead'] > $b['ahead']) ? -1 : 1;
             }
+
             return ($a['numPRMerged'] > $b['numPRMerged']) ? -1 : 1;
         });
         if (!empty($modulesNeedRelease)) {
             $modulesNeedRelease = array_slice($modulesNeedRelease, 0, 10);
             $slackMessage = ':rocket: Modules need some release :rocket:' . PHP_EOL;
             foreach ($modulesNeedRelease as $repository => $status) {
-                $slackMessage .= ' - <https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> ';
-                $slackMessage .= '('.$status['ahead'].' commits / '.$status['numPRMerged'].' PR'.($status['numPRMerged'] > 1 ? 's': '').')';
+                $slackMessage .= ' - <https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> ';
+                $slackMessage .= '(' . $status['ahead'] . ' commits / ' . $status['numPRMerged'] . ' PR' . ($status['numPRMerged'] > 1 ? 's' : '') . ')';
                 $slackMessage .= PHP_EOL;
             }
+
             return $slackMessage;
         }
+
         return '';
     }
 
@@ -650,18 +656,18 @@ class SlackNotifierCommand extends Command
             }
             $report = $this->moduleChecker->getReport();
             if ($report['archived'] || $report['moved']) {
-                $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Please remove for the Presthubot analysis';
+                $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please remove for the Presthubot analysis';
                 continue;
             }
-            
+
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_BRANCH) != ModuleChecker::RATING_BRANCH_MAX) {
                 if (!$this->report['branch']['isDefault']) {
-                    $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Please set the `dev` branch as main branch';
+                    $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please set the `dev` branch as main branch';
                 }
                 // Needs release (cf. checkModuleReadyToRelease)
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_DESCRIPTION) != ModuleChecker::RATING_DESCRIPTION_MAX) {
-                $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Please description ' . $path;
+                $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please description ' . $path;
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_FILES) != ModuleChecker::RATING_FILES_MAX) {
                 foreach ($report['files'] as $path => $check) {
@@ -673,7 +679,7 @@ class SlackNotifierCommand extends Command
                         continue;
                     }
                     if (!$check[ModuleChecker::CHECK_FILES_EXIST]) {
-                        $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Missing file ' . $path;
+                        $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Missing file ' . $path;
                     }
                     if (isset($check[ModuleChecker::CHECK_FILES_CONTAIN])) {
                         $remainingCheck = true;
@@ -684,19 +690,19 @@ class SlackNotifierCommand extends Command
                             $remainingCheck = $remainingCheck && $value;
                         }
                         if (!$remainingCheck) {
-                            $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Invalid file ' . $path;
+                            $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Invalid file ' . $path;
                         }
                     }
                 }
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_ISSUES) != ModuleChecker::RATING_ISSUES_MAX) {
-                $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Please migrate issues to main repository and close issues on the module repository';
+                $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please migrate issues to main repository and close issues on the module repository';
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_LABELS) != ModuleChecker::RATING_LABELS_MAX) {
-                $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Please fix labels ' . $path;
+                $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please fix labels ' . $path;
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_LICENSE) != ModuleChecker::RATING_LICENSE_MAX) {
-                $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Invalid license (Check composer.json)';
+                $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Invalid license (Check composer.json)';
             }
             if ($this->moduleChecker->getRating(ModuleChecker::RATING_TOPICS) != ModuleChecker::RATING_TOPICS_MAX) {
                 $topics = '';
@@ -705,17 +711,19 @@ class SlackNotifierCommand extends Command
                         $topics .= (empty($topics) ? $key : ', ' . $key);
                     }
                 }
-                $improvements[] = '<https://github.com/PrestaShop/'.$repository.'|:preston: '.$repository.'> Please add missings topics on Github (' . $topics . ')';
+                $improvements[] = '<https://github.com/PrestaShop/' . $repository . '|:preston: ' . $repository . '> Please add missings topics on Github (' . $topics . ')';
             }
         }
         if (!empty($improvements)) {
             $improvements = array_slice($improvements, 0, 10);
             $slackMessage = ':pencil: Modules need some improvements :pencil:' . PHP_EOL;
             foreach ($improvements as $message) {
-                $slackMessage .= ' - ' . $message .' (on master branch)' . PHP_EOL;
+                $slackMessage .= ' - ' . $message . ' (on master branch)' . PHP_EOL;
             }
+
             return $slackMessage;
         }
+
         return '';
     }
 
@@ -724,27 +732,27 @@ class SlackNotifierCommand extends Command
         $graphQLQuery = new Query();
         $slackMessage = ':chart_with_upwards_trend: PR Stats for QA :chart_with_upwards_trend:' . PHP_EOL;
 
-        $searchPR176 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.6.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
+        $searchPR176 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.6.x ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPR176);
         $countPR176 = $this->github->countSearch($graphQLQuery);
 
-        $searchPR177 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.7.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
+        $searchPR177 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.7.x ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPR177);
         $countPR177 = $this->github->countSearch($graphQLQuery);
 
-        $searchPRDevelop = 'repo:PrestaShop/PrestaShop is:pr is:open -label:1.7.7.x -label:1.7.6.x '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
+        $searchPRDevelop = 'repo:PrestaShop/PrestaShop is:pr is:open -label:1.7.7.x -label:1.7.6.x ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRDevelop);
         $countDevelop = $this->github->countSearch($graphQLQuery);
 
-        $searchPRModules = 'org:PrestaShop archived:false -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
+        $searchPRModules = 'org:PrestaShop archived:false -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRModules);
         $countModules = $this->github->countSearch($graphQLQuery);
 
-        $searchPRWaitingForAuthor = 'org:PrestaShop archived:false is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' '.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
+        $searchPRWaitingForAuthor = 'org:PrestaShop archived:false is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' ' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRWaitingForAuthor);
         $countWaitingForAuthor = $this->github->countSearch($graphQLQuery);
 
-        $searchPRSpecs = 'repo:PrestaShop/prestashop-specs is:pr is:open '.Query::LABEL_WAITING_FOR_QA.' -'.Query::LABEL_WAITING_FOR_AUTHOR.' -'.Query::LABEL_WAITING_FOR_DEV.' -'.Query::LABEL_WAITING_FOR_PM;
+        $searchPRSpecs = 'repo:PrestaShop/prestashop-specs is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRSpecs);
         $countSpecs = $this->github->countSearch($graphQLQuery);
 
@@ -762,52 +770,53 @@ class SlackNotifierCommand extends Command
             'Specs' => $countSpecs,
             'WaitingForAuthor' => $countWaitingForAuthor,
         ];
-        if(!is_dir(\dirname(self::CACHE_CHECKSTATSQA))) {
+        if (!is_dir(\dirname(self::CACHE_CHECKSTATSQA))) {
             \mkdir(\dirname(self::CACHE_CHECKSTATSQA));
         }
         \file_put_contents(self::CACHE_CHECKSTATSQA, \json_encode($cache));
-        
+
         // Stats
         $dateJSub1 = date('D') == 'Mon' ? date('Y-m-d', strtotime('-3 days')) : date('Y-m-d', strtotime('-1 day'));
         if (!isset($cache[$dateJSub1])) {
             $cache[$dateJSub1] = $cache[date('Y-m-d')];
         }
-        
+
         $diff = $countPR176 - $cache[$dateJSub1]['176'];
         $countPR176Diff = isset($cache[$dateJSub1], $cache[$dateJSub1]['176'])
-            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
+            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
             : '';
         $diff = $countPR177 - $cache[$dateJSub1]['177'];
         $countPR177Diff = isset($cache[$dateJSub1], $cache[$dateJSub1]['177'])
-            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
+            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
             : '';
         $diff = $countDevelop - $cache[$dateJSub1]['Develop'];
         $countDevelopDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Develop'])
-            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
+            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
             : '';
         $diff = $countModules - $cache[$dateJSub1]['Modules'];
         $countModulesDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Modules'])
-            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
+            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
             : '';
         $diff = $countSpecs - $cache[$dateJSub1]['Specs'];
         $countSpecsDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Specs'])
-            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
+            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
             : '';
         $diff = $countWaitingForAuthor - $cache[$dateJSub1]['WaitingForAuthor'];
         $countWaitingForAuthorDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['WaitingForAuthor'])
-            ? ' ('.($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) .')'
+            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
             : '';
 
         // Number of PR with the label "Waiting for QA", without the label "Waiting for author", filtered by branch
-        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPR176)).'|PR 1.7.6.x> : *' . $countPR176 . '*' . $countPR176Diff . PHP_EOL;
-        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPR177)).'|PR 1.7.7.x> : *' . $countPR177 . '*' . $countPR177Diff . PHP_EOL;
-        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRDevelop)).'|PR Develop> : *' . $countDevelop . '*' . $countDevelopDiff . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR176)) . '|PR 1.7.6.x> : *' . $countPR176 . '*' . $countPR176Diff . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR177)) . '|PR 1.7.7.x> : *' . $countPR177 . '*' . $countPR177Diff . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRDevelop)) . '|PR Develop> : *' . $countDevelop . '*' . $countDevelopDiff . PHP_EOL;
         // Number of PR for Modules
-        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRModules)).'|PR Modules> : *' . $countModules . '*' . $countModulesDiff . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRModules)) . '|PR Modules> : *' . $countModules . '*' . $countModulesDiff . PHP_EOL;
         // Number of PR for Specs
-        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRSpecs)).'|PR Specs> : *' . $countSpecs . '*' . $countSpecsDiff . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRSpecs)) . '|PR Specs> : *' . $countSpecs . '*' . $countSpecsDiff . PHP_EOL;
         // Number of PR with the label "Waiting for QA" AND with the label "Waiting for author"
-        $slackMessage .= '- <https://github.com/search?q='.urlencode(stripslashes($searchPRWaitingForAuthor)).'|PR Waiting for Author> : *' . $countWaitingForAuthor . '*' . $countWaitingForAuthorDiff . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRWaitingForAuthor)) . '|PR Waiting for Author> : *' . $countWaitingForAuthor . '*' . $countWaitingForAuthorDiff . PHP_EOL;
+
         return $slackMessage;
     }
 
@@ -828,16 +837,16 @@ class SlackNotifierCommand extends Command
         unset($arrayTeamPR['PierreRambaud']);
 
         $branches = $this->github->getRepoBranches('PrestaShop', 'PrestaShop', false);
-        $lastBranch = array_reduce($branches, function($carry, $item) {
+        $lastBranch = array_reduce($branches, function ($carry, $item) {
             return version_compare($carry, $item) < 0 ? $item : $carry;
         }, '');
 
         // Slack Messages
         $arrayMessage = [];
-        $slackMessageTitle = ':arrow_right: We are Monday. Don\'t forget to merge `'.$lastBranch.'` in `develop`! :muscle: ' . PHP_EOL;
+        $slackMessageTitle = ':arrow_right: We are Monday. Don\'t forget to merge `' . $lastBranch . '` in `develop`! :muscle: ' . PHP_EOL;
         foreach ($arrayTeamPR as $maintainer => $arrayPullRequest) {
             $slackMessage = $slackMessageTitle;
-            
+
             $slackMessage = $this->slack->linkGithubUsername($slackMessage);
             $slackChannel = Slack::MAINTAINER_MEMBERS[$maintainer];
             $slackChannel = str_replace(['<@', '>'], '', $slackChannel);

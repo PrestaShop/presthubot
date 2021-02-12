@@ -1,4 +1,5 @@
 <?php
+
 namespace Console\App\Command;
 
 use Console\App\Service\Github;
@@ -8,7 +9,7 @@ use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
- 
+
 class GithubCheckRepositoryCommand extends Command
 {
     /**
@@ -38,9 +39,9 @@ class GithubCheckRepositoryCommand extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Only private repositories'
-            );   
+            );
     }
- 
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $onlyPublic = $input->getOption('public');
@@ -51,9 +52,9 @@ class GithubCheckRepositoryCommand extends Command
 
         if (($onlyPublic && $onlyPrivate) || (!$onlyPublic && !$onlyPrivate)) {
             $type = 'all';
-        } elseif($onlyPrivate) {
+        } elseif ($onlyPrivate) {
             $type = 'private';
-        } elseif($onlyPublic) {
+        } elseif ($onlyPublic) {
             $type = 'public';
         }
 
@@ -61,13 +62,14 @@ class GithubCheckRepositoryCommand extends Command
         $results = [];
         do {
             $repos = $this->github->getClient()->api('organization')->repositories('PrestaShop', $type, $page);
-            $page++;
+            ++$page;
             $results = array_merge($results, $repos);
         } while (!empty($repos));
-        uasort($results, function($row1, $row2) {
+        uasort($results, function ($row1, $row2) {
             if (strtolower($row1['name']) == strtolower($row2['name'])) {
                 return 0;
             }
+
             return strtolower($row1['name']) < strtolower($row2['name']) ? -1 : 1;
         });
 
@@ -84,9 +86,9 @@ class GithubCheckRepositoryCommand extends Command
                 'Issues Opened',
                 'License',
             ]);
-        foreach($results as $key => $result) {
+        foreach ($results as $key => $result) {
             $table->addRows([[
-                '<href='.$result['html_url'].'>'.$result['name'].'</>',
+                '<href=' . $result['html_url'] . '>' . $result['name'] . '</>',
                 $result['stargazers_count'],
                 !empty($result['description']) ? '<info>✓ </info>' : '<error>✗ </error>',
                 $result['has_issues'] ? '<info>✓ </info>' : '<error>✗ </error>',
@@ -100,14 +102,14 @@ class GithubCheckRepositoryCommand extends Command
                 if (!array_key_exists($result['license']['spdx_id'], $countWLicense)) {
                     $countWLicense[$result['license']['spdx_id']] = 0;
                 }
-                $countWLicense[$result['license']['spdx_id']]++;
+                ++$countWLicense[$result['license']['spdx_id']];
             }
             $table->addRows([new TableSeparator()]);
         }
 
         $licenseCell = '';
         ksort($countWLicense);
-        foreach($countWLicense as $license => $count) {
+        foreach ($countWLicense as $license => $count) {
             $licenseCell .= $license . ' : ' . $count;
             if ($license !== array_key_last($countWLicense)) {
                 $licenseCell .= PHP_EOL;

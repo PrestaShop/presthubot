@@ -23,39 +23,39 @@ class Query
         'Merged PR' => 'is:merged merged:>%dateYesterday%',
         // Check PR waiting for merge
         self::REQUEST_PR_WAITING_FOR_MERGE => 'is:open archived:false ' . self::LABEL_QA_OK
-            .' -'.self::LABEL_WAITING_FOR_AUTHOR
-            .' -'.self::LABEL_WAITING_FOR_PM
-            .' -'.self::LABEL_WAITING_FOR_REBASE,
+            . ' -' . self::LABEL_WAITING_FOR_AUTHOR
+            . ' -' . self::LABEL_WAITING_FOR_PM
+            . ' -' . self::LABEL_WAITING_FOR_REBASE,
         // Check PR waiting for QA
         self::REQUEST_PR_WAITING_FOR_QA => 'is:open archived:false ' . self::LABEL_WAITING_FOR_QA
-          .' -'.self::LABEL_WAITING_FOR_AUTHOR
-          .' -'.self::LABEL_WAITING_FOR_DEV
-          .' -'.self::LABEL_WAITING_FOR_PM,
+          . ' -' . self::LABEL_WAITING_FOR_AUTHOR
+          . ' -' . self::LABEL_WAITING_FOR_DEV
+          . ' -' . self::LABEL_WAITING_FOR_PM,
         // Check PR waiting for Rebase
         'PR Waiting for Rebase' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_REBASE,
         // Check PR waiting for PM
-        'PR Waiting for PM' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_PM .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+        'PR Waiting for PM' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_PM . ' -' . self::LABEL_WAITING_FOR_AUTHOR,
         // Check PR waiting for UX
-        'PR Waiting for UX' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_UX .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+        'PR Waiting for UX' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_UX . ' -' . self::LABEL_WAITING_FOR_AUTHOR,
         // Check PR waiting for Wording
-        'PR Waiting for Wording' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_WORDING .' -'.self::LABEL_WAITING_FOR_AUTHOR,
+        'PR Waiting for Wording' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_WORDING . ' -' . self::LABEL_WAITING_FOR_AUTHOR,
         // Check PR waiting for dev
         self::REQUEST_PR_WAITING_FOR_DEV => 'is:open archived:false ' . self::LABEL_WAITING_FOR_DEV,
         // Check PR waiting for Author
         'PR Waiting for Author' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_AUTHOR,
-        // Check PR waiting for Review 
+        // Check PR waiting for Review
         self::REQUEST_PR_WAITING_FOR_REVIEW => 'is:open archived:false'
-            .' -' . self::LABEL_ON_HOLD
-            .' -' . self::LABEL_QA_OK
-            .' -' . self::LABEL_WAITING_FOR_AUTHOR
-            .' -' . self::LABEL_WAITING_FOR_PM
-            .' -' . self::LABEL_WAITING_FOR_QA
-            .' -' . self::LABEL_WAITING_FOR_REBASE
-            .' -' . self::LABEL_WAITING_FOR_UX
-            .' -' . self::LABEL_WAITING_FOR_WORDING
-            .' -' . self::LABEL_WAITING_FOR_QA
-            .' -' . self::LABEL_WIP,
-    ]; 
+            . ' -' . self::LABEL_ON_HOLD
+            . ' -' . self::LABEL_QA_OK
+            . ' -' . self::LABEL_WAITING_FOR_AUTHOR
+            . ' -' . self::LABEL_WAITING_FOR_PM
+            . ' -' . self::LABEL_WAITING_FOR_QA
+            . ' -' . self::LABEL_WAITING_FOR_REBASE
+            . ' -' . self::LABEL_WAITING_FOR_UX
+            . ' -' . self::LABEL_WAITING_FOR_WORDING
+            . ' -' . self::LABEL_WAITING_FOR_QA
+            . ' -' . self::LABEL_WIP,
+    ];
     public const REQUEST_PR_WAITING_FOR_DEV = 'PR Waiting for Dev';
     public const REQUEST_PR_WAITING_FOR_MERGE = 'PR Waiting for Merge';
     public const REQUEST_PR_WAITING_FOR_QA = 'PR Waiting for QA';
@@ -72,25 +72,25 @@ class Query
     protected $query = '';
 
     /**
-     * @return  string
-     */ 
+     * @return string
+     */
     public function getPageAfter(): string
     {
         return $this->pageAfter;
     }
 
     /**
-     * @return  string
-     */ 
+     * @return string
+     */
     public function getQuery(): string
     {
         return $this->query;
     }
 
     /**
-     * @return  array
-     */ 
-    static function getRequests(): array
+     * @return array
+     */
+    public static function getRequests(): array
     {
         $requests = self::REQUESTS;
 
@@ -98,10 +98,10 @@ class Query
         $dateYesterDay->sub(new DateInterval('P1D'));
 
         foreach ($requests as &$value) {
-          $value = str_replace([
-            '%dateYesterDay%'
+            $value = str_replace([
+            '%dateYesterDay%',
           ], [
-            $dateYesterDay->format('Y-m-d')
+            $dateYesterDay->format('Y-m-d'),
           ], $value);
         }
 
@@ -109,29 +109,33 @@ class Query
     }
 
     /**
-     * @param  string  $pageAfter
-     * @return  self
-     */ 
+     * @param string $pageAfter
+     *
+     * @return self
+     */
     public function setPageAfter(string $pageAfter): self
     {
         $this->pageAfter = $pageAfter;
+
         return $this;
     }
 
     /**
-     * @param  string  $query
-     * @return  self
-     */ 
+     * @param string $query
+     *
+     * @return self
+     */
     public function setQuery(string $query): self
     {
         $this->query = $query;
+
         return $this;
-    }    
+    }
 
     public function __toString(): string
     {
         return '{
-            search(query: "' . $this->getQuery() . '", type: ISSUE, last: 100' . ($this->getPageAfter() == '' ? '' : ', after: "' . $this->getPageAfter() . '"'). ') {
+            search(query: "' . $this->getQuery() . '", type: ISSUE, last: 100' . ($this->getPageAfter() == '' ? '' : ', after: "' . $this->getPageAfter() . '"') . ') {
               issueCount
               pageInfo {
                 endCursor

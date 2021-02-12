@@ -1,15 +1,15 @@
 <?php
+
 namespace Console\App\Command;
 
 use Console\App\Service\Github;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
- 
+
 class GithubNotificationsCommand extends Command
 {
     /**
@@ -28,15 +28,14 @@ class GithubNotificationsCommand extends Command
                 '',
                 $_ENV['GH_TOKEN'] ?? null
             );
-        
     }
- 
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->github = new Github($input->getOption('ghtoken'));
 
         $time = time();
-        
+
         $this->processNotifications($output, $this->github->getClient()->notifications()->all());
 
         $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
@@ -52,10 +51,10 @@ class GithubNotificationsCommand extends Command
             $id = str_replace('https://api.github.com/repos/PrestaShop/PrestaShop/pulls/', '', $id);
 
             $type = $notification['subject']['type'] == 'PullRequest' ? 'PR' : 'Issue';
-            
+
             $rows[] = [
-                '<href='.$notification['repository']['html_url'].'>'.$notification['repository']['name'].'</>',
-                '<href='.$notification['subject']['url'].'>#'.$id.'</> ('.$type.')',
+                '<href=' . $notification['repository']['html_url'] . '>' . $notification['repository']['name'] . '</>',
+                '<href=' . $notification['subject']['url'] . '>#' . $id . '</> (' . $type . ')',
                 $notification['subject']['title'],
                 $notification['reason'],
             ];

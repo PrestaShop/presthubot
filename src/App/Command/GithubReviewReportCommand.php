@@ -1,16 +1,14 @@
 <?php
+
 namespace Console\App\Command;
 
 use Console\App\Service\Github;
-use Console\App\Service\Github\Query;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableCell;
-use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
- 
+
 class GithubReviewReportCommand extends Command
 {
     /**
@@ -55,9 +53,8 @@ class GithubReviewReportCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 ''
             );
-        
     }
- 
+
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
         $this->github = new Github($input->getOption('ghtoken'));
@@ -75,11 +72,13 @@ class GithubReviewReportCommand extends Command
     {
         if ($input->getOption('dateStart') === null) {
             $output->writeln('<error>Error: Empty parameter dateStart</error>');
+
             return false;
         }
         $dateStart = strtotime($input->getOption('dateStart'));
         if (date('Y-m-d', $dateStart) != $input->getOption('dateStart')) {
             $output->writeln('<error>Error: Unrecognizable dateStart format : ' . $input->getOption('dateStart') . '</error>');
+
             return false;
         }
         $this->dateStart = date('Y-m-d', $dateStart);
@@ -87,6 +86,7 @@ class GithubReviewReportCommand extends Command
             $dateEnd = strtotime($input->getOption('dateEnd'));
             if (date('Y-m-d', $dateEnd) != $input->getOption('dateEnd')) {
                 $output->writeln('<error>Error: Unrecognizable dateEnd format : ' . $input->getOption('dateEnd') . '</error>');
+
                 return false;
             }
         } else {
@@ -98,11 +98,11 @@ class GithubReviewReportCommand extends Command
     }
 
     private function generateReport(InputInterface $input, OutputInterface $output): void
-    {   
+    {
         $pullRequests = $this->github->getReviews('PrestaShop');
 
         $reviewsDate = $reviewsDateAuthor = $reviewsAuthor = [];
-        $insiders = $_ENV['REVIEW_INSIDER'] ? explode(',', $_ENV['REVIEW_INSIDER']): $this->github->getMaintainers();
+        $insiders = $_ENV['REVIEW_INSIDER'] ? explode(',', $_ENV['REVIEW_INSIDER']) : $this->github->getMaintainers();
 
         foreach ($pullRequests as $pullRequest) {
             foreach ($pullRequest['reviews']['edges'] as $review) {
@@ -122,8 +122,8 @@ class GithubReviewReportCommand extends Command
                 if ($date < $this->dateStart) {
                     continue;
                 }
-                
-                if($input->getOption('byDate')) {
+
+                if ($input->getOption('byDate')) {
                     // Review by date
                     if (!in_array($reviewer, $reviewsDateAuthor)) {
                         $reviewsDateAuthor[] = $reviewer;
@@ -134,7 +134,7 @@ class GithubReviewReportCommand extends Command
                     if (!isset($reviewsDate[$date][$reviewer])) {
                         $reviewsDate[$date][$reviewer] = 0;
                     }
-                    $reviewsDate[$date][$reviewer] += 1;
+                    ++$reviewsDate[$date][$reviewer];
                 } else {
                     // Review by author
                     if (!isset($reviewsAuthor[$reviewer])) {
@@ -147,15 +147,15 @@ class GithubReviewReportCommand extends Command
                             'OUTSIDE' => 0,
                         ];
                     }
-                    $reviewsAuthor[$reviewer]['ALL'] += 1;
-                    $reviewsAuthor[$reviewer][$state] += 1;
-                    $reviewsAuthor[$reviewer][$authorIsInsider ? 'INSIDE' : 'OUTSIDE'] += 1;
+                    ++$reviewsAuthor[$reviewer]['ALL'];
+                    ++$reviewsAuthor[$reviewer][$state];
+                    ++$reviewsAuthor[$reviewer][$authorIsInsider ? 'INSIDE' : 'OUTSIDE'];
                 }
             }
         }
 
         $rows = [];
-        if($input->getOption('byDate')) {
+        if ($input->getOption('byDate')) {
             ksort($reviewsDateAuthor, SORT_STRING | SORT_FLAG_CASE);
             ksort($reviewsDate, SORT_STRING | SORT_FLAG_CASE);
             $headers = array_merge(['Date'], $reviewsDateAuthor);

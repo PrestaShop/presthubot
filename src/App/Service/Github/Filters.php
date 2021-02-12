@@ -6,7 +6,7 @@ class Filters
 {
     private const KEY_DATA = 'data';
     private const KEY_IS_INCLUDED = 'isIncluded';
-    
+
     public const FILTER_AUTHOR = 'author';
     public const FILTER_FILE_EXTENSION = 'fileExtension';
     public const FILTER_NUM_APPROVED = 'numApproved';
@@ -29,6 +29,7 @@ class Filters
 
         $this->filters[$filter][self::KEY_DATA] = $data;
         $this->filters[$filter][self::KEY_IS_INCLUDED] = $isIncluded;
+
         return $this;
     }
 

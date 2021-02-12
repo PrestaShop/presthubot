@@ -1,4 +1,5 @@
 <?php
+
 namespace Console\App\Command;
 
 use Console\App\Service\Github;
@@ -11,7 +12,7 @@ use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
- 
+
 class GithubCheckModuleCommand extends Command
 {
     /**
@@ -92,7 +93,7 @@ class GithubCheckModuleCommand extends Command
         'statsvisits',
         'welcome',
     ];
-    
+
     const COL_ALL = 'all';
     const COL_BRANCH = 'branch';
     const COL_DESCRIPTION = 'description';
@@ -142,9 +143,9 @@ class GithubCheckModuleCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 '',
                 '1'
-            );   
+            );
     }
- 
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->github = new Github($input->getOption('ghtoken'));
@@ -187,7 +188,7 @@ class GithubCheckModuleCommand extends Command
         $progressBar = new ProgressBar($sectionProgressBar, $numRepositories);
         $progressBar->start();
 
-        foreach($arrayRepositories as $key => $repository) {
+        foreach ($arrayRepositories as $key => $repository) {
             $this->checkRepository('PrestaShop', $repository, $table, $branch);
             if ($numRepositories > 1) {
                 $table->addRows([new TableSeparator()]);
@@ -200,14 +201,14 @@ class GithubCheckModuleCommand extends Command
         $table->addRows([[
             'Total : ' . $numRepositories,
             '',
-            '✓ ' . number_format((($this->stats[self::COL_ISSUES] / ModuleChecker::RATING_ISSUES_MAX) / $numRepositories) * 100, 2). '%',
-            '✓ ' . number_format((($this->stats[self::COL_DESCRIPTION] / ModuleChecker::RATING_DESCRIPTION_MAX) / $numRepositories) * 100, 2). '%',
-            '✓ ' . number_format((($this->stats[self::COL_LICENSE] / ModuleChecker::RATING_LICENSE_MAX) / $numRepositories) * 100, 2). '%',
-            '✓ ' . number_format((($this->stats[self::COL_LABELS] / ModuleChecker::RATING_LABELS_MAX) / $numRepositories) * 100, 2). '%',
-            '✓ ' . number_format((($this->stats[self::COL_BRANCH] / ModuleChecker::RATING_BRANCH_MAX) / $numRepositories) * 100, 2). '%',
-            '✓ ' . number_format((($this->stats[self::COL_FILES] / ModuleChecker::RATING_FILES_MAX) / $numRepositories) * 100, 2). '%',
-            '✓ ' . number_format((($this->stats[self::COL_TOPICS] / ModuleChecker::RATING_TOPICS_MAX) / $numRepositories) * 100, 2). '%',
-            '✓ ' . number_format((($this->stats[self::COL_ALL] / ModuleChecker::RATING_GLOBAL_MAX) / $numRepositories) * 100, 2). '%',
+            '✓ ' . number_format((($this->stats[self::COL_ISSUES] / ModuleChecker::RATING_ISSUES_MAX) / $numRepositories) * 100, 2) . '%',
+            '✓ ' . number_format((($this->stats[self::COL_DESCRIPTION] / ModuleChecker::RATING_DESCRIPTION_MAX) / $numRepositories) * 100, 2) . '%',
+            '✓ ' . number_format((($this->stats[self::COL_LICENSE] / ModuleChecker::RATING_LICENSE_MAX) / $numRepositories) * 100, 2) . '%',
+            '✓ ' . number_format((($this->stats[self::COL_LABELS] / ModuleChecker::RATING_LABELS_MAX) / $numRepositories) * 100, 2) . '%',
+            '✓ ' . number_format((($this->stats[self::COL_BRANCH] / ModuleChecker::RATING_BRANCH_MAX) / $numRepositories) * 100, 2) . '%',
+            '✓ ' . number_format((($this->stats[self::COL_FILES] / ModuleChecker::RATING_FILES_MAX) / $numRepositories) * 100, 2) . '%',
+            '✓ ' . number_format((($this->stats[self::COL_TOPICS] / ModuleChecker::RATING_TOPICS_MAX) / $numRepositories) * 100, 2) . '%',
+            '✓ ' . number_format((($this->stats[self::COL_ALL] / ModuleChecker::RATING_GLOBAL_MAX) / $numRepositories) * 100, 2) . '%',
         ]]);
         $table->render();
         $output->writeLn(['', 'Output generated in ' . (time() - $time) . 's.']);
@@ -219,25 +220,26 @@ class GithubCheckModuleCommand extends Command
         $this->moduleChecker->checkRepository($org, $repository, $branch);
         $report = $this->moduleChecker->getReport();
         if ($report['archived'] || $report['moved']) {
-            echo 'Please remove `' . $org . '/'.$repository.'`for the Presthubot analysis' . PHP_EOL;
+            echo 'Please remove `' . $org . '/' . $repository . '`for the Presthubot analysis' . PHP_EOL;
+
             return;
         }
 
-        $nums = 'Stars : '. $report['numStargazers'] . PHP_EOL
-            . 'PR : ' . $report['numPROpened']  . PHP_EOL
+        $nums = 'Stars : ' . $report['numStargazers'] . PHP_EOL
+            . 'PR : ' . $report['numPROpened'] . PHP_EOL
             . 'Files : ' . $report['numFiles'];
 
         $checkLabels = '';
         foreach ($report['labels'] as $key => $value) {
             $checkLabels .= ($value['name'] ? '<info>✓ </info>' : '<error>✗ </error>') . ' '
-                . ($value['color'] ? '<info>✓ </info>' : '<error>✗ </error>') 
+                . ($value['color'] ? '<info>✓ </info>' : '<error>✗ </error>')
                 . ' ' . str_replace('✔️', '✓', $key) . PHP_EOL;
         }
 
         $checkBranch = 'Branch : ';
         $checkBranch .= $report['branch']['develop'] ? '<info>✓ </info>' . ' (' . $report['branch']['develop'] . ')' : '<error>✗ </error>';
-        $checkBranch .= $report['branch']['isDefault'] ? PHP_EOL . 'Default (dev) : ' . (!$report['branch']['isDefault'] ? '<error>✗ </error>' : '<info>✓ </info>') : ''; 
-        $checkBranch .= $report['branch']['develop'] ? PHP_EOL . 'Status : ' . ($report['branch']['hasDiffMaster'] ? '<error>✗ </error>' : '<info>✓ </info>') : ''; 
+        $checkBranch .= $report['branch']['isDefault'] ? PHP_EOL . 'Default (dev) : ' . (!$report['branch']['isDefault'] ? '<error>✗ </error>' : '<info>✓ </info>') : '';
+        $checkBranch .= $report['branch']['develop'] ? PHP_EOL . 'Status : ' . ($report['branch']['hasDiffMaster'] ? '<error>✗ </error>' : '<info>✓ </info>') : '';
         if (!empty($report['branch']['status']) && $report['branch']['status']['ahead'] > 0) {
             $checkBranch .= PHP_EOL . sprintf('- dev < master by %d commits', $report['branch']['status']['ahead']) . PHP_EOL;
             $checkBranch .= sprintf('THIS MODULE NEEDS A RELEASE');
@@ -267,7 +269,7 @@ class GithubCheckModuleCommand extends Command
         }
         $checkTopics = '';
         foreach ($report['githubTopics'] as $topicName => $hasTopic) {
-            $checkTopics .= ($hasTopic  ? '<info>✓ </info>' : '<error>✗ </error>') . ' ' . $topicName . PHP_EOL;
+            $checkTopics .= ($hasTopic ? '<info>✓ </info>' : '<error>✗ </error>') . ' ' . $topicName . PHP_EOL;
         }
 
         // %
@@ -281,7 +283,7 @@ class GithubCheckModuleCommand extends Command
         $this->stats[self::COL_ALL] += $this->moduleChecker->getRating(ModuleChecker::RATING_GLOBAL);
 
         $table->addRows([[
-            '<href='.$report['url'].'>'.$repository.'</>',
+            '<href=' . $report['url'] . '>' . $repository . '</>',
             $nums,
             'Closed : ' . (!$report['hasIssuesOpened'] ? '<info>✓ </info>' : '<error>✗ </error>') . PHP_EOL . 'Number : ' . $report['numIssuesOpened'],
             $this->moduleChecker->getRating(ModuleChecker::RATING_DESCRIPTION) ? '<info>✓ </info>' : '<error>✗ </error>',
@@ -293,7 +295,7 @@ class GithubCheckModuleCommand extends Command
             number_format(
                 ($this->moduleChecker->getRating(ModuleChecker::RATING_GLOBAL) / $this->moduleChecker->getRating(ModuleChecker::RATING_GLOBAL_MAX)) * 100,
                 2
-            ) . '%'
+            ) . '%',
         ]]);
     }
 }

@@ -11,9 +11,10 @@ class NightlyBoard
             return [];
         }
         $json = json_decode($json, true);
-        $data = array_filter($json, function($item) use($date, $version) {
-            return ($item['date'] == $date && $item['version'] == $version);
+        $data = array_filter($json, function ($item) use ($date, $version) {
+            return $item['date'] == $date && $item['version'] == $version;
         });
+
         return !empty($data) ? reset($data) : [];
     }
 
@@ -25,7 +26,7 @@ class NightlyBoard
         curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
         $result = curl_exec($session);
         curl_close($session);
-        
+
         return $result;
     }
 }

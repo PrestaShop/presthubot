@@ -2,11 +2,10 @@
 
 use Console\App\Service\Github;
 use Console\App\Service\PrestaShop\ModuleFetcher;
-use Github\Client;
 use Github\Api\Repo;
 use Github\Api\Repository\Contents;
+use Github\Client;
 use PHPUnit\Framework\TestCase;
-
 
 class ModuleFetcherTest extends TestCase
 {
@@ -17,7 +16,7 @@ class ModuleFetcherTest extends TestCase
     {
         $moduleFetcher = new ModuleFetcher($this->getMockGithub($apiReturn));
         $modules = $moduleFetcher->getModules();
-        
+
         $this->assertIsArray($modules);
         $this->assertEquals($expected, $modules);
     }
@@ -35,7 +34,7 @@ class ModuleFetcherTest extends TestCase
 
         $mockGithub = $this->getMockBuilder(Github::class)->disableOriginalConstructor()->getMock();
         $mockGithub->method('getClient')->willReturn($mockClient);
-        
+
         return $mockGithub;
     }
 
@@ -43,11 +42,11 @@ class ModuleFetcherTest extends TestCase
     {
         yield [
             [['download_url' => '', 'name' => 'TestA']],
-            ['TestA']
+            ['TestA'],
         ];
         yield [
             [['download_url' => 'https://', 'name' => 'TestB']],
-            []
+            [],
         ];
     }
 }

@@ -55,7 +55,7 @@ class Slack
             // Slack markup parsing
             'mrkdwn' => true,
             // Not unfurling of primarily text-based content
-            'unfurl_links' => false
+            'unfurl_links' => false,
         ]);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
@@ -63,7 +63,7 @@ class Slack
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         $result = curl_exec($ch);
         curl_close($ch);
-        
+
         return $result;
     }
 }

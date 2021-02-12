@@ -1,16 +1,14 @@
 <?php
+
 namespace Console\App\Command;
 
 use Console\App\Service\Github;
 use Console\App\Service\Github\Query;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableCell;
-use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
- 
+
 class GithubIssuesReportCommand extends Command
 {
     /**
@@ -41,7 +39,7 @@ class GithubIssuesReportCommand extends Command
         'closed' => 0,
         'regressions_TE' => 0,
         'regressions' => [],
-        'duplicates' => []
+        'duplicates' => [],
     ];
 
     protected function configure()
@@ -74,9 +72,8 @@ class GithubIssuesReportCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 ''
             );
-        
     }
- 
+
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
         $this->github = new Github($input->getOption('ghtoken'));
@@ -95,17 +92,20 @@ class GithubIssuesReportCommand extends Command
     {
         if ($input->getOption('dateStart') === null) {
             $output->writeln('<error>Error: Empty parameter dateStart</error>');
+
             return false;
         }
         $this->dateStart = strtotime($input->getOption('dateStart'));
         if (date('Y-m-d', $this->dateStart) != $input->getOption('dateStart')) {
             $output->writeln('<error>Error: Unrecognizable dateStart format : ' . $input->getOption('dateStart') . '</error>');
+
             return false;
         }
         if ($input->getOption('dateEnd') !== null) {
             $this->dateEnd = strtotime($input->getOption('dateEnd'));
             if (date('Y-m-d', $this->dateEnd) != $input->getOption('dateEnd')) {
                 $output->writeln('<error>Error: Unrecognizable dateEnd format : ' . $input->getOption('dateEnd') . '</error>');
+
                 return false;
             }
         }
@@ -114,35 +114,35 @@ class GithubIssuesReportCommand extends Command
     }
 
     private function generateReport(InputInterface $input, OutputInterface $output): void
-    {   
+    {
         if (empty($this->dateEnd)) {
-            $this->dateEnd = strtotime("+28 day", $this->dateStart);
+            $this->dateEnd = strtotime('+28 day', $this->dateStart);
         }
         $this->dateStartFormatted = date('Y-m-d', $this->dateStart);
         $this->dateEndFormatted = date('Y-m-d', $this->dateEnd);
 
-        $reportFilename = 'report-'.$this->dateStartFormatted.'-'.$this->dateEndFormatted.'.md';
+        $reportFilename = 'report-' . $this->dateStartFormatted . '-' . $this->dateEndFormatted . '.md';
         $reportPath = $input->getOption('outputDir') . DIRECTORY_SEPARATOR . $reportFilename;
 
         $graphQLQuery = new Query();
-        $graphQLQuery->setQuery('type:issue created:'.$this->dateStartFormatted.'..'.$this->dateEndFormatted.' sort:created-desc repo:PrestaShop/PrestaShop');
+        $graphQLQuery->setQuery('type:issue created:' . $this->dateStartFormatted . '..' . $this->dateEndFormatted . ' sort:created-desc repo:PrestaShop/PrestaShop');
         $issues = $this->github->search($graphQLQuery);
 
         $output->writeln('Found ' . count($issues) . ' issues');
 
-        foreach($issues as $issue) {
+        foreach ($issues as $issue) {
             $issue = $issue['node'];
             if ($issue['state'] === 'OPEN') {
-                $this->results['open'] += 1;
+                ++$this->results['open'];
             } else {
-                $this->results['closed'] += 1;
+                ++$this->results['closed'];
             }
-            foreach($issue['labels']['nodes'] as $label) {
+            foreach ($issue['labels']['nodes'] as $label) {
                 if ($label['name'] === 'Regression') {
                     $this->results['regressions'][] = $issue;
                 }
                 if ($label['name'] === 'Detected by TE') {
-                    $this->results['regressions_TE'] +=1;
+                    ++$this->results['regressions_TE'];
                 }
                 if ($label['name'] === 'Duplicate') {
                     $this->results['duplicates'][] = $issue;
@@ -154,9 +154,9 @@ class GithubIssuesReportCommand extends Command
         $output->writeln('Retrieving duplicates original data...');
 
         $issuesOrigin = [];
-        foreach($this->results['duplicates'] as $duplicate) {
+        foreach ($this->results['duplicates'] as $duplicate) {
             $comments = $this->github->getClient()->api('issue')->comments()->all('PrestaShop', 'PrestaShop', $duplicate['number']);
-            foreach($comments as $comment) {
+            foreach ($comments as $comment) {
                 preg_match('/Duplicates? of #(\d+)/i', $comment['body'], $matches);
                 if (isset($matches[1])) {
                     // We got the original issue number
@@ -180,7 +180,7 @@ class GithubIssuesReportCommand extends Command
         $data = [
             'start-date' => $this->dateStartFormatted,
             'end-date' => $this->dateEndFormatted,
-            'period' => ceil(($this->dateEnd - $this->dateStart)/(24*3600)),
+            'period' => ceil(($this->dateEnd - $this->dateStart) / (24 * 3600)),
             'issues-created' => count($issues),
             'issues-open' => $this->results['open'],
             'issues-closed' => $this->results['closed'],
@@ -193,7 +193,7 @@ class GithubIssuesReportCommand extends Command
             'creation-date' => date('Y-m-d H:i'),
             'duplicate-table' => $this->getDuplicatesTable($this->results['duplicates']),
         ];
-        foreach($data as $k => $v) {
+        foreach ($data as $k => $v) {
             $template = str_replace("%$k%", $v, $template);
         }
 
@@ -204,8 +204,9 @@ class GithubIssuesReportCommand extends Command
     private function excerpt(string $string, int $length = 50): string
     {
         if (mb_strlen($string) > $length) {
-            return mb_substr($string, 0, $length).'...';
+            return mb_substr($string, 0, $length) . '...';
         }
+
         return $string;
     }
 
@@ -213,9 +214,9 @@ class GithubIssuesReportCommand extends Command
     {
         $table = '';
 
-        foreach($duplicates as $duplicate) {
+        foreach ($duplicates as $duplicate) {
             $priority = $isBOorFO = $state = '-';
-            foreach($duplicate['labels'] as $label) {
+            foreach ($duplicate['labels'] as $label) {
                 if (in_array($label['name'], ['Trivial', 'Minor', 'Major', 'Critical'])) {
                     $priority = $label['name'];
                 }
@@ -240,11 +241,11 @@ class GithubIssuesReportCommand extends Command
             }
             foreach ($duplicate['duplicates'] as $duplicateItem) {
                 $table .= implode('|', [
-                    '['.$duplicateItem['number'].']('.$duplicateItem['url'].')',
+                    '[' . $duplicateItem['number'] . '](' . $duplicateItem['url'] . ')',
                     $this->excerpt($duplicateItem['title']),
                     date('Y-m-d', strtotime($duplicateItem['createdAt'])),
                     $isBOorFO,
-                    '['.$duplicate['number'].']('.$duplicate['html_url'].')',
+                    '[' . $duplicate['number'] . '](' . $duplicate['html_url'] . ')',
                     $state,
                     $priority,
                 ]);

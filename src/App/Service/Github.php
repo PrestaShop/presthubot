@@ -2,11 +2,11 @@
 
 namespace Console\App\Service;
 
+use Cache\Adapter\Filesystem\FilesystemCachePool;
 use Console\App\Service\Github\Filters;
+use Github\Client;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;
-use Cache\Adapter\Filesystem\FilesystemCachePool;
-use Github\Client;
 
 class Github
 {
@@ -59,15 +59,17 @@ class Github
             $resultPage = $this->apiSearchGraphQL((string) $graphQLQuery);
             $result = array_merge($result, $resultPage['data']['search']['edges']);
             if (!empty($resultPage['data']['search']['pageInfo']['endCursor'])) {
-                $graphQLQuery->setPageAfter($resultPage['data']['search']['pageInfo']['endCursor']); 
+                $graphQLQuery->setPageAfter($resultPage['data']['search']['pageInfo']['endCursor']);
             }
-        } while($resultPage['data']['search']['pageInfo']['hasNextPage']);
+        } while ($resultPage['data']['search']['pageInfo']['hasNextPage']);
+
         return $result;
     }
 
     public function countSearch(Github\Query $graphQLQuery): int
     {
         $resultPage = $this->apiSearchGraphQL((string) $graphQLQuery);
+
         return $resultPage['data']['search']['issueCount'];
     }
 
@@ -76,9 +78,9 @@ class Github
         $numFiles = 0;
 
         $arrayPath = $this->client->api('repo')->contents()->show($org, $repository, $path);
-        foreach($arrayPath as $itemPath) {
+        foreach ($arrayPath as $itemPath) {
             if ($itemPath['type'] == 'file') {
-                $numFiles += 1;
+                ++$numFiles;
                 continue;
             }
             if ($itemPath['type'] == 'dir') {
@@ -86,6 +88,7 @@ class Github
                 continue;
             }
         }
+
         return $numFiles;
     }
 
@@ -106,7 +109,7 @@ class Github
 
         // API Alert
         if (isset($pullRequest['_links'])) {
-            var_dump('PR #'.$pullRequest['number'].' has _links in its API');
+            var_dump('PR #' . $pullRequest['number'] . ' has _links in its API');
         }
 
         return $issue;
@@ -115,7 +118,7 @@ class Github
     public function getRepoBranches(string $org, string $repository, bool $withDevelop = true): array
     {
         $query = '{
-            repository(owner: "'.$org.'", name: "'.$repository.'") {
+            repository(owner: "' . $org . '", name: "' . $repository . '") {
                 refs(refPrefix: "refs/heads/", first: 100) {
                   nodes {
                     name
@@ -126,20 +129,21 @@ class Github
 
         $repositoryInfoGraphQL = $this->apiSearchGraphQL($query);
         $branches = [];
-        foreach($repositoryInfoGraphQL['data']['repository']['refs']['nodes'] as $node) {
+        foreach ($repositoryInfoGraphQL['data']['repository']['refs']['nodes'] as $node) {
             $name = $node['name'];
             if (!$withDevelop && $name === 'develop') {
                 continue;
             }
             $branches[] = $name;
         }
+
         return $branches;
     }
 
     public function getRepoReleases(string $org, string $repository, bool $withPreRelease = true): array
     {
         $query = '{
-            repository(owner: "'.$org.'", name: "'.$repository.'") {
+            repository(owner: "' . $org . '", name: "' . $repository . '") {
                 releases(first:100) {
                   nodes {
                     tagName 
@@ -151,20 +155,21 @@ class Github
 
         $repositoryInfoGraphQL = $this->apiSearchGraphQL($query);
         $tags = [];
-        foreach($repositoryInfoGraphQL['data']['repository']['releases']['nodes'] as $node) {
+        foreach ($repositoryInfoGraphQL['data']['repository']['releases']['nodes'] as $node) {
             $nameTag = $node['tagName'];
             if (!$withPreRelease && (strpos($nameTag, 'alpha') !== false || strpos($nameTag, 'beta') !== false || strpos($nameTag, 'rc') !== false)) {
                 continue;
             }
             $tags[$node['updatedAt']] = $nameTag;
         }
+
         return $tags;
     }
 
     public function getRepoTopics(string $org, string $repository): array
     {
         $query = '{
-            repository(owner: "'.$org.'", name: "'.$repository.'") {
+            repository(owner: "' . $org . '", name: "' . $repository . '") {
               repositoryTopics(first: 10) {
                 edges {
                   node {
@@ -179,9 +184,10 @@ class Github
 
         $repositoryInfoGraphQL = $this->apiSearchGraphQL($query);
         $topics = [];
-        foreach($repositoryInfoGraphQL['data']['repository']['repositoryTopics']['edges'] as $edge) {
+        foreach ($repositoryInfoGraphQL['data']['repository']['repositoryTopics']['edges'] as $edge) {
             $topics[] = $edge['node']['topic']['name'];
         }
+
         return $topics;
     }
 
@@ -238,7 +244,8 @@ class Github
                     $graphQLQuery
                 );
             }
-        } while($resultPage['data']['search']['pageInfo']['hasNextPage']);
+        } while ($resultPage['data']['search']['pageInfo']['hasNextPage']);
+
         return $result;
     }
 
@@ -257,21 +264,21 @@ class Github
         if ($filters->hasFilter(Filters::FILTER_REPOSITORY_PRIVATE)) {
             if ($filters->isFilterIncluded(Filters::FILTER_REPOSITORY_PRIVATE)
                 && !in_array($pullRequest['repository']['isPrivate'], $filters->getFilterData(Filters::FILTER_REPOSITORY_PRIVATE), true)) {
-                    return false;
+                return false;
             }
             if (!$filters->isFilterIncluded(Filters::FILTER_REPOSITORY_PRIVATE)
                 && in_array($pullRequest['repository']['isPrivate'], $filters->getFilterData(Filters::FILTER_REPOSITORY_PRIVATE), true)) {
-                    return false;
+                return false;
             }
         }
 
         // Filter Author
         if ($filters->hasFilter(Filters::FILTER_AUTHOR)) {
-            if ($filters->isFilterIncluded(Filters::FILTER_AUTHOR) 
+            if ($filters->isFilterIncluded(Filters::FILTER_AUTHOR)
                 && !in_array($pullRequest['author']['login'], $filters->getFilterData(Filters::FILTER_AUTHOR))) {
                 return false;
             }
-            if (!$filters->isFilterIncluded(Filters::FILTER_AUTHOR) 
+            if (!$filters->isFilterIncluded(Filters::FILTER_AUTHOR)
                 && in_array($pullRequest['author']['login'], $filters->getFilterData(Filters::FILTER_AUTHOR))) {
                 return false;
             }
@@ -298,11 +305,11 @@ class Github
 
         // Filter Num Approved
         if ($filters->hasFilter(Filters::FILTER_NUM_APPROVED)) {
-            if ($filters->isFilterIncluded(Filters::FILTER_NUM_APPROVED) 
+            if ($filters->isFilterIncluded(Filters::FILTER_NUM_APPROVED)
                 && !in_array(count($pullRequest['approved']), $filters->getFilterData(Filters::FILTER_NUM_APPROVED), true)) {
                 return false;
             }
-            if (!$filters->isFilterIncluded(Filters::FILTER_NUM_APPROVED) 
+            if (!$filters->isFilterIncluded(Filters::FILTER_NUM_APPROVED)
                 && in_array(count($pullRequest['approved']), $filters->getFilterData(Filters::FILTER_NUM_APPROVED), true)) {
                 return false;
             }
@@ -332,7 +339,7 @@ class Github
     public function extractApproved(array $pullRequest): array
     {
         $approved = [];
-        foreach($pullRequest['reviews']['nodes'] as $node) {
+        foreach ($pullRequest['reviews']['nodes'] as $node) {
             $login = $node['author']['login'];
             if (!in_array($login, self::MAINTAINER_MEMBERS)) {
                 continue;
@@ -348,6 +355,7 @@ class Github
                 }
             }
         }
+
         return $approved;
     }
 
@@ -356,7 +364,7 @@ class Github
         do {
             try {
                 $resultPage = $this->client->api('graphql')->execute($graphQLQuery, []);
-            } catch(\RuntimeException $e) {
+            } catch (\RuntimeException $e) {
             }
         } while (!isset($resultPage));
 

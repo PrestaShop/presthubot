@@ -1,10 +1,10 @@
 <?php
+
 namespace Console\App\Command;
 
 use Console\App\Service\Github;
 use Console\App\Service\Github\Filters;
 use Console\App\Service\Github\Query;
-use Github\ResultPager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
- 
+
 class GithubCheckPRCommand extends Command
 {
     public const ORDERBY_PROJECT = 'projectName';
@@ -25,7 +25,7 @@ class GithubCheckPRCommand extends Command
         self::ORDERBY_NUMAPPROVED,
         self::ORDERBY_ID,
     ];
-    
+
     /**
      * @var Filters;
      */
@@ -87,12 +87,11 @@ class GithubCheckPRCommand extends Command
                 'orderBy',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'Order By Column ('.implode(',', self::DEFAULT_ORDERBY).')',
+                'Order By Column (' . implode(',', self::DEFAULT_ORDERBY) . ')',
                 implode(',', self::DEFAULT_ORDERBY)
             );
-        
     }
- 
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->github = new Github($input->getOption('ghtoken'));
@@ -105,11 +104,11 @@ class GithubCheckPRCommand extends Command
         if ($request) {
             if (array_key_exists($request, Query::getRequests())) {
                 $requests = [
-                    $request => Query::getRequests()[$request]
+                    $request => Query::getRequests()[$request],
                 ];
             } else {
                 $requests = [
-                    $request => $request
+                    $request => $request,
                 ];
             }
         } else {
@@ -138,7 +137,7 @@ class GithubCheckPRCommand extends Command
         }
         $table = new Table($this->output);
         $table->setStyle('box');
-        foreach($requests as $title => $request) {
+        foreach ($requests as $title => $request) {
             $graphQLQuery = new Query();
             $graphQLQuery->setQuery('org:PrestaShop is:pr ' . $request);
             $hasRows = $this->checkPR(
@@ -151,7 +150,7 @@ class GithubCheckPRCommand extends Command
         }
 
         $table->render();
-        $this->output->writeLn(['', 'Output generated in ' . (time() - $time) . 's for ' . $this->countRows. ' rows.']);
+        $this->output->writeLn(['', 'Output generated in ' . (time() - $time) . 's for ' . $this->countRows . ' rows.']);
     }
 
     private function checkPR(
@@ -162,11 +161,11 @@ class GithubCheckPRCommand extends Command
         bool $needCountFilesType
     ) {
         $rows = [];
-        foreach($resultAPI as $key => $pullRequest) {
+        foreach ($resultAPI as $key => $pullRequest) {
             $resultAPI[$key] = $pullRequest['node'];
             $resultAPI[$key]['approved'] = $this->github->extractApproved($resultAPI[$key]);
         }
-        uasort($resultAPI, function($row1, $row2) {
+        uasort($resultAPI, function ($row1, $row2) {
             $projectName1 = $row1['repository']['name'];
             $projectName2 = $row2['repository']['name'];
             $id1 = $row1['number'];
@@ -177,36 +176,38 @@ class GithubCheckPRCommand extends Command
             $numApproved2 = count($row2['approved']);
 
             $return = 0;
-            foreach($this->orderBy as $orderKey) {
-                if (isset(${$orderKey.'1'}, ${$orderKey.'2'})) {
-                    if (${$orderKey.'1'} == ${$orderKey.'2'}) {
+            foreach ($this->orderBy as $orderKey) {
+                if (isset(${$orderKey . '1'}, ${$orderKey . '2'})) {
+                    if (${$orderKey . '1'} == ${$orderKey . '2'}) {
                         continue;
                     }
-                    return ${$orderKey.'1'} < ${$orderKey.'2'} ? -1 : 1;
+
+                    return ${$orderKey . '1'} < ${$orderKey . '2'} ? -1 : 1;
                 }
             }
+
             return $return;
         });
         $countPR = 0;
-        foreach($resultAPI as $pullRequest) {
+        foreach ($resultAPI as $pullRequest) {
             if (!$this->github->isPRValid($pullRequest, $this->filters)) {
                 continue;
-            }            
+            }
 
             $pullRequestTitle = str_split($pullRequest['title'], 70);
             $pullRequestTitle = implode(PHP_EOL, $pullRequestTitle);
-            $pullRequestTitle = '('. count($pullRequest['approved']) .'✓) '. $pullRequestTitle;
-            
+            $pullRequestTitle = '(' . count($pullRequest['approved']) . '✓) ' . $pullRequestTitle;
+
             $linkedIssue = $this->github->getLinkedIssue($pullRequest);
             $currentRow = [
-                '<href='.$pullRequest['repository']['url'].'>'.$pullRequest['repository']['name'].'</>',
-                '<href='.$pullRequest['url'].'>#'.$pullRequest['number'].'</>',
+                '<href=' . $pullRequest['repository']['url'] . '>' . $pullRequest['repository']['name'] . '</>',
+                '<href=' . $pullRequest['url'] . '>#' . $pullRequest['number'] . '</>',
                 $pullRequest['createdAt'],
                 $pullRequestTitle,
-                '<href='.$pullRequest['author']['url'].'>'.$pullRequest['author']['login'].'</>',
+                '<href=' . $pullRequest['author']['url'] . '>' . $pullRequest['author']['login'] . '</>',
                 !empty($pullRequest['milestone']) ? '    <info>✓</info>' : '    <error>✗ </error>',
                 !is_null($linkedIssue) && $pullRequest['repository']['name'] == 'PrestaShop'
-                    ? (!empty($linkedIssue['milestone']) ? '<info>✓ </info>' : '<error>✗ </error>') .' <href='.$linkedIssue['html_url'].'>#'.$linkedIssue['number'].'</>'
+                    ? (!empty($linkedIssue['milestone']) ? '<info>✓ </info>' : '<error>✗ </error>') . ' <href=' . $linkedIssue['html_url'] . '>#' . $linkedIssue['number'] . '</>'
                     : '',
             ];
             if ($needCountFilesType) {
@@ -214,7 +215,7 @@ class GithubCheckPRCommand extends Command
             }
 
             $rows[] = $currentRow;
-            $countPR++;
+            ++$countPR;
         }
         if (empty($rows)) {
             return $hasRows;
@@ -236,13 +237,14 @@ class GithubCheckPRCommand extends Command
             array_push($headers, '<info>Files</info>');
         }
         $table->addRows([
-            [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' ('.$countPR.') </>', ['colspan' => 7])],
+            [new TableCell('<fg=black;bg=white;options=bold> ' . $title . ' (' . $countPR . ') </>', ['colspan' => 7])],
             new TableSeparator(),
-            $headers
+            $headers,
         ]);
         $table->addRows($rows);
 
         $this->countRows += $countPR;
+
         return true;
     }
 
@@ -250,15 +252,15 @@ class GithubCheckPRCommand extends Command
     {
         $types = [];
 
-        foreach($pullRequest['files']['nodes'] as $file) {
+        foreach ($pullRequest['files']['nodes'] as $file) {
             $extension = pathinfo($file['path'], PATHINFO_EXTENSION);
             if (!array_key_exists($extension, $types)) {
                 $types[$extension] = 0;
             }
-            $types[$extension]++;
+            ++$types[$extension];
         }
         ksort($types);
-        
+
         return $types;
     }
 }
