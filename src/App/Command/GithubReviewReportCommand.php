@@ -124,6 +124,9 @@ class GithubReviewReportCommand extends Command
                 if ($date < $this->dateStart) {
                     continue;
                 }
+                if ($date > $this->dateEnd) {
+                    continue;
+                }
 
                 if ($input->getOption('byDate')) {
                     // Review by date
