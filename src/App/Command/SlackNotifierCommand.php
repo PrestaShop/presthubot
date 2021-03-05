@@ -193,6 +193,7 @@ class SlackNotifierCommand extends Command
         }
         foreach ($slackMessageCoreMembers as $messages) {
             foreach ($messages as $slackChannelPrivateMaintainer => $message) {
+                $this->slack->sendNotification($slackChannelPrivateMaintainer, $message);
             }
         }
 
