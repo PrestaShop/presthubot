@@ -201,8 +201,8 @@ class SlackNotifierCommand extends Command
 
     protected function checkStatusNightly(): string
     {
-        $report177x = $this->nightlyBoard->getReport(date('Y-m-d'), '1.7.7.x');
-        $reportDevelop = $this->nightlyBoard->getReport(date('Y-m-d'), 'develop');
+        $report177x = $this->nightlyBoard->getReport(date('Y-m-d'), '1.7.7.x', 'functional');
+        $reportDevelop = $this->nightlyBoard->getReport(date('Y-m-d'), 'develop', 'functional');
 
         $has177XPassed = isset($report177x['tests'], $report177x['tests']['passed']);
         $has177XFailed = isset($report177x['tests'], $report177x['tests']['failed']);
