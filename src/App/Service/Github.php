@@ -194,15 +194,40 @@ class Github
         return $topics;
     }
 
-    public function getReviews(string $org, string $repository = ''): array
+    public function getRepositories(string $org): array
+    {
+        $search = 'org:' . $org;
+        $graphQLQuery = '{
+            search(query: "' . $search .' is:repo archived:false", type: REPOSITORY, last: 100 %after%) {
+              repositoryCount
+              nodes {
+                 ... on Repository {
+                   name
+                }
+              }
+            }
+          }';
+
+        $query = str_replace('%after%', '', $graphQLQuery);
+        $resultPage = $this->apiSearchGraphQL($query);
+
+        return $resultPage['data']['search']['nodes'];
+    }
+
+    public function getReviews(string $org, string $repository = '', string $reviewer = ''): array
     {
         if (empty($repository)) {
             $search = 'org:' . $org;
         } else {
             $search = 'repo:' . $org . '/' . $repository;
         }
+
+        $reviewerSearch = '';
+        if (!empty($reviewer)) {
+            $reviewerSearch = 'reviewed-by:'.$reviewer;
+        }
         $graphQLQuery = '{
-            search(query: "' . $search .' is:pr archived:false", type: ISSUE, last: 100 %after%) {
+            search(query: "' . $search .' is:pr archived:false ' . $reviewerSearch . ' created:>2020-01-01", type: ISSUE, last: 100 %after%) {
               issueCount
               pageInfo {
                 endCursor
