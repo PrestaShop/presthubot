@@ -4,9 +4,6 @@ namespace Console\App\Command;
 
 use Console\App\Service\Github;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableCell;
-use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -61,11 +58,13 @@ class GithubContributorsStatsCommand extends Command
         $contributorsFile = $input->getOption('contributorsFile');
         if (!is_file($contributorsFile)) {
             $output->writeLn(['<error>File "' . $contributorsFile . '" not found</error>']);
+
             return;
         }
         $outputFile = $input->getOption('outputFile');
         if (is_file($outputFile)) {
             $output->writeLn(['<error>Remove file "' . $outputFile . '"</error>']);
+
             return;
         }
 
@@ -73,7 +72,7 @@ class GithubContributorsStatsCommand extends Command
         $hFile = fopen($contributorsFile, 'r');
         $contributors = [];
         if ($hFile !== false) {
-            while (($data = fgetcsv($hFile, 1000, ",")) !== false) {
+            while (($data = fgetcsv($hFile, 1000, ',')) !== false) {
                 // Column 0 : Agency Name
                 // Column 1 : Contributor Github Nickname
                 $contributors[$data[1]] = $data[0];
@@ -96,50 +95,50 @@ class GithubContributorsStatsCommand extends Command
                 ];
             }
             $pullRequests = $this->github->getClient()->api('search')->issues('org:PrestaShop is:pr author:' . $author);
-            $output->writeLn(['[' . $agency . '] ' . $author . ' (' . count($pullRequests['items']) .')']);
+            $output->writeLn(['[' . $agency . '] ' . $author . ' (' . count($pullRequests['items']) . ')']);
 
             foreach ($pullRequests['items'] as $pullRequest) {
                 $repository = str_replace('https://api.github.com/repos/PrestaShop/', '', $pullRequest['repository_url']);
                 $createdKey = substr($pullRequest['created_at'], 0, 10);
-                $branch = array_reduce($pullRequest['labels'], function(bool $carry, array $item) {
+                $branch = array_reduce($pullRequest['labels'], function (bool $carry, array $item) {
                     if (!empty($carry)) {
                         return $carry;
                     }
                     if ($item['name'] === 'develop') {
                         return $item['name'];
                     }
+
                     return '';
                 }, '');
-                
-                if(!isset($data[$agency]['created_day'][$createdKey])) {
+
+                if (!isset($data[$agency]['created_day'][$createdKey])) {
                     $data[$agency]['created_day'][$createdKey] = 0;
                 }
-                if(!isset($data[$agency]['created_branch'][$branch])) {
+                if (!isset($data[$agency]['created_branch'][$branch])) {
                     $data[$agency]['created_branch'][$branch] = 0;
                 }
 
                 // The number of PRs created by the company by day
-                $data[$agency]['created_day'][$createdKey]++;
+                ++$data[$agency]['created_day'][$createdKey];
                 // The number of PRs created by the company by branch
-                $data[$agency]['created_branch'][$branch]++;
+                ++$data[$agency]['created_branch'][$branch];
 
                 $apiPullRequest = $this->github->getClient()->api('pr')->show('PrestaShop', $repository, $pullRequest['number']);
                 if (!$apiPullRequest['merged']) {
                     continue;
                 }
                 $mergedKey = substr($apiPullRequest['merged_at'], 0, 10);
-                if(!isset($data[$agency]['merged_day'][$mergedKey])) {
+                if (!isset($data[$agency]['merged_day'][$mergedKey])) {
                     $data[$agency]['merged_day'][$mergedKey] = 0;
                 }
-                if(!isset($data[$agency]['merged_branch'][$branch])) {
+                if (!isset($data[$agency]['merged_branch'][$branch])) {
                     $data[$agency]['merged_branch'][$branch] = 0;
                 }
 
                 // The number of PRs merged by the company by day
-                $data[$agency]['merged_day'][$mergedKey]++;
+                ++$data[$agency]['merged_day'][$mergedKey];
                 // The number of PRs merged by the company by branch
-                $data[$agency]['merged_branch'][$branch]++;
-                
+                ++$data[$agency]['merged_branch'][$branch];
             }
         }
 
@@ -152,14 +151,14 @@ class GithubContributorsStatsCommand extends Command
                         $agency,
                         $type,
                         $category,
-                        $num
+                        $num,
                     ];
                     fputcsv($hFile, $fields);
                 }
             }
         }
         fclose($hFile);
-        
+
         return;
     }
 }

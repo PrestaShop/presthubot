@@ -7,3 +7,6 @@ composer.phar
 vendor
 var/cache/*
 var/report/*
+contributors.csv
+output.csv
+stats.csv

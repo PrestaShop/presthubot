@@ -155,6 +155,33 @@ php bin/console github:review:report
 | `--dateEnd=<dateEnd>` | No | Format date: `yyyy-mm-dd`)` (default: today) |
 | `--byDate=<0|1>` | No | Report by date or author |
 
+### Export contributors
+
+```bash
+php bin/console github:contributors:export --contributorsFile contributors.csv --outputFile output.csv
+```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--contributorsFile=<contributorsFile>` | Yes | Contributors file |
+| `--outputFile=<outputFile>` | Yes | Output file |
+
+
+### Export contributors Stats
+
+```bash
+php bin/console github:contributors:stats --contributorsFile contributors.csv --outputFile output.csv
+```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--contributorsFile=<contributorsFile>` | Yes | Contributors file |
+| `--outputFile=<outputFile>` | Yes | Output file |
+
 ### Slack Notifier for Core Team
 Notify on Slack :
 - Nightly Build Status

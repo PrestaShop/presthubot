@@ -202,7 +202,7 @@ class Github
             $search = 'repo:' . $org . '/' . $repository;
         }
         $graphQLQuery = '{
-            search(query: "' . $search .' is:pr archived:false", type: ISSUE, last: 100 %after%) {
+            search(query: "' . $search . ' is:pr archived:false", type: ISSUE, last: 100 %after%) {
               issueCount
               pageInfo {
                 endCursor

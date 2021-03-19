@@ -4,9 +4,6 @@ namespace Console\App\Command;
 
 use Console\App\Service\Github;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableCell;
-use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -61,11 +58,13 @@ class GithubContributorsExportCommand extends Command
         $contributorsFile = $input->getOption('contributorsFile');
         if (!is_file($contributorsFile)) {
             $output->writeLn(['<error>File "' . $contributorsFile . '" not found</error>']);
+
             return;
         }
         $outputFile = $input->getOption('outputFile');
         if (is_file($outputFile)) {
             $output->writeLn(['<error>Remove file "' . $outputFile . '"</error>']);
+
             return;
         }
 
@@ -73,7 +72,7 @@ class GithubContributorsExportCommand extends Command
         $hFile = fopen($contributorsFile, 'r');
         $contributors = [];
         if ($hFile !== false) {
-            while (($data = fgetcsv($hFile, 1000, ",")) !== false) {
+            while (($data = fgetcsv($hFile, 1000, ',')) !== false) {
                 // Column 0 : Agency Name
                 // Column 1 : Contributor Github Nickname
                 $contributors[$data[1]] = $data[0];
@@ -88,23 +87,25 @@ class GithubContributorsExportCommand extends Command
         $export = [];
         foreach ($contributors as $author => $agency) {
             $pullRequests = $this->github->getClient()->api('search')->issues('org:PrestaShop is:pr author:' . $author);
-            $output->writeLn(['[' . $agency . '] ' . $author . ' (' . count($pullRequests['items']) .')']);
+            $output->writeLn(['[' . $agency . '] ' . $author . ' (' . count($pullRequests['items']) . ')']);
 
             foreach ($pullRequests['items'] as $pullRequest) {
                 $repository = str_replace('https://api.github.com/repos/PrestaShop/', '', $pullRequest['repository_url']);
-                $isBug = array_reduce($pullRequest['labels'], function(bool $carry, array $item) {
+                $isBug = array_reduce($pullRequest['labels'], function (bool $carry, array $item) {
                     if ($carry) {
                         return $carry;
                     }
+
                     return $item['name'] === 'Bug';
                 }, false);
-                $isImprovement = array_reduce($pullRequest['labels'], function(bool $carry, array $item) {
+                $isImprovement = array_reduce($pullRequest['labels'], function (bool $carry, array $item) {
                     if ($carry) {
                         return $carry;
                     }
+
                     return $item['name'] === 'Improvement';
                 }, false);
-                $status = array_reduce($pullRequest['labels'], function(string $carry, array $item) {
+                $status = array_reduce($pullRequest['labels'], function (string $carry, array $item) {
                     if (!empty($carry)) {
                         return $carry;
                     }
@@ -117,29 +118,32 @@ class GithubContributorsExportCommand extends Command
                     ])) {
                         return $item['name'];
                     }
+
                     return '';
                 }, '');
-                $branch = array_reduce($pullRequest['labels'], function(bool $carry, array $item) {
+                $branch = array_reduce($pullRequest['labels'], function (bool $carry, array $item) {
                     if (!empty($carry)) {
                         return $carry;
                     }
                     if ($item['name'] === 'develop') {
                         return $item['name'];
                     }
+
                     return '';
                 }, '');
                 $apiPullRequest = $this->github->getClient()->api('pr')->show('PrestaShop', $repository, $pullRequest['number']);
 
                 $severityIssue = '';
                 $linkedIssue = $this->github->getLinkedIssue($pullRequest);
-                if($linkedIssue) {
-                    $severityIssue = array_reduce($linkedIssue['labels'], function(string $carry, array $item) {
+                if ($linkedIssue) {
+                    $severityIssue = array_reduce($linkedIssue['labels'], function (string $carry, array $item) {
                         if (!empty($carry)) {
                             return $carry;
                         }
                         if (strpos($item['description'], 'Severity') === 0) {
                             return $item['name'];
                         }
+
                         return '';
                     }, '');
                 }
@@ -178,7 +182,6 @@ class GithubContributorsExportCommand extends Command
                     // Number of comments on the PR
                     $pullRequest['comments'],
                 ];
-                
             }
         }
 
@@ -187,8 +190,8 @@ class GithubContributorsExportCommand extends Command
         foreach ($export as $fields) {
             fputcsv($hFile, $fields);
         }
-        fclose($hFile);    
-        
+        fclose($hFile);
+
         return;
     }
 }
