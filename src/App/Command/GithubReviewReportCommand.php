@@ -3,6 +3,7 @@
 namespace Console\App\Command;
 
 use Console\App\Service\Github;
+use Console\App\Service\PrestaShop\Filter\ReviewFilter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,6 +12,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GithubReviewReportCommand extends Command
 {
+    /**
+     * @see https://docs.github.com/en/graphql/reference/objects#user field contributionsCollection
+     */
+    private const PRESTASHOP_ORGANIZATION_ID = 'MDEyOk9yZ2FuaXphdGlvbjI4MTU2OTY=';
+
     /**
      * @var Github
      */
@@ -101,60 +107,29 @@ class GithubReviewReportCommand extends Command
 
     private function generateReport(InputInterface $input, OutputInterface $output): void
     {
-        $pullRequests = $this->github->getReviews('PrestaShop');
-
         $reviewsDate = $reviewsDateAuthor = $reviewsAuthor = [];
-        $insiders = $_ENV['REVIEW_INSIDER'] ? explode(',', $_ENV['REVIEW_INSIDER']) : $this->github->getMaintainers();
+        $insiders = isset($_ENV['REVIEW_INSIDER']) ? explode(',', $_ENV['REVIEW_INSIDER']) : $this->github->getMaintainers();
 
-        foreach ($pullRequests as $pullRequest) {
-            foreach ($pullRequest['reviews']['edges'] as $review) {
-                $review = $review['node'];
-                $date = date('Y-m-d', strtotime($review['createdAt']));
-                $reviewer = $review['author']['login'];
-                $state = $review['state'];
-                $authorIsInsider = in_array($pullRequest['author']['login'], $insiders);
-                $reviewerIsMaintainer = in_array($reviewer, $this->github->getMaintainers());
+        $maintainers = $this->github->getMaintainers();
 
-                if (!$reviewerIsMaintainer) {
-                    continue;
-                }
-                if ($state == 'DISMISSED') {
-                    continue;
-                }
-                if ($date < $this->dateStart) {
-                    continue;
-                }
-                if ($date > $this->dateEnd) {
-                    continue;
-                }
+        foreach ($maintainers as $maintainer) {
+            $reviewsFilter = new ReviewFilter(
+                $maintainer,
+                \DateTime::createFromFormat('Y-m-d', $this->dateStart),
+                \DateTime::createFromFormat('Y-m-d', $this->dateEnd)
+            );
+            $reviewContributionsByOrganization = $this->github->getReviewsContributions(static::PRESTASHOP_ORGANIZATION_ID, $reviewsFilter);
 
-                if ($input->getOption('byDate')) {
-                    // Review by date
-                    if (!in_array($reviewer, $reviewsDateAuthor)) {
-                        $reviewsDateAuthor[] = $reviewer;
-                    }
-                    if (!isset($reviewsDate[$date])) {
-                        $reviewsDate[$date] = [];
-                    }
-                    if (!isset($reviewsDate[$date][$reviewer])) {
-                        $reviewsDate[$date][$reviewer] = 0;
-                    }
-                    ++$reviewsDate[$date][$reviewer];
-                } else {
-                    // Review by author
-                    if (!isset($reviewsAuthor[$reviewer])) {
-                        $reviewsAuthor[$reviewer] = [
-                            'ALL' => 0,
-                            'COMMENTED' => 0,
-                            'APPROVED' => 0,
-                            'CHANGES_REQUESTED' => 0,
-                            'INSIDE' => 0,
-                            'OUTSIDE' => 0,
-                        ];
-                    }
-                    ++$reviewsAuthor[$reviewer]['ALL'];
-                    ++$reviewsAuthor[$reviewer][$state];
-                    ++$reviewsAuthor[$reviewer][$authorIsInsider ? 'INSIDE' : 'OUTSIDE'];
+            if ($input->getOption('byDate')) {
+                // Review by date
+                if (!in_array($maintainer, $reviewsDateAuthor)) {
+                    $reviewsDateAuthor[] = $maintainer;
+                }
+                $reviewsDate = $reviewContributionsByOrganization->getReviewsByDate();
+            } else {
+                // Review by author
+                if (!isset($reviewsAuthor[$maintainer])) {
+                    $reviewsAuthor[$maintainer] = $reviewContributionsByOrganization->getTotalReviews($insiders);
                 }
             }
         }

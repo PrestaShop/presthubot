@@ -4,6 +4,11 @@ namespace Console\App\Service;
 
 use Cache\Adapter\Filesystem\FilesystemCachePool;
 use Console\App\Service\Github\Filters;
+use Console\App\Service\Model\Contribution;
+use Console\App\Service\Model\ContributionsCollection;
+use Console\App\Service\Model\ReviewContributionsByOrganization;
+use Console\App\Service\Model\ReviewContributionsByRepository;
+use Console\App\Service\PrestaShop\Filter\ReviewFilter;
 use Github\Client;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;
@@ -252,6 +257,42 @@ class Github
         return $result;
     }
 
+    public function getReviewsContributions(string $organizationId, ReviewFilter $reviewFilter, string $repository = ''): ReviewContributionsByOrganization
+    {
+        $graphQLQuery = '{
+            user(login: "' . $reviewFilter->getReviewer() . '") {
+                contributionsCollection(organizationID:"' . $organizationId . '" from: "' . $reviewFilter->getStartDate()->format('Y-m-d') . 'T00:00:00" to: "' . $reviewFilter->getEndDate()->format('Y-m-d') . 'T23:59:59") {
+                    pullRequestReviewContributionsByRepository {
+                        contributions(last: 100) {
+                            totalCount
+                            nodes {
+                                occurredAt
+                                pullRequestReview {
+                                    state
+                                    pullRequest {
+                                        author {
+                                            login
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        repository {
+                            name
+                        }
+                    }
+                }
+            }
+          }';
+
+        $reviewsByOrganization = $this->transformContributionsToModel($this->apiSearchGraphQL($graphQLQuery)['data']['user']['contributionsCollection']['pullRequestReviewContributionsByRepository']);
+        if ('' !== $repository) {
+            $reviewsByOrganization->filterByRepository($repository);
+        }
+
+        return $reviewsByOrganization;
+    }
+
     public function isPRValid(array $pullRequest, Filters $filters): bool
     {
         // FIX : Some merged PR are displayed in open search
@@ -396,5 +437,35 @@ class Github
         ksort($types);
 
         return $types;
+    }
+
+    private function transformContributionsToModel(array $pullRequestReviewContributionsByRepository): ReviewContributionsByOrganization
+    {
+        $reviewContributionsByOrganization = new ReviewContributionsByOrganization();
+
+        foreach ($pullRequestReviewContributionsByRepository as $pullRequestReviewContributionByRepository) {
+            $reviewContributionsByRepository = new ReviewContributionsByRepository();
+
+            $reviewContributionsByRepository->setRepositoryName(
+                $pullRequestReviewContributionByRepository['repository']['name']
+            );
+
+            $contributionsCollection = new ContributionsCollection();
+            $contributionsCollection->setTotal($pullRequestReviewContributionByRepository['contributions']['totalCount']);
+            foreach ($pullRequestReviewContributionByRepository['contributions']['nodes'] as $pullRequestReviewContribution) {
+                $contribution = new Contribution();
+                $contribution
+                    ->setOccurredAt(\DateTime::createFromFormat(\DateTime::ISO8601, $pullRequestReviewContribution['occurredAt']))
+                    ->setState($pullRequestReviewContribution['pullRequestReview']['state'])
+                    ->setPullRequestAuthor($pullRequestReviewContribution['pullRequestReview']['pullRequest']['author']['login']);
+
+                $contributionsCollection->addContribution($contribution);
+            }
+            $reviewContributionsByRepository->addContributionsCollection($contributionsCollection);
+
+            $reviewContributionsByOrganization->addReviewContributionsByRepository($reviewContributionsByRepository);
+        }
+
+        return $reviewContributionsByOrganization;
     }
 }
