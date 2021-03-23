@@ -15,7 +15,7 @@ class ReviewContributionsByRepository
     /**
      * @var ContributionsCollection[]
      */
-    private $contributionsCollections;
+    private $contributionsCollections = [];
 
     /**
      * @return string

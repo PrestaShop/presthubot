@@ -4,10 +4,8 @@ namespace Console\App\Service;
 
 use Cache\Adapter\Filesystem\FilesystemCachePool;
 use Console\App\Service\Github\Filters;
-use Console\App\Service\Model\Contribution;
-use Console\App\Service\Model\ContributionsCollection;
+use Console\App\Service\Helper\GithubResultToModelTransformer;
 use Console\App\Service\Model\ReviewContributionsByOrganization;
-use Console\App\Service\Model\ReviewContributionsByRepository;
 use Console\App\Service\PrestaShop\Filter\ReviewFilter;
 use Github\Client;
 use League\Flysystem\Adapter\Local;
@@ -19,6 +17,11 @@ class Github
      * @var Client;
      */
     protected $client;
+
+    /**
+     * @var GithubResultToModelTransformer
+     */
+    private $resultToModelTransformer;
 
     private const MAINTAINER_MEMBERS = [
         'atomiix',
@@ -40,6 +43,7 @@ class Github
 
     public function __construct(string $ghToken = null)
     {
+        $this->resultToModelTransformer = new GithubResultToModelTransformer();
         $filesystemAdapter = new Local(__DIR__ . '/../../../var/');
         $filesystem = new Filesystem($filesystemAdapter);
         $pool = new FilesystemCachePool($filesystem);
@@ -285,7 +289,10 @@ class Github
             }
           }';
 
-        $reviewsByOrganization = $this->transformContributionsToModel($this->apiSearchGraphQL($graphQLQuery)['data']['user']['contributionsCollection']['pullRequestReviewContributionsByRepository']);
+        $reviewsByOrganization = $this->resultToModelTransformer->transformContributionsToModel(
+            $reviewFilter->getReviewer(),
+            $this->apiSearchGraphQL($graphQLQuery)['data']['user']['contributionsCollection']['pullRequestReviewContributionsByRepository']
+        );
         if ('' !== $repository) {
             $reviewsByOrganization->filterByRepository($repository);
         }
@@ -437,35 +444,5 @@ class Github
         ksort($types);
 
         return $types;
-    }
-
-    private function transformContributionsToModel(array $pullRequestReviewContributionsByRepository): ReviewContributionsByOrganization
-    {
-        $reviewContributionsByOrganization = new ReviewContributionsByOrganization();
-
-        foreach ($pullRequestReviewContributionsByRepository as $pullRequestReviewContributionByRepository) {
-            $reviewContributionsByRepository = new ReviewContributionsByRepository();
-
-            $reviewContributionsByRepository->setRepositoryName(
-                $pullRequestReviewContributionByRepository['repository']['name']
-            );
-
-            $contributionsCollection = new ContributionsCollection();
-            $contributionsCollection->setTotal($pullRequestReviewContributionByRepository['contributions']['totalCount']);
-            foreach ($pullRequestReviewContributionByRepository['contributions']['nodes'] as $pullRequestReviewContribution) {
-                $contribution = new Contribution();
-                $contribution
-                    ->setOccurredAt(\DateTime::createFromFormat(\DateTime::ISO8601, $pullRequestReviewContribution['occurredAt']))
-                    ->setState($pullRequestReviewContribution['pullRequestReview']['state'])
-                    ->setPullRequestAuthor($pullRequestReviewContribution['pullRequestReview']['pullRequest']['author']['login']);
-
-                $contributionsCollection->addContribution($contribution);
-            }
-            $reviewContributionsByRepository->addContributionsCollection($contributionsCollection);
-
-            $reviewContributionsByOrganization->addReviewContributionsByRepository($reviewContributionsByRepository);
-        }
-
-        return $reviewContributionsByOrganization;
     }
 }

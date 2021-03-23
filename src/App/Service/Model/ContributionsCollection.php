@@ -15,7 +15,7 @@ class ContributionsCollection
     /**
      * @var Contribution[]
      */
-    private $contributions;
+    private $contributions = [];
 
     /**
      * @return int

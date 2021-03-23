@@ -37,7 +37,12 @@ class ReviewContributionsByOrganization
     /**
      * @var ReviewContributionsByRepository[]
      */
-    private $reviewContributionsByRepositories;
+    private $reviewContributionsByRepositories = [];
+
+    public function __construct(string $reviewer)
+    {
+        $this->reviewer = $reviewer;
+    }
 
     /**
      * @return string
@@ -45,18 +50,6 @@ class ReviewContributionsByOrganization
     public function getReviewer(): string
     {
         return $this->reviewer;
-    }
-
-    /**
-     * @param string $reviewer
-     *
-     * @return ReviewContributionsByOrganization
-     */
-    public function setReviewer(string $reviewer): self
-    {
-        $this->reviewer = $reviewer;
-
-        return $this;
     }
 
     /**
@@ -137,6 +130,9 @@ class ReviewContributionsByOrganization
                     if ('DISMISSED' === $contribution->getState()) {
                         continue;
                     }
+                    if ('PENDING' === $contribution->getState()) {
+                        continue;
+                    }
 
                     ++$total['ALL'];
 
@@ -177,6 +173,14 @@ class ReviewContributionsByOrganization
         foreach ($this->reviewContributionsByRepositories as $i => $reviewContributionsByRepository) {
             foreach ($reviewContributionsByRepository->getContributionsCollections() as $contributionsCollection) {
                 foreach ($contributionsCollection->getContributions() as $contribution) {
+                    // shouldn't we count them ?
+                    if ('DISMISSED' === $contribution->getState()) {
+                        continue;
+                    }
+                    if ('PENDING' === $contribution->getState()) {
+                        continue;
+                    }
+
                     $date = $contribution->getOccurredAt()->format('Y-m-d');
 
                     if (!isset($reviewsByDate[$date])) {
