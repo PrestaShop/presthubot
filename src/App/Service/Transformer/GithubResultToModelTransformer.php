@@ -1,6 +1,6 @@
 <?php
 
-namespace Console\App\Service\Helper;
+namespace Console\App\Service\Transformer;
 
 use Console\App\Service\Model\Contribution;
 use Console\App\Service\Model\ContributionsCollection;

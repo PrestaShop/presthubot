@@ -4,9 +4,9 @@ namespace Console\App\Service;
 
 use Cache\Adapter\Filesystem\FilesystemCachePool;
 use Console\App\Service\Github\Filters;
-use Console\App\Service\Helper\GithubResultToModelTransformer;
 use Console\App\Service\Model\ReviewContributionsByOrganization;
 use Console\App\Service\PrestaShop\Filter\ReviewFilter;
+use Console\App\Service\Transformer\GithubResultToModelTransformer;
 use Github\Client;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;

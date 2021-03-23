@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Console\App\Service\Helper;
+namespace Tests\Console\App\Service\Transformer;
 
-use Console\App\Service\Helper\GithubResultToModelTransformer;
+use Console\App\Service\Transformer\GithubResultToModelTransformer;
 use PHPUnit\Framework\TestCase;
 
 class GithubResultToModelTransformerTest extends TestCase
