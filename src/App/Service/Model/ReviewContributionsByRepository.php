@@ -18,23 +18,19 @@ class ReviewContributionsByRepository
     private $contributionsCollections = [];
 
     /**
+     * @param string $repositoryName
+     */
+    public function __construct(string $repositoryName)
+    {
+        $this->repositoryName = $repositoryName;
+    }
+
+    /**
      * @return string
      */
     public function getRepositoryName(): string
     {
         return $this->repositoryName;
-    }
-
-    /**
-     * @param string $repositoryName
-     *
-     * @return ReviewContributionsByRepository
-     */
-    public function setRepositoryName(string $repositoryName): self
-    {
-        $this->repositoryName = $repositoryName;
-
-        return $this;
     }
 
     /**

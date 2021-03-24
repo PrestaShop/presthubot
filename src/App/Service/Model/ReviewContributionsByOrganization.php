@@ -29,6 +29,12 @@ namespace Console\App\Service\Model;
  */
 class ReviewContributionsByOrganization
 {
+    public const REVIEW_STATE_APPROVED = 'APPROVED';
+    public const REVIEW_STATE_CHANGES_REQUESTED = 'CHANGES_REQUESTED';
+    public const REVIEW_STATE_COMMENTED = 'COMMENTED';
+    public const REVIEW_STATE_DISMISSED = 'DISMISSED';
+    public const REVIEW_STATE_PENDING = 'PENDING';
+
     /**
      * @var string
      */
@@ -127,27 +133,24 @@ class ReviewContributionsByOrganization
             foreach ($reviewContributionsByRepository->getContributionsCollections() as $contributionsCollection) {
                 foreach ($contributionsCollection->getContributions() as $contribution) {
                     // shouldn't we count them ?
-                    if ('DISMISSED' === $contribution->getState()) {
+                    if (self::REVIEW_STATE_DISMISSED === $contribution->getState()) {
                         continue;
                     }
-                    if ('PENDING' === $contribution->getState()) {
+                    if (self::REVIEW_STATE_PENDING === $contribution->getState()) {
                         continue;
                     }
 
                     ++$total['ALL'];
 
                     switch ($contribution->getState()) {
-                        case 'APPROVED':
+                        case self::REVIEW_STATE_APPROVED:
                             ++$total['APPROVED'];
                             break;
-                        case 'CHANGES_REQUESTED':
+                        case self::REVIEW_STATE_CHANGES_REQUESTED:
                             ++$total['CHANGES_REQUESTED'];
                             break;
-                        case 'COMMENTED':
+                        case self::REVIEW_STATE_COMMENTED:
                             ++$total['COMMENTED'];
-                            break;
-                        default:
-                            var_dump($contribution->getState());
                             break;
                     }
 

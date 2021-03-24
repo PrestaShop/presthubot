@@ -4,6 +4,7 @@ namespace Console\App\Command;
 
 use Console\App\Service\Github;
 use Console\App\Service\PrestaShop\Filter\ReviewFilter;
+use DateTime;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -115,10 +116,10 @@ class GithubReviewReportCommand extends Command
         foreach ($maintainers as $maintainer) {
             $reviewsFilter = new ReviewFilter(
                 $maintainer,
-                \DateTime::createFromFormat('Y-m-d', $this->dateStart),
-                \DateTime::createFromFormat('Y-m-d', $this->dateEnd)
+                DateTime::createFromFormat('Y-m-d', $this->dateStart),
+                DateTime::createFromFormat('Y-m-d', $this->dateEnd)
             );
-            $reviewContributionsByOrganization = $this->github->getReviewsContributions(static::PRESTASHOP_ORGANIZATION_ID, $reviewsFilter);
+            $reviewContributionsByOrganization = $this->github->getReviewsContributions(self::PRESTASHOP_ORGANIZATION_ID, $reviewsFilter);
 
             if ($input->getOption('byDate')) {
                 // Review by date

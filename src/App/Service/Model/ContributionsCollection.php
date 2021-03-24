@@ -8,7 +8,7 @@ namespace Console\App\Service\Model;
 class ContributionsCollection
 {
     /**
-     * @var int
+     * @var int|null
      */
     private $total;
 

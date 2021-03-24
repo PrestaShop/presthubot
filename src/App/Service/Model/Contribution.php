@@ -24,24 +24,19 @@ class Contribution
      */
     private $pullRequestAuthor;
 
+    public function __construct(Datetime $occurredAt, string $state, string $pullRequestAuthor)
+    {
+        $this->occurredAt = $occurredAt;
+        $this->state = $state;
+        $this->pullRequestAuthor = $pullRequestAuthor;
+    }
+
     /**
      * @return Datetime
      */
     public function getOccurredAt(): Datetime
     {
         return $this->occurredAt;
-    }
-
-    /**
-     * @param Datetime $occurredAt
-     *
-     * @return Contribution
-     */
-    public function setOccurredAt(Datetime $occurredAt): self
-    {
-        $this->occurredAt = $occurredAt;
-
-        return $this;
     }
 
     /**
@@ -53,34 +48,10 @@ class Contribution
     }
 
     /**
-     * @param string $state
-     *
-     * @return Contribution
-     */
-    public function setState(string $state): self
-    {
-        $this->state = $state;
-
-        return $this;
-    }
-
-    /**
      * @return string
      */
     public function getPullRequestAuthor(): string
     {
         return $this->pullRequestAuthor;
-    }
-
-    /**
-     * @param string $pullRequestAuthor
-     *
-     * @return Contribution
-     */
-    public function setPullRequestAuthor(string $pullRequestAuthor): self
-    {
-        $this->pullRequestAuthor = $pullRequestAuthor;
-
-        return $this;
     }
 }
