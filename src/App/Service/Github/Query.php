@@ -154,6 +154,7 @@ class Query
                     body
                     createdAt
                     merged
+                    mergedAt
                     files(last: 100) {
                       nodes {
                         path
@@ -176,6 +177,12 @@ class Query
                         state
                         createdAt
                       }              
+                    }
+                    labels(last: 100) {
+                      totalCount
+                      nodes {
+                        name
+                      }
                     }
                   }
                   ... on Issue {

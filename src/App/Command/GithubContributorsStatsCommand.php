@@ -3,6 +3,7 @@
 namespace Console\App\Command;
 
 use Console\App\Service\Github;
+use Console\App\Service\Github\Query;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -94,13 +95,16 @@ class GithubContributorsStatsCommand extends Command
                     'merged_branch' => [],
                 ];
             }
-            $pullRequests = $this->github->getClient()->api('search')->issues('org:PrestaShop is:pr author:' . $author);
-            $output->writeLn(['[' . $agency . '] ' . $author . ' (' . count($pullRequests['items']) . ')']);
+            $graphQLQuery = new Query();
+            $graphQLQuery->setQuery('org:PrestaShop is:pr author:' . $author);
+            $pullRequests = $this->github->search($graphQLQuery);
+            $output->writeLn(['[' . $agency . '] ' . $author . ' (' . count($pullRequests) . ')']);
 
-            foreach ($pullRequests['items'] as $pullRequest) {
-                $repository = str_replace('https://api.github.com/repos/PrestaShop/', '', $pullRequest['repository_url']);
-                $createdKey = substr($pullRequest['created_at'], 0, 10);
-                $branch = array_reduce($pullRequest['labels'], function (bool $carry, array $item) {
+            foreach ($pullRequests as $pullRequest) {
+                $pullRequest = $pullRequest['node'];
+                $repository = $pullRequest['repository']['name'];
+                $createdKey = substr($pullRequest['createdAt'], 0, 10);
+                $branch = array_reduce($pullRequest['labels']['nodes'], function (bool $carry, array $item) {
                     if (!empty($carry)) {
                         return $carry;
                     }
@@ -123,11 +127,10 @@ class GithubContributorsStatsCommand extends Command
                 // The number of PRs created by the company by branch
                 ++$data[$agency]['created_branch'][$branch];
 
-                $apiPullRequest = $this->github->getClient()->api('pr')->show('PrestaShop', $repository, $pullRequest['number']);
-                if (!$apiPullRequest['merged']) {
+                if (!$pullRequest['merged']) {
                     continue;
                 }
-                $mergedKey = substr($apiPullRequest['merged_at'], 0, 10);
+                $mergedKey = substr($pullRequest['mergedAt'], 0, 10);
                 if (!isset($data[$agency]['merged_day'][$mergedKey])) {
                     $data[$agency]['merged_day'][$mergedKey] = 0;
                 }
