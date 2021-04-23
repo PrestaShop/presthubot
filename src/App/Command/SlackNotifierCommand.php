@@ -100,6 +100,15 @@ class SlackNotifierCommand extends Command
         'new feature',
     ];
 
+    /**
+     * @var array<string>
+     */
+    private const BRANCH_SUPPORT = [
+        '1.7.7.x',
+        '1.7.8.x',
+        'develop',
+    ];
+
     protected function configure()
     {
         $this->setName('slack:notifier')
@@ -202,39 +211,25 @@ class SlackNotifierCommand extends Command
 
     protected function checkStatusNightly(): string
     {
-        $report177x = $this->nightlyBoard->getReport(date('Y-m-d'), '1.7.7.x', 'functional');
-        $reportDevelop = $this->nightlyBoard->getReport(date('Y-m-d'), 'develop', 'functional');
-
-        $has177XPassed = isset($report177x['tests'], $report177x['tests']['passed']);
-        $has177XFailed = isset($report177x['tests'], $report177x['tests']['failed']);
-        $has177XPending = isset($report177x['tests'], $report177x['tests']['pending']);
-        $hasDevelopPassed = isset($reportDevelop['tests'], $reportDevelop['tests']['passed']);
-        $hasDevelopFailed = isset($reportDevelop['tests'], $reportDevelop['tests']['failed']);
-        $hasDevelopPending = isset($reportDevelop['tests'], $reportDevelop['tests']['pending']);
-
-        $status177X = ($has177XFailed && $report177x['tests']['failed'] == 0);
-        $statusDevelop = ($hasDevelopFailed && $reportDevelop['tests']['failed'] == 0);
-
-        $emoji177X = $status177X ? ':greenlight:' : ':redlight:';
-        $emojiDevelop = $statusDevelop ? ':greenlight:' : ':redlight:';
-
         $slackMessage = ':notebook_with_decorative_cover: Nightly Board :notebook_with_decorative_cover:' . PHP_EOL;
-        $slackMessage .= ' - <https://nightly.prestashop.com/report/' . $report177x['id'] . '|' . $emoji177X . ' Report `1.7.7.x`>';
-        $slackMessage .= ' : ';
-        $slackMessage .= $has177XPassed ? ':heavy_check_mark: ' . $report177x['tests']['passed'] : '';
-        $slackMessage .= ($has177XPassed && ($has177XFailed || $has177XPending) ? ' - ' : '');
-        $slackMessage .= $has177XFailed ? ':x: ' . $report177x['tests']['failed'] : '';
-        $slackMessage .= (($has177XPassed || $has177XFailed) && ($has177XPending) ? ' - ' : '');
-        $slackMessage .= $has177XPending ? '⏸️ ' . $report177x['tests']['pending'] : '';
-        $slackMessage .= PHP_EOL;
-        $slackMessage .= ' - <https://nightly.prestashop.com/report/' . $reportDevelop['id'] . '|' . $emojiDevelop . ' Report `develop`>';
-        $slackMessage .= ' : ';
-        $slackMessage .= $hasDevelopPassed ? ':heavy_check_mark: ' . $reportDevelop['tests']['passed'] : '';
-        $slackMessage .= ($hasDevelopPassed && ($hasDevelopFailed || $hasDevelopPending) ? ' - ' : '');
-        $slackMessage .= $hasDevelopFailed ? ':x: ' . $reportDevelop['tests']['failed'] : '';
-        $slackMessage .= (($hasDevelopPassed || $hasDevelopFailed) && ($hasDevelopPending) ? ' - ' : '');
-        $slackMessage .= $hasDevelopPending ? '⏸️ ' . $reportDevelop['tests']['pending'] : '';
-        $slackMessage .= PHP_EOL;
+
+        foreach (self::BRANCH_SUPPORT as $branch) {
+            $report = $this->nightlyBoard->getReport(date('Y-m-d'), $branch, 'functional');
+            $hasPassed = isset($report['tests'], $report['tests']['passed']);
+            $hasFailed = isset($report['tests'], $report['tests']['failed']);
+            $hasPending = isset($report['tests'], $report['tests']['pending']);
+            $status = ($hasFailed && $report['tests']['failed'] == 0);
+            $emoji = $status ? ':greenlight:' : ':redlight:';
+
+            $slackMessage .= ' - <https://nightly.prestashop.com/report/' . $report['id'] . '|' . $emoji . ' Report `' . $branch . '`>';
+            $slackMessage .= ' : ';
+            $slackMessage .= $hasPassed ? ':heavy_check_mark: ' . $report['tests']['passed'] : '';
+            $slackMessage .= ($hasPassed && ($hasFailed || $hasPending) ? ' - ' : '');
+            $slackMessage .= $hasFailed ? ':x: ' . $report['tests']['failed'] : '';
+            $slackMessage .= (($hasPassed || $hasFailed) && ($hasPending) ? ' - ' : '');
+            $slackMessage .= $hasPending ? '⏸️ ' . $report['tests']['pending'] : '';
+            $slackMessage .= PHP_EOL;
+        }
 
         return $slackMessage;
     }
@@ -735,90 +730,31 @@ class SlackNotifierCommand extends Command
         $graphQLQuery = new Query();
         $slackMessage = ':chart_with_upwards_trend: PR Stats for QA :chart_with_upwards_trend:' . PHP_EOL;
 
-        $searchPR176 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.6.x ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
-        $graphQLQuery->setQuery($searchPR176);
-        $countPR176 = $this->github->countSearch($graphQLQuery);
+        // Number of PR with the label "Waiting for QA", without the label "Waiting for author", filtered by branch
+        foreach (self::BRANCH_SUPPORT as $branch) {
+            $searchPR = 'repo:PrestaShop/PrestaShop is:pr is:open base:' . $branch . ' ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
+            $graphQLQuery->setQuery($searchPR);
+            $count = $this->github->countSearch($graphQLQuery);
+            $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR)) . '|PR ' . $branch . '> : *' . $count . '*' . PHP_EOL;
+        }
 
-        $searchPR177 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.7.x ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
-        $graphQLQuery->setQuery($searchPR177);
-        $countPR177 = $this->github->countSearch($graphQLQuery);
-
-        $searchPRDevelop = 'repo:PrestaShop/PrestaShop is:pr is:open -label:1.7.7.x -label:1.7.6.x ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
-        $graphQLQuery->setQuery($searchPRDevelop);
-        $countDevelop = $this->github->countSearch($graphQLQuery);
-
+        // Number of PR for Modules
         $searchPRModules = 'org:PrestaShop archived:false -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRModules);
         $countModules = $this->github->countSearch($graphQLQuery);
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRModules)) . '|PR Modules> : *' . $countModules . '*' . PHP_EOL;
 
-        $searchPRWaitingForAuthor = 'org:PrestaShop archived:false is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' ' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
-        $graphQLQuery->setQuery($searchPRWaitingForAuthor);
-        $countWaitingForAuthor = $this->github->countSearch($graphQLQuery);
-
+        // Number of PR for Specs
         $searchPRSpecs = 'repo:PrestaShop/prestashop-specs is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRSpecs);
         $countSpecs = $this->github->countSearch($graphQLQuery);
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRSpecs)) . '|PR Specs> : *' . $countSpecs . '*' . PHP_EOL;
 
-        // Cache
-        $cache = [];
-        if (is_file(self::CACHE_CHECKSTATSQA)) {
-            $cache = file_get_contents(self::CACHE_CHECKSTATSQA);
-            $cache = json_decode($cache, true);
-        }
-        $cache[date('Y-m-d')] = [
-            '176' => $countPR176,
-            '177' => $countPR177,
-            'Develop' => $countDevelop,
-            'Modules' => $countModules,
-            'Specs' => $countSpecs,
-            'WaitingForAuthor' => $countWaitingForAuthor,
-        ];
-        if (!is_dir(\dirname(self::CACHE_CHECKSTATSQA))) {
-            \mkdir(\dirname(self::CACHE_CHECKSTATSQA));
-        }
-        \file_put_contents(self::CACHE_CHECKSTATSQA, \json_encode($cache));
-
-        // Stats
-        $dateJSub1 = date('D') == 'Mon' ? date('Y-m-d', strtotime('-3 days')) : date('Y-m-d', strtotime('-1 day'));
-        if (!isset($cache[$dateJSub1])) {
-            $cache[$dateJSub1] = $cache[date('Y-m-d')];
-        }
-
-        $diff = $countPR176 - $cache[$dateJSub1]['176'];
-        $countPR176Diff = isset($cache[$dateJSub1], $cache[$dateJSub1]['176'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-        $diff = $countPR177 - $cache[$dateJSub1]['177'];
-        $countPR177Diff = isset($cache[$dateJSub1], $cache[$dateJSub1]['177'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-        $diff = $countDevelop - $cache[$dateJSub1]['Develop'];
-        $countDevelopDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Develop'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-        $diff = $countModules - $cache[$dateJSub1]['Modules'];
-        $countModulesDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Modules'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-        $diff = $countSpecs - $cache[$dateJSub1]['Specs'];
-        $countSpecsDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Specs'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-        $diff = $countWaitingForAuthor - $cache[$dateJSub1]['WaitingForAuthor'];
-        $countWaitingForAuthorDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['WaitingForAuthor'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-
-        // Number of PR with the label "Waiting for QA", without the label "Waiting for author", filtered by branch
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR176)) . '|PR 1.7.6.x> : *' . $countPR176 . '*' . $countPR176Diff . PHP_EOL;
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR177)) . '|PR 1.7.7.x> : *' . $countPR177 . '*' . $countPR177Diff . PHP_EOL;
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRDevelop)) . '|PR Develop> : *' . $countDevelop . '*' . $countDevelopDiff . PHP_EOL;
-        // Number of PR for Modules
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRModules)) . '|PR Modules> : *' . $countModules . '*' . $countModulesDiff . PHP_EOL;
-        // Number of PR for Specs
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRSpecs)) . '|PR Specs> : *' . $countSpecs . '*' . $countSpecsDiff . PHP_EOL;
         // Number of PR with the label "Waiting for QA" AND with the label "Waiting for author"
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRWaitingForAuthor)) . '|PR Waiting for Author> : *' . $countWaitingForAuthor . '*' . $countWaitingForAuthorDiff . PHP_EOL;
+        $searchPRWaitingForAuthor = 'org:PrestaShop archived:false is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' ' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
+        $graphQLQuery->setQuery($searchPRWaitingForAuthor);
+        $countWaitingForAuthor = $this->github->countSearch($graphQLQuery);
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRWaitingForAuthor)) . '|PR Waiting for Author> : *' . $countWaitingForAuthor . '*' . PHP_EOL;
 
         return $slackMessage;
     }
