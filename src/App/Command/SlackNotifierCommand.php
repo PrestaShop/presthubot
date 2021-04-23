@@ -730,39 +730,30 @@ class SlackNotifierCommand extends Command
         $graphQLQuery = new Query();
         $slackMessage = ':chart_with_upwards_trend: PR Stats for QA :chart_with_upwards_trend:' . PHP_EOL;
 
-        $searchPR177 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.7.x ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
-        $graphQLQuery->setQuery($searchPR177);
-        $countPR177 = $this->github->countSearch($graphQLQuery);
+        // Number of PR with the label "Waiting for QA", without the label "Waiting for author", filtered by branch
+        foreach (self::BRANCH_SUPPORT as $branch) {
+            $searchPR = 'repo:PrestaShop/PrestaShop is:pr is:open base:' . $branch . ' ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
+            $graphQLQuery->setQuery($searchPR);
+            $count = $this->github->countSearch($graphQLQuery);
+            $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR)) . '|PR ' . $branch . '> : *' . $count . '*' . PHP_EOL;
+        }
 
-        $searchPR178 = 'repo:PrestaShop/PrestaShop is:pr is:open label:1.7.8.x ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
-        $graphQLQuery->setQuery($searchPR178);
-        $countPR178 = $this->github->countSearch($graphQLQuery);
-
-        $searchPRDevelop = 'repo:PrestaShop/PrestaShop is:pr is:open -label:1.7.7.x -label:1.7.8.x ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
-        $graphQLQuery->setQuery($searchPRDevelop);
-        $countDevelop = $this->github->countSearch($graphQLQuery);
-
+        // Number of PR for Modules
         $searchPRModules = 'org:PrestaShop archived:false -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRModules);
         $countModules = $this->github->countSearch($graphQLQuery);
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRModules)) . '|PR Modules> : *' . $countModules . '*' . PHP_EOL;
 
-        $searchPRWaitingForAuthor = 'org:PrestaShop archived:false is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' ' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
-        $graphQLQuery->setQuery($searchPRWaitingForAuthor);
-        $countWaitingForAuthor = $this->github->countSearch($graphQLQuery);
-
+        // Number of PR for Specs
         $searchPRSpecs = 'repo:PrestaShop/prestashop-specs is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
         $graphQLQuery->setQuery($searchPRSpecs);
         $countSpecs = $this->github->countSearch($graphQLQuery);
-
-        // Number of PR with the label "Waiting for QA", without the label "Waiting for author", filtered by branch
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR177)) . '|PR 1.7.7.x> : *' . $countPR177 . '*' . PHP_EOL;
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR178)) . '|PR 1.7.8.x> : *' . $countPR178 . '*' . PHP_EOL;
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRDevelop)) . '|PR Develop> : *' . $countDevelop . '*' . PHP_EOL;
-        // Number of PR for Modules
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRModules)) . '|PR Modules> : *' . $countModules . '*' . PHP_EOL;
-        // Number of PR for Specs
         $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRSpecs)) . '|PR Specs> : *' . $countSpecs . '*' . PHP_EOL;
+
         // Number of PR with the label "Waiting for QA" AND with the label "Waiting for author"
+        $searchPRWaitingForAuthor = 'org:PrestaShop archived:false is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' ' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM;
+        $graphQLQuery->setQuery($searchPRWaitingForAuthor);
+        $countWaitingForAuthor = $this->github->countSearch($graphQLQuery);
         $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRWaitingForAuthor)) . '|PR Waiting for Author> : *' . $countWaitingForAuthor . '*' . PHP_EOL;
 
         return $slackMessage;
