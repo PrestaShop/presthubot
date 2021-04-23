@@ -754,66 +754,16 @@ class SlackNotifierCommand extends Command
         $graphQLQuery->setQuery($searchPRSpecs);
         $countSpecs = $this->github->countSearch($graphQLQuery);
 
-        // Cache
-        $cache = [];
-        if (is_file(self::CACHE_CHECKSTATSQA)) {
-            $cache = file_get_contents(self::CACHE_CHECKSTATSQA);
-            $cache = json_decode($cache, true);
-        }
-        $cache[date('Y-m-d')] = [
-            '177' => $countPR177,
-            '178' => $countPR178,
-            'Develop' => $countDevelop,
-            'Modules' => $countModules,
-            'Specs' => $countSpecs,
-            'WaitingForAuthor' => $countWaitingForAuthor,
-        ];
-        if (!is_dir(\dirname(self::CACHE_CHECKSTATSQA))) {
-            \mkdir(\dirname(self::CACHE_CHECKSTATSQA));
-        }
-        \file_put_contents(self::CACHE_CHECKSTATSQA, \json_encode($cache));
-
-        // Stats
-        $dateJSub1 = date('D') == 'Mon' ? date('Y-m-d', strtotime('-3 days')) : date('Y-m-d', strtotime('-1 day'));
-        if (!isset($cache[$dateJSub1])) {
-            $cache[$dateJSub1] = $cache[date('Y-m-d')];
-        }
-
-        $diff = $countPR177 - $cache[$dateJSub1]['177'];
-        $countPR177Diff = isset($cache[$dateJSub1], $cache[$dateJSub1]['177'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-        $diff = $countPR178 - $cache[$dateJSub1]['178'];
-        $countPR178Diff = isset($cache[$dateJSub1], $cache[$dateJSub1]['178'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-        $diff = $countDevelop - $cache[$dateJSub1]['Develop'];
-        $countDevelopDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Develop'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-        $diff = $countModules - $cache[$dateJSub1]['Modules'];
-        $countModulesDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Modules'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-        $diff = $countSpecs - $cache[$dateJSub1]['Specs'];
-        $countSpecsDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['Specs'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-        $diff = $countWaitingForAuthor - $cache[$dateJSub1]['WaitingForAuthor'];
-        $countWaitingForAuthorDiff = isset($cache[$dateJSub1], $cache[$dateJSub1]['WaitingForAuthor'])
-            ? ' (' . ($diff == 0 ? '=' : ($diff > 0 ? '+' : '') . $diff) . ')'
-            : '';
-
         // Number of PR with the label "Waiting for QA", without the label "Waiting for author", filtered by branch
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR177)) . '|PR 1.7.7.x> : *' . $countPR177 . '*' . $countPR177Diff . PHP_EOL;
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR178)) . '|PR 1.7.8.x> : *' . $countPR178 . '*' . $countPR178Diff . PHP_EOL;
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRDevelop)) . '|PR Develop> : *' . $countDevelop . '*' . $countDevelopDiff . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR177)) . '|PR 1.7.7.x> : *' . $countPR177 . '*' . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPR178)) . '|PR 1.7.8.x> : *' . $countPR178 . '*' . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRDevelop)) . '|PR Develop> : *' . $countDevelop . '*' . PHP_EOL;
         // Number of PR for Modules
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRModules)) . '|PR Modules> : *' . $countModules . '*' . $countModulesDiff . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRModules)) . '|PR Modules> : *' . $countModules . '*' . PHP_EOL;
         // Number of PR for Specs
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRSpecs)) . '|PR Specs> : *' . $countSpecs . '*' . $countSpecsDiff . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRSpecs)) . '|PR Specs> : *' . $countSpecs . '*' . PHP_EOL;
         // Number of PR with the label "Waiting for QA" AND with the label "Waiting for author"
-        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRWaitingForAuthor)) . '|PR Waiting for Author> : *' . $countWaitingForAuthor . '*' . $countWaitingForAuthorDiff . PHP_EOL;
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRWaitingForAuthor)) . '|PR Waiting for Author> : *' . $countWaitingForAuthor . '*' . PHP_EOL;
 
         return $slackMessage;
     }
