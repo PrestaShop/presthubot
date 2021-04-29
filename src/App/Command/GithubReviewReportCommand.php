@@ -149,7 +149,7 @@ class GithubReviewReportCommand extends Command
             }
         } else {
             ksort($reviewsAuthor, SORT_STRING | SORT_FLAG_CASE);
-            $headers = ['Author', '#Reviews', '#Commented', '#Approved', '#ChangesRequested', '#Insiders', '#Outsiders'];
+            $headers = ['Author', '#Reviews', '#Commented', '#Approved', '#ChangesRequested', '#Dismissed', '#Insiders', '#Outsiders'];
             foreach ($reviewsAuthor as $reviewer => $reviews) {
                 $rows[] = array_merge([$reviewer], $reviews);
             }

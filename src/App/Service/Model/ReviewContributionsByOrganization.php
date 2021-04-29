@@ -126,16 +126,13 @@ class ReviewContributionsByOrganization
             'COMMENTED' => 0,
             'APPROVED' => 0,
             'CHANGES_REQUESTED' => 0,
+            'DISMISSED' => 0,
             'INSIDE' => 0,
             'OUTSIDE' => 0,
         ];
         foreach ($this->reviewContributionsByRepositories as $i => $reviewContributionsByRepository) {
             foreach ($reviewContributionsByRepository->getContributionsCollections() as $contributionsCollection) {
                 foreach ($contributionsCollection->getContributions() as $contribution) {
-                    // shouldn't we count them ?
-                    if (self::REVIEW_STATE_DISMISSED === $contribution->getState()) {
-                        continue;
-                    }
                     if (self::REVIEW_STATE_PENDING === $contribution->getState()) {
                         continue;
                     }
@@ -143,6 +140,9 @@ class ReviewContributionsByOrganization
                     ++$total['ALL'];
 
                     switch ($contribution->getState()) {
+                        case self::REVIEW_STATE_DISMISSED:
+                            ++$total['DISMISSED'];
+                            break;
                         case self::REVIEW_STATE_APPROVED:
                             ++$total['APPROVED'];
                             break;
@@ -176,10 +176,6 @@ class ReviewContributionsByOrganization
         foreach ($this->reviewContributionsByRepositories as $i => $reviewContributionsByRepository) {
             foreach ($reviewContributionsByRepository->getContributionsCollections() as $contributionsCollection) {
                 foreach ($contributionsCollection->getContributions() as $contribution) {
-                    // shouldn't we count them ?
-                    if ('DISMISSED' === $contribution->getState()) {
-                        continue;
-                    }
                     if ('PENDING' === $contribution->getState()) {
                         continue;
                     }

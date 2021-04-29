@@ -107,11 +107,12 @@ class GithubResultToModelTransformerTest extends TestCase
             ],
             [
                 'totalReviews' => [
-                    'ALL' => 3,
+                    'ALL' => 4,
                     'COMMENTED' => 1,
                     'APPROVED' => 1,
                     'CHANGES_REQUESTED' => 1,
-                    'INSIDE' => 1,
+                    'DISMISSED' => 1,
+                    'INSIDE' => 2,
                     'OUTSIDE' => 2,
                 ],
                 'reviewsByDate' => [
@@ -120,6 +121,9 @@ class GithubResultToModelTransformerTest extends TestCase
                     ],
                     '2021-03-10' => [
                         'joeylelievre' => 2,
+                    ],
+                    '2021-03-08' => [
+                        'joeylelievre' => 1,
                     ],
                 ],
             ],
@@ -133,6 +137,7 @@ class GithubResultToModelTransformerTest extends TestCase
                     'COMMENTED' => 0,
                     'APPROVED' => 0,
                     'CHANGES_REQUESTED' => 0,
+                    'DISMISSED' => 0,
                     'INSIDE' => 0,
                     'OUTSIDE' => 0,
                 ],

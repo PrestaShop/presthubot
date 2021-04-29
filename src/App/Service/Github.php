@@ -264,8 +264,8 @@ class Github
     public function getReviewsContributions(string $organizationId, ReviewFilter $reviewFilter, string $repository = ''): ReviewContributionsByOrganization
     {
         $graphQLQuery = '{
-            user(login: "' . $reviewFilter->getReviewer() . '") {
-                contributionsCollection(organizationID:"' . $organizationId . '" from: "' . $reviewFilter->getStartDate()->format('Y-m-d') . 'T00:00:00" to: "' . $reviewFilter->getEndDate()->format('Y-m-d') . 'T23:59:59") {
+            user(login: "%s") {
+                contributionsCollection(organizationID:"%s" from: "%sT00:00:00" to: "%sT23:59:59") {
                     pullRequestReviewContributionsByRepository {
                         contributions(last: 100) {
                             totalCount
@@ -288,6 +288,14 @@ class Github
                 }
             }
           }';
+
+        $graphQLQuery = sprintf(
+            $graphQLQuery,
+            $reviewFilter->getReviewer(),
+            $organizationId,
+            $reviewFilter->getStartDate()->format('Y-m-d'),
+            $reviewFilter->getEndDate()->format('Y-m-d')
+        );
 
         $reviewsByOrganization = $this->resultToModelTransformer->transformContributionsToModel(
             $reviewFilter->getReviewer(),
