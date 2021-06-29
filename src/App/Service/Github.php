@@ -52,7 +52,7 @@ class Github
         $this->client->addCache($pool);
 
         if (!empty($ghToken)) {
-            $this->client->authenticate($ghToken, null, Client::AUTH_URL_TOKEN);
+            $this->client->authenticate($ghToken, null, Client::AUTH_ACCESS_TOKEN);
         }
     }
 
