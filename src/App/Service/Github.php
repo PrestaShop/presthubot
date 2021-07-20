@@ -7,7 +7,9 @@ use Console\App\Service\Github\Filters;
 use Console\App\Service\Model\ReviewContributionsByOrganization;
 use Console\App\Service\PrestaShop\Filter\ReviewFilter;
 use Console\App\Service\Transformer\GithubResultToModelTransformer;
+use Exception;
 use Github\Client;
+use Github\Exception\RuntimeException;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;
 
@@ -117,7 +119,15 @@ class Github
             preg_match('#Fixes\shttps:\/\/github.com\/PrestaShop\/PrestaShop\/issues\/([0-9]{1,5})#', $pullRequest['body'], $matches);
             $issueId = !empty($matches) && !empty($matches[1]) ? $matches[1] : null;
         }
-        $issue = is_null($issueId) ? null : $this->client->api('issue')->show('PrestaShop', 'PrestaShop', $issueId);
+        try {
+            $issue = is_null($issueId) ? null : $this->client->api('issue')->show('PrestaShop', 'PrestaShop', $issueId);
+        } catch (RuntimeException $e) {
+            if ($e->getMessage() == 'Not Found') {
+                throw new Exception(sprintf('Cannot find linked issue #%s in PR #%s', $issueId, $pullRequest['number']));
+            } else {
+                throw $e;
+            }
+        }
 
         // API Alert
         if (isset($pullRequest['_links'])) {
