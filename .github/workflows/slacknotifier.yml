@@ -3,6 +3,8 @@ name: Slack Notifier
 on:
   schedule:
     - cron:  '0 7 * * 1-5'
+  workflow_dispatch:
+
 #  push:
 #    branches:
 #      - master
