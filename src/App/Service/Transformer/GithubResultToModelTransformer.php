@@ -31,7 +31,6 @@ class GithubResultToModelTransformer
             $contributionsCollection = new ContributionsCollection();
             $contributionsCollection->setTotal($pullRequestReviewContributionByRepository['contributions']['totalCount']);
             foreach ($pullRequestReviewContributionByRepository['contributions']['nodes'] as $pullRequestReviewContribution) {
-
                 if ($pullRequestReviewContribution['pullRequestReview']['pullRequest']['author'] === null) {
                     // skip orphan reviews
                     continue;
