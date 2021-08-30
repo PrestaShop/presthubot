@@ -7,6 +7,7 @@ use DateTime;
 
 class Query
 {
+    public const LABEL_BLOCKED = 'label:\"Blocked\"';
     public const LABEL_ON_HOLD = 'label:\"On hold\"';
     public const LABEL_QA_OK = 'label:\"QA ✔️\"';
     public const LABEL_WAITING_FOR_AUTHOR = 'label:\"waiting for author\"';
@@ -54,7 +55,8 @@ class Query
             . ' -' . self::LABEL_WAITING_FOR_UX
             . ' -' . self::LABEL_WAITING_FOR_WORDING
             . ' -' . self::LABEL_WAITING_FOR_QA
-            . ' -' . self::LABEL_WIP,
+            . ' -' . self::LABEL_WIP
+            . ' -' . self::LABEL_BLOCKED,
     ];
     public const REQUEST_PR_WAITING_FOR_DEV = 'PR Waiting for Dev';
     public const REQUEST_PR_WAITING_FOR_MERGE = 'PR Waiting for Merge';
