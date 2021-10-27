@@ -4,9 +4,6 @@ namespace Console\App\Service;
 
 use Cache\Adapter\Filesystem\FilesystemCachePool;
 use Console\App\Service\Github\Filters;
-use Console\App\Service\Model\ReviewContributionsByOrganization;
-use Console\App\Service\PrestaShop\Filter\ReviewFilter;
-use Console\App\Service\Transformer\GithubResultToModelTransformer;
 use Exception;
 use Github\Client;
 use Github\Exception\RuntimeException;
@@ -19,11 +16,6 @@ class Github
      * @var Client;
      */
     protected $client;
-
-    /**
-     * @var GithubResultToModelTransformer
-     */
-    private $resultToModelTransformer;
 
     private const MAINTAINER_MEMBERS = [
         'atomiix',
@@ -45,7 +37,6 @@ class Github
 
     public function __construct(string $ghToken = null)
     {
-        $this->resultToModelTransformer = new GithubResultToModelTransformer();
         $filesystemAdapter = new Local(__DIR__ . '/../../../var/');
         $filesystem = new Filesystem($filesystemAdapter);
         $pool = new FilesystemCachePool($filesystem);
@@ -269,53 +260,6 @@ class Github
         } while ($resultPage['data']['search']['pageInfo']['hasNextPage']);
 
         return $result;
-    }
-
-    public function getReviewsContributions(string $organizationId, ReviewFilter $reviewFilter, string $repository = ''): ReviewContributionsByOrganization
-    {
-        $graphQLQuery = '{
-            user(login: "%s") {
-                contributionsCollection(organizationID:"%s" from: "%sT00:00:00" to: "%sT23:59:59") {
-                    pullRequestReviewContributionsByRepository {
-                        contributions(last: 100) {
-                            totalCount
-                            nodes {
-                                occurredAt
-                                pullRequestReview {
-                                    state
-                                    pullRequest {
-                                        author {
-                                            login
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        repository {
-                            name
-                        }
-                    }
-                }
-            }
-          }';
-
-        $graphQLQuery = sprintf(
-            $graphQLQuery,
-            $reviewFilter->getReviewer(),
-            $organizationId,
-            $reviewFilter->getStartDate()->format('Y-m-d'),
-            $reviewFilter->getEndDate()->format('Y-m-d')
-        );
-
-        $reviewsByOrganization = $this->resultToModelTransformer->transformContributionsToModel(
-            $reviewFilter->getReviewer(),
-            $this->apiSearchGraphQL($graphQLQuery)['data']['user']['contributionsCollection']['pullRequestReviewContributionsByRepository']
-        );
-        if ('' !== $repository) {
-            $reviewsByOrganization->filterByRepository($repository);
-        }
-
-        return $reviewsByOrganization;
     }
 
     public function isPRValid(array $pullRequest, Filters $filters): bool
