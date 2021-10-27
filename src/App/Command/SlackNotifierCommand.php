@@ -610,7 +610,7 @@ class SlackNotifierCommand extends Command
         $modulesNeedRelease = [];
         foreach ($this->moduleFetcher->getModules() as $repository) {
             $checkBranches = $this->moduleChecker->checkBranches('PrestaShop', $repository);
-            if ($checkBranches['hasDiffMaster']) {
+            if ($checkBranches['hasDiffMaster'] && !$checkBranches['hasPRRelease']) {
                 $modulesNeedRelease[$repository] = $checkBranches['status'];
             }
         }

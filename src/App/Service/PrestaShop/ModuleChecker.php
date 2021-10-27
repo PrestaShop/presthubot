@@ -348,12 +348,23 @@ class ModuleChecker
             $branches[str_replace('refs/heads/', '', $info['ref'])] = $info['object']['sha'];
         }
 
+        // Fetch pulls requests
+        $pullRequests = $this->github->getClient()->api('pull_request')->all($org, $repository);
+        $hasPRRelease = array_reduce(
+            $pullRequests,
+            function (bool $carry, array $item) {
+                return $carry ?: strpos($item['title'], 'Release ') === 0;
+            },
+            false
+        );
+
         // Name of develop branch
         $this->report['branch'] = [];
         $this->report['branch']['develop'] = (array_key_exists('dev', $branches) ? 'dev' : '');
         $this->report['branch']['status'] = $this->report['branch']['develop'] === '' ? null : $this->findReleaseStatus($references, $org, $repository);
         $this->report['branch']['isDefault'] = $mainBranch === 'dev';
         $this->report['branch']['hasDiffMaster'] = (!empty($this->report['branch']['status']) && $this->report['branch']['status']['ahead'] > 0);
+        $this->report['branch']['hasPRRelease'] = $hasPRRelease;
 
         $this->rating[self::RATING_BRANCH] +=
             ($this->report['branch']['develop'] ? 1 : 0)
