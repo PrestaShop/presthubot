@@ -46,11 +46,6 @@ class SlackNotifierCommand extends Command
     protected $slackChannelQA;
 
     /**
-     * @var string
-     */
-    private const CACHE_CHECKSTATSQA = '.cache/slacknotifier_checkStatsQA.json';
-
-    /**
      * @var int
      */
     private const NUM_PR_FOR_MAINTAINERS = 5;
