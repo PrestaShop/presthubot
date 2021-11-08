@@ -99,7 +99,6 @@ class SlackNotifierCommand extends Command
      * @var array<string>
      */
     private const BRANCH_SUPPORT = [
-        '1.7.7.x',
         '1.7.8.x',
         'develop',
     ];
