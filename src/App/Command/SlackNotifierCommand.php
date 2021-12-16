@@ -395,6 +395,9 @@ class SlackNotifierCommand extends Command
         $prReadyToReview = [];
         $filters = new Filters();
         $filters->addFilter(Filters::FILTER_REPOSITORY_PRIVATE, [false], true);
+        $filters->addFilter(Filters::FILTER_REPOSITORY_NAME, [
+            'prestashop-specs',
+        ], false);
         // 1st PR with already a review (indicate who has ever)
         // 2nd PR without review
         foreach ([5, 4, 3, 2, 1, 0] as $numApproved) {
