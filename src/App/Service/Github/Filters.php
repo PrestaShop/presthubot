@@ -10,6 +10,7 @@ class Filters
     public const FILTER_AUTHOR = 'author';
     public const FILTER_FILE_EXTENSION = 'fileExtension';
     public const FILTER_NUM_APPROVED = 'numApproved';
+    public const FILTER_REPOSITORY_NAME = 'repositoryName';
     public const FILTER_REPOSITORY_PRIVATE = 'repositoryPrivate';
     public const FILTER_REVIEWER = 'reviewer';
 

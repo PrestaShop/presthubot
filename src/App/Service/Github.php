@@ -273,7 +273,19 @@ class Github
             return false;
         }
 
-        // Filter Repository PRovaite
+        // Filter Repository Name
+        if ($filters->hasFilter(Filters::FILTER_REPOSITORY_NAME)) {
+            if ($filters->isFilterIncluded(Filters::FILTER_REPOSITORY_NAME)
+                && !in_array($pullRequest['repository']['name'], $filters->getFilterData(Filters::FILTER_REPOSITORY_NAME), true)) {
+                return false;
+            }
+            if (!$filters->isFilterIncluded(Filters::FILTER_REPOSITORY_NAME)
+                && in_array($pullRequest['repository']['name'], $filters->getFilterData(Filters::FILTER_REPOSITORY_NAME), true)) {
+                return false;
+            }
+        }
+
+        // Filter Repository Private
         if ($filters->hasFilter(Filters::FILTER_REPOSITORY_PRIVATE)) {
             if ($filters->isFilterIncluded(Filters::FILTER_REPOSITORY_PRIVATE)
                 && !in_array($pullRequest['repository']['isPrivate'], $filters->getFilterData(Filters::FILTER_REPOSITORY_PRIVATE), true)) {
