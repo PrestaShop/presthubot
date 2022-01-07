@@ -26,12 +26,14 @@ class Query
         self::REQUEST_PR_WAITING_FOR_MERGE => 'is:open archived:false ' . self::LABEL_QA_OK
             . ' -' . self::LABEL_WAITING_FOR_AUTHOR
             . ' -' . self::LABEL_WAITING_FOR_PM
-            . ' -' . self::LABEL_WAITING_FOR_REBASE,
+            . ' -' . self::LABEL_WAITING_FOR_REBASE
+            . ' -' . self::LABEL_BLOCKED,
         // Check PR waiting for QA
         self::REQUEST_PR_WAITING_FOR_QA => 'is:open archived:false ' . self::LABEL_WAITING_FOR_QA
           . ' -' . self::LABEL_WAITING_FOR_AUTHOR
           . ' -' . self::LABEL_WAITING_FOR_DEV
-          . ' -' . self::LABEL_WAITING_FOR_PM,
+          . ' -' . self::LABEL_WAITING_FOR_PM
+          . ' -' . self::LABEL_BLOCKED,
         // Check PR waiting for Rebase
         'PR Waiting for Rebase' => 'is:open archived:false ' . self::LABEL_WAITING_FOR_REBASE,
         // Check PR waiting for PM
