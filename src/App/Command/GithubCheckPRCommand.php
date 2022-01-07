@@ -163,7 +163,9 @@ class GithubCheckPRCommand extends Command
         $rows = [];
         foreach ($resultAPI as $key => $pullRequest) {
             $resultAPI[$key] = $pullRequest['node'];
-            $resultAPI[$key]['approved'] = $this->github->extractApproved($resultAPI[$key]);
+            $resultAPI[$key]['approved'] = $this->github->extractPullRequestState($resultAPI[$key], Github::PULL_REQUEST_STATE_APPROVED);
+            $resultAPI[$key]['request_changes'] = $this->github->extractPullRequestState($resultAPI[$key], Github::PULL_REQUEST_STATE_REQUEST_CHANGES);
+            $resultAPI[$key]['comment'] = $this->github->extractPullRequestState($resultAPI[$key], Github::PULL_REQUEST_STATE_COMMENT);
         }
         uasort($resultAPI, function ($row1, $row2) {
             $projectName1 = $row1['repository']['name'];

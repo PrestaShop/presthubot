@@ -355,7 +355,9 @@ class SlackNotifierCommand extends Command
             $filters->addFilter(Filters::FILTER_NUM_APPROVED, [$numApproved], true);
             foreach ($prReviews as $pullRequest) {
                 $pullRequest = $pullRequest['node'];
-                $pullRequest['approved'] = $this->github->extractApproved($pullRequest);
+                $pullRequest['approved'] = $this->github->extractPullRequestState($pullRequest, Github::PULL_REQUEST_STATE_APPROVED);
+                $pullRequest['request_changes'] = $this->github->extractPullRequestState($pullRequest, Github::PULL_REQUEST_STATE_REQUEST_CHANGES);
+                $pullRequest['comment'] = $this->github->extractPullRequestState($pullRequest, Github::PULL_REQUEST_STATE_COMMENT);
                 if (!$this->github->isPRValid($pullRequest, $filters)) {
                     continue;
                 }
@@ -376,6 +378,14 @@ class SlackNotifierCommand extends Command
             if (!empty($pullRequest['approved'])) {
                 $slackMessage .= PHP_EOL;
                 $slackMessage .= '    - :heavy_check_mark: ' . implode(', ', $pullRequest['approved']);
+            }
+            if (!empty($pullRequest['request_changes'])) {
+                $slackMessage .= PHP_EOL;
+                $slackMessage .= '    - :no_entry: ' . implode(', ', $pullRequest['request_changes']);
+            }
+            if (!empty($pullRequest['comment'])) {
+                $slackMessage .= PHP_EOL;
+                $slackMessage .= '    - :thought_balloon: ' . implode(', ', $pullRequest['comment']);
             }
             $slackMessage .= PHP_EOL;
             $slackMessage .= PHP_EOL;
@@ -403,7 +413,7 @@ class SlackNotifierCommand extends Command
             $filters->addFilter(Filters::FILTER_NUM_APPROVED, [$numApproved], true);
             foreach ($prReviews as $pullRequest) {
                 $pullRequest = $pullRequest['node'];
-                $pullRequest['approved'] = $this->github->extractApproved($pullRequest);
+                $pullRequest['approved'] = $this->github->extractPullRequestState($pullRequest, Github::PULL_REQUEST_STATE_APPROVED);
                 if (!$this->github->isPRValid($pullRequest, $filters)) {
                     continue;
                 }
