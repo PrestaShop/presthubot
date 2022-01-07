@@ -35,6 +35,10 @@ class Github
         'PrestaShop-1.6',
     ];
 
+    public const PULL_REQUEST_STATE_APPROVED = 'APPROVED';
+    public const PULL_REQUEST_STATE_REQUEST_CHANGES = 'REQUEST_CHANGES';
+    public const PULL_REQUEST_STATE_COMMENT = 'COMMENT';
+
     public function __construct(string $ghToken = null)
     {
         $filesystemAdapter = new Local(__DIR__ . '/../../../var/');
@@ -361,27 +365,27 @@ class Github
         return true;
     }
 
-    public function extractApproved(array $pullRequest): array
+    public function extractPullRequestState(array $pullRequest, string $state): array
     {
-        $approved = [];
+        $statesByLogin = [];
         foreach ($pullRequest['reviews']['nodes'] as $node) {
             $login = $node['author']['login'];
             if (!in_array($login, self::MAINTAINER_MEMBERS)) {
                 continue;
             }
-            if ($node['state'] == 'APPROVED') {
-                if (!in_array($login, $approved)) {
-                    $approved[] = $login;
+            if ($node['state'] == $state) {
+                if (!in_array($login, $statesByLogin)) {
+                    $statesByLogin[] = $login;
                 }
             } else {
-                if (in_array($login, $approved)) {
-                    $pos = array_search($login, $approved);
-                    unset($approved[$pos]);
+                if (in_array($login, $statesByLogin)) {
+                    $pos = array_search($login, $statesByLogin);
+                    unset($statesByLogin[$pos]);
                 }
             }
         }
 
-        return $approved;
+        return $statesByLogin;
     }
 
     private function apiSearchGraphQL(string $graphQLQuery): array
