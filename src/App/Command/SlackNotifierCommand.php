@@ -103,6 +103,14 @@ class SlackNotifierCommand extends Command
         'develop',
     ];
 
+    /**
+     * @var array<string>
+     */
+    private const CAMPAIGN_SUPPORT = [
+        'functional',
+        'autoupgrade',
+    ];
+
     protected function configure()
     {
         $this->setName('slack:notifier')
@@ -208,21 +216,23 @@ class SlackNotifierCommand extends Command
         $slackMessage = ':notebook_with_decorative_cover: Nightly Board :notebook_with_decorative_cover:' . PHP_EOL;
 
         foreach (self::BRANCH_SUPPORT as $branch) {
-            $report = $this->nightlyBoard->getReport(date('Y-m-d'), $branch, 'functional');
-            $hasPassed = isset($report['tests'], $report['tests']['passed']);
-            $hasFailed = isset($report['tests'], $report['tests']['failed']);
-            $hasPending = isset($report['tests'], $report['tests']['pending']);
-            $status = ($hasFailed && $report['tests']['failed'] == 0);
-            $emoji = $status ? ':greenlight:' : ':redlight:';
+            foreach (self::CAMPAIGN_SUPPORT as $campaign) {
+                $report = $this->nightlyBoard->getReport(date('Y-m-d'), $branch, $campaign);
+                $hasPassed = isset($report['tests'], $report['tests']['passed']);
+                $hasFailed = isset($report['tests'], $report['tests']['failed']);
+                $hasPending = isset($report['tests'], $report['tests']['pending']);
+                $status = ($hasFailed && $report['tests']['failed'] == 0);
+                $emoji = $status ? ':greenlight:' : ':redlight:';
 
-            $slackMessage .= ' - <https://nightly.prestashop.com/report/' . $report['id'] . '|' . $emoji . ' Report `' . $branch . '`>';
-            $slackMessage .= ' : ';
-            $slackMessage .= $hasPassed ? ':heavy_check_mark: ' . $report['tests']['passed'] : '';
-            $slackMessage .= ($hasPassed && ($hasFailed || $hasPending) ? ' - ' : '');
-            $slackMessage .= $hasFailed ? ':x: ' . $report['tests']['failed'] : '';
-            $slackMessage .= (($hasPassed || $hasFailed) && ($hasPending) ? ' - ' : '');
-            $slackMessage .= $hasPending ? '⏸️ ' . $report['tests']['pending'] : '';
-            $slackMessage .= PHP_EOL;
+                $slackMessage .= ' - <https://nightly.prestashop.com/report/' . $report['id'] . '|' . $emoji . ' Report `' . $branch . '(' . $campaign . ')`>';
+                $slackMessage .= ' : ';
+                $slackMessage .= $hasPassed ? ':heavy_check_mark: ' . $report['tests']['passed'] : '';
+                $slackMessage .= ($hasPassed && ($hasFailed || $hasPending) ? ' - ' : '');
+                $slackMessage .= $hasFailed ? ':x: ' . $report['tests']['failed'] : '';
+                $slackMessage .= (($hasPassed || $hasFailed) && ($hasPending) ? ' - ' : '');
+                $slackMessage .= $hasPending ? '⏸️ ' . $report['tests']['pending'] : '';
+                $slackMessage .= PHP_EOL;
+            }
         }
 
         return $slackMessage;
