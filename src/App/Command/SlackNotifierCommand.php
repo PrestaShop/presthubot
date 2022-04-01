@@ -218,9 +218,13 @@ class SlackNotifierCommand extends Command
         foreach (self::BRANCH_SUPPORT as $branch) {
             foreach (self::CAMPAIGN_SUPPORT as $campaign) {
                 $report = $this->nightlyBoard->getReport(date('Y-m-d'), $branch, $campaign);
+                if (empty($report)) {
+                    continue;
+                }
                 $hasPassed = isset($report['tests'], $report['tests']['passed']);
                 $hasFailed = isset($report['tests'], $report['tests']['failed']);
                 $hasPending = isset($report['tests'], $report['tests']['pending']);
+                $duration = strtotime($report['end_date']) - strtotime($report['start_date']);
                 $status = ($hasFailed && $report['tests']['failed'] == 0);
                 $emoji = $status ? ':greenlight:' : ':redlight:';
 
@@ -231,6 +235,8 @@ class SlackNotifierCommand extends Command
                 $slackMessage .= $hasFailed ? ':x: ' . $report['tests']['failed'] : '';
                 $slackMessage .= (($hasPassed || $hasFailed) && ($hasPending) ? ' - ' : '');
                 $slackMessage .= $hasPending ? '⏸️ ' . $report['tests']['pending'] : '';
+                $slackMessage .= (($hasPassed || $hasFailed || $hasPending) ? ' - ' : '');
+                $slackMessage .= ':timer_clock: ' . gmdate("H\h i\m s\s", $duration);
                 $slackMessage .= PHP_EOL;
             }
         }
