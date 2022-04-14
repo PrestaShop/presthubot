@@ -215,3 +215,64 @@ php bin/console slack:notifier:qa
 | `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
 | `--slacktoken=<slacktoken>` | Yes/No | Use it or use .env |
 | `--slackchannel=<slackchannel>` | Yes/No | Use it or use .env |
+
+### Release Note helper
+Generate the list of resolved issues in a milestone
+
+```bash
+php bin/console github:release:note 
+```
+
+#### Parameters
+| Type                            | Name       | Required | Notes                                | Default    |
+|---------------------------------|------------|----------|--------------------------------------|------------|
+| Argument                        | milestone  | No       | milestone selected for search        | none       |
+| Option                          | output     | No       | output between 'table' or 'markdown' | table      |
+| Option                          | repository | No       | repository to explore                | PrestaShop |
+
+Note that if the milestone is not defined, It will be asked to the user.
+#### Example
+```bash
+php bin/console github:release:note 1.7.8.2 --repository=PrestaShop --output=table
+or
+php bin/console github:release:note 1.7.8.2 --repository=PrestaShop
+or
+php bin/console github:release:note 1.7.8.2 --output=table
+or 
+php bin/console github:release:note 1.7.8.2
+```  
+```
+provide:
+```bash
+├─────────────────┼───────────────────────────────────────────────────────┼───────────────────────────────────────────────────────┤
+│  Issues involved in the milestone 1.7.8.2 (3)                                                                                   │
+├─────────────────┼───────────────────────────────────────────────────────┼───────────────────────────────────────────────────────┤
+│ Issue N°        │ url                                                   │ Title                                                 │
+│ 26623           │ https://github.com/PrestaShop/PrestaShop/issues/26623 │ Release 1.7.8.2                                       │
+│ 26327           │ https://github.com/PrestaShop/PrestaShop/issues/26327 │ Wishlist button disappears while using Faceted Search │
+│ 23394           │ https://github.com/PrestaShop/PrestaShop/issues/23394 │ Missing Alias CustomerQueryBuilder.php                │
+└─────────────────┴───────────────────────────────────────────────────────┴───────────────────────────────────────────────────────┘
+
+Output generated in 0s for 3 rows.
+```
+
+and
+
+
+```bash
+php bin/console github:release:note 1.7.8.2 --output=markdown
+or
+php bin/console github:release:note 1.7.8.2 --repository=PrestaShop --output=markdown
+``` 
+
+provide:
+```bash
+Issues involved in the milestone 1.7.8.2
+========================================
+
+- [Release 1.7.8.2](https://github.com/PrestaShop/PrestaShop/issues/26623)
+- [Wishlist button disappears while using Faceted Search](https://github.com/PrestaShop/PrestaShop/issues/26327)
+- [Missing Alias CustomerQueryBuilder.php](https://github.com/PrestaShop/PrestaShop/issues/23394)
+
+Output generated in 0s for 3 rows.
+```
