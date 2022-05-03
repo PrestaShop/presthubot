@@ -17,7 +17,6 @@ class Slack
         'matks' => '<@UB61HUD2A>',
         'matthieu-rolland' => '<@UKW0VAT8S>',
         'NeOMakinG' => '<@UQNF13DAR>',
-        'PierreRambaud' => '<@UAC6UKKK8>',
         'Progi1984' => '<@UL16KUPC5>',
         'PululuK' => 'PululuK',
         'sowbiba' => '<@USKJT4C4Q>',
