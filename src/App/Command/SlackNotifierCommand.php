@@ -39,10 +39,6 @@ class SlackNotifierCommand extends Command
     /**
      * @var string;
      */
-    protected $slackChannelCore;
-    /**
-     * @var string;
-     */
     protected $slackChannelQA;
 
     /**
@@ -131,13 +127,6 @@ class SlackNotifierCommand extends Command
                 $_ENV['SLACK_TOKEN'] ?? null
             )
             ->addOption(
-                'slackchannelCore',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                '',
-                $_ENV['SLACK_CHANNEL_CORE'] ?? null
-            )
-            ->addOption(
                 'slackchannelQA',
                 null,
                 InputOption::VALUE_OPTIONAL,
@@ -149,36 +138,21 @@ class SlackNotifierCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Local Variable
-        $slackMessageCore = $slackMessageQA = $slackMessageCoreMembers = [];
+        $slackMessageQA = $slackMessageCoreMembers = [];
 
         $this->github = new Github($input->getOption('ghtoken'));
         $this->moduleChecker = new ModuleChecker($this->github);
         $this->moduleFetcher = new ModuleFetcher($this->github);
         $this->nightlyBoard = new NightlyBoard();
         $this->slack = new Slack($input->getOption('slacktoken'));
-        $this->slackChannelCore = $input->getOption('slackchannelCore');
         $this->slackChannelQA = $input->getOption('slackchannelQA');
 
         $title = ':preston::date: Welcome to the PrestHubot Report of the day :date:';
-        $slackMessageCore[] = $title;
         $slackMessageQA[] = $title;
 
         // Check Status
         $statusNightly = $this->checkStatusNightly();
-        $slackMessageCore[] = $statusNightly;
         $slackMessageQA[] = $statusNightly;
-
-        // Check if PR are need to merge
-        $slackMessageCore[] = $this->checkPRReadyToMerge();
-
-        // Check PR to review
-        $slackMessageCore[] = $this->checkPRReadyToReview();
-
-        // Need module releases
-        $slackMessageCore[] = $this->checkModuleReadyToRelease();
-
-        // Need module improvements
-        $slackMessageCore[] = $this->checkModuleImprovements();
 
         // Check QA Stats
         $slackMessageQA[] = $this->checkStatsQA();
@@ -186,7 +160,6 @@ class SlackNotifierCommand extends Command
         // Check PR Priority to Test
         $prReadyToTest = $this->checkPRReadyToTest();
         $slackMessageQA[] = $prReadyToTest;
-        $slackMessageCore[] = $prReadyToTest;
 
         // Get PR to Review for Core Team
         $slackMessageCoreMembers[] = $this->checkPRReadyToReviewForCoreTeam();
@@ -197,9 +170,6 @@ class SlackNotifierCommand extends Command
         // Send Message to Merge to Develop for CoreTeam
         $slackMessageCoreMembers[] = $this->needMergeToDevelop();
 
-        foreach ($slackMessageCore as $message) {
-            $this->slack->sendNotification($this->slackChannelCore, $message);
-        }
         foreach ($slackMessageQA as $message) {
             $this->slack->sendNotification($this->slackChannelQA, $message);
         }

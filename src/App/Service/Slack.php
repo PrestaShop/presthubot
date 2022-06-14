@@ -14,7 +14,6 @@ class Slack
         'eternoendless' => '<@U5GRYPEUC>',
         'jolelievre' => '<@UC4KB9BJS>',
         'kpodemski' => 'kpodemski',
-        'matks' => '<@UB61HUD2A>',
         'matthieu-rolland' => '<@UKW0VAT8S>',
         'NeOMakinG' => '<@UQNF13DAR>',
         'Progi1984' => '<@UL16KUPC5>',
