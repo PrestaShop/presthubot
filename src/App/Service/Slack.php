@@ -16,7 +16,6 @@ class Slack
         'kpodemski' => 'kpodemski',
         'matthieu-rolland' => '<@UKW0VAT8S>',
         'NeOMakinG' => '<@UQNF13DAR>',
-        'Progi1984' => '<@UL16KUPC5>',
         'PululuK' => 'PululuK',
         'sowbiba' => '<@USKJT4C4Q>',
     ];
