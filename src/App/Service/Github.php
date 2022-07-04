@@ -25,7 +25,6 @@ class Github
         'matks',
         'matthieu-rolland',
         'NeOMakinG',
-        'Progi1984',
         'PululuK',
         'sowbiba',
     ];
