@@ -276,3 +276,15 @@ Issues involved in the milestone 1.7.8.2
 
 Output generated in 0s for 3 rows.
 ```
+
+### CQRS Endpoints
+Get Commands and Queries developed as CQRS endpoints
+
+```bash
+php bin/console github:cqrs:endpoints
+```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
