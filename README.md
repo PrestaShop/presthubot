@@ -71,6 +71,22 @@ php bin/console github:check:module
 | ------------- | ------------- | ------------- |
 | Files | .travis.yml | Check if .travis.yml is present<br>Check if `before_deploy` & `deploy` are present in the file |
 
+### Monitor Module
+Permits to monitor PrestaShop Modules
+
+```bash
+php bin/console github:module:monitor
+```
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+
+
+#### Informations
+Output an index.html file onto a src/docs directory
+
 ### Check Repositories
 Permits to check PrestaShop Repositories
 
