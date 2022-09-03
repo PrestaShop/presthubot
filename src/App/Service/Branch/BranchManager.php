@@ -4,10 +4,21 @@ namespace Console\App\Service\Branch;
 
 use DateTime;
 use Exception;
+use Github\Api\GitData;
+use Github\Api\PullRequest;
+use Github\Api\Repo;
 use Github\Client;
 
 class BranchManager
 {
+    const PRESTASHOP_USERNAME = 'prestashop';
+    const REFS_HEADS_DEV = 'refs/heads/dev';
+    const REFS_HEADS_DEVELOP = 'refs/heads/develop';
+    const REFS_HEADS_MASTER = 'refs/heads/master';
+    const REFS_HEADS_MAIN = 'refs/heads/main';
+    const MASTER = 'master';
+    const MAIN = 'main';
+
     /**
      * @var Client
      */
@@ -21,59 +32,82 @@ class BranchManager
         $this->client = $client;
     }
 
-    /**
-     * @param string $repositoryName
-     * @return string|null null if failed to find base branch
-     *
-     * Inspired by https://github.com/PrestaShop/presthubot ModuleChecker::findReleaseStatus()
-     */
-    public function getReleaseData($repositoryName)
+    public function getReleaseData(string $repositoryName): array
     {
+        /**
+         * @var Repo $repository
+         */
+        $repository = $this->client->api('repo');
         try {
-            $release = $this->client->api('repo')->releases()->latest('prestashop', $repositoryName);
+            $release = $repository->releases()->latest(
+                self::PRESTASHOP_USERNAME,
+                $repositoryName
+            );
             $date = new DateTime($release['created_at']);
             $releaseDate = $date->format('Y-m-d H:i:s');
         } catch (Exception $e) {
             $releaseDate = 'NA';
         }
 
-        $references = $this->client->api('gitData')->references()->branches('prestashop', $repositoryName);
-
+        /**
+         * @var GitData $gitData
+         */
+        $gitData = $this->client->api('gitData');
+        $references = $gitData->references()->branches(
+            self::PRESTASHOP_USERNAME,
+            $repositoryName
+        );
         $devBranchData = $masterBranchData = [];
-        foreach ($references as $branchID => $branchData) {
+        $usedBranch = self::MAIN;
+        foreach ($references as $branchData) {
             $branchName = $branchData['ref'];
 
-            if ($branchName === 'refs/heads/dev') {
+            if ($branchName === self::REFS_HEADS_DEV) {
                 $devBranchData = $branchData;
             }
-            if ($branchName === 'refs/heads/develop') {
+            if ($branchName === self::REFS_HEADS_DEVELOP) {
                 $devBranchData = $branchData;
             }
-            if ($branchName === 'refs/heads/master') {
+            if ($branchName === self::REFS_HEADS_MASTER) {
                 $masterBranchData = $branchData;
-                $usedBranch = 'master';
+                $usedBranch = self::MASTER;
             }
-            if ($branchName === 'refs/heads/main') {
+            if ($branchName === self::REFS_HEADS_MAIN) {
                 $masterBranchData = $branchData;
-                $usedBranch = 'main';
+                $usedBranch = self::MAIN;
             }
         }
 
         $devLastCommitSha = $devBranchData['object']['sha'];
         $masterLastCommitSha = $masterBranchData['object']['sha'];
 
-        $comparison = $this->client->api('repo')->commits()->compare(
-            'prestashop',
+        $comparison = $repository->commits()->compare(
+            self::PRESTASHOP_USERNAME,
             $repositoryName,
             $masterLastCommitSha,
             $devLastCommitSha
         );
 
-        $openPullRequests = $this->client->api('pull_request')->all('prestashop', $repositoryName, array('state' => 'open', 'base' => $usedBranch));
+        /**
+         * @var PullRequest $pullRequests
+         */
+        $pullRequests = $this->client->api('pull_request');
+        $openPullRequests = $pullRequests->all(
+            self::PRESTASHOP_USERNAME,
+            $repositoryName,
+            [
+                'state' => 'open',
+                'base' => $usedBranch
+            ]
+        );
 
         if ($openPullRequests) {
-            $assignee = isset($openPullRequests[0]['assignee']['login']) ? $openPullRequests[0]['assignee']['login'] : '';
-            $openPullRequest = ['link' => $openPullRequests[0]['html_url'], 'number' => $openPullRequests[0]['number'], 'assignee' => $assignee];
+            $assignee = $openPullRequests[0]['assignee']['login'] ?? '';
+            $openPullRequest = [
+                'link' => $openPullRequests[0]['html_url'],
+                'number' => $openPullRequests[0]['number'],
+                'assignee' => $assignee
+            ];
         } else {
             $openPullRequest = false;
         }

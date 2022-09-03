@@ -4,12 +4,8 @@ namespace Console\App\Command;
 
 use Console\App\Service\Branch\BranchManager;
 use Console\App\Service\Github;
-use Console\App\Service\PrestaShop\ModuleChecker;
-use Console\App\Service\PrestaShop\ModuleFetcher;
+use Github\Api\Repo;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -51,11 +47,9 @@ class GithubModuleMonitorCommand extends Command
             $repositoryName = $moduleToProcess;
             $data = $branchManager->getReleaseData($repositoryName);
             $nbCommitsAhead = $data['ahead'];
-
             $trClass = $this->getClassByNbCommitsAhead($nbCommitsAhead);
-
-            $link = $assignee = '';
-
+            $link = '';
+            $assignee = '';
             if ($data['pullRequest']) {
                 $link = '<a href="'.$data['pullRequest']['link'].'">#PR' . $data['pullRequest']['number'] . '</a>';
                 $assignee = $data['pullRequest']['assignee'];
@@ -123,7 +117,14 @@ class GithubModuleMonitorCommand extends Command
 
     function getModules(): array
     {
-        $contents = $this->github->getClient()->api('repo')->contents()->show('PrestaShop', 'PrestaShop-modules');
+        /**
+         * @var Repo $repository
+         */
+        $repository = $this->github->getClient()->api('repo');
+        $contents = $repository->contents()->show(
+            BranchManager::PRESTASHOP_USERNAME,
+            'PrestaShop-modules'
+        );
 
         $modules = [];
         foreach ($contents as $content) {
