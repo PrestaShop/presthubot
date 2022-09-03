@@ -12,10 +12,70 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GithubModuleMonitorCommand extends Command
 {
+    const LEVEL_LIGHT = 'light';
+    const LEVEL_WARNING = 'warning';
+    const LEVEL_DANGER = 'danger';
+    const LEVEL_DEFAULT = 'default';
+    const LEVEL_SUCCESS = 'success';
     /**
      * @var Github;
      */
     protected $github;
+
+    public function getHTMLContent(int $i, $repositoryName, $numberOfCommitsAhead, $releaseDate, string $link, $assignee): string
+    {
+        $trClass = 'table-' . $this->getLevelByNumberOfCommitsAhead($numberOfCommitsAhead);
+        $needReleaseText = $numberOfCommitsAhead === 0 ? 'NO' : 'YES';
+
+        return sprintf(
+            '<tr class="%s">
+              <th scope="row">%d</th>
+              <td><a href="https://github.com/prestashop/%s">%s</a></td>
+              <td>%s</td>
+              <td>%s</td>
+              <td>%s</td>
+              <td>%s %s</td>
+            </tr>',
+            $trClass,
+            $i,
+            $repositoryName,
+            $repositoryName,
+            $needReleaseText,
+            $numberOfCommitsAhead,
+            $releaseDate,
+            $link,
+            $assignee
+        );
+    }
+
+    public function writeFile(array $tableContent): void
+    {
+        $template = file_get_contents(__DIR__.'/../Resources/Template/module_monitor.tpl');
+
+        file_put_contents(
+            __DIR__ . '/../../docs/index.html',
+            str_replace(
+                [
+                    '{%%placeholder%%}',
+                    '{%%latestUpdateDate%%}',
+                ],
+                [
+                    implode('', $tableContent),
+                    date('l, j F Y H:i'),
+                ],
+                $template
+            )
+        );
+    }
+
+    public function getPullResquestLink(array $pullRequest): string
+    {
+        return sprintf(
+            '<a href="%s">#PR%s</a>',
+            $pullRequest['link'],
+            $pullRequest['number']
+        );
+    }
 
     protected function configure()
     {
@@ -35,82 +95,40 @@ class GithubModuleMonitorCommand extends Command
         $timeStart = microtime(true);
         $this->github = new Github($input->getOption('ghtoken'));
         $branchManager = new BranchManager($this->github->getClient());
-
         $modulesToProcess = $this->getModules();
-        $template = file_get_contents(__DIR__.'/../Resources/Template/module_monitor.tpl');
-
         $tableRows = [];
         $i = 1;
 
 
         foreach ($modulesToProcess as $moduleToProcess) {
             $repositoryName = $moduleToProcess;
-            $data = $branchManager->getReleaseData($repositoryName);
-            $nbCommitsAhead = $data['ahead'];
-            $trClass = $this->getClassByNbCommitsAhead($nbCommitsAhead);
+            $releaseData = $branchManager->getReleaseData($repositoryName);
+            $numberOfCommitsAhead = $releaseData['ahead'];
             $link = '';
             $assignee = '';
-            if ($data['pullRequest']) {
-                $link = '<a href="'.$data['pullRequest']['link'].'">#PR' . $data['pullRequest']['number'] . '</a>';
-                $assignee = $data['pullRequest']['assignee'];
+            if ($releaseData['pullRequest']) {
+                $link = $this->getPullResquestLink($releaseData['pullRequest']);
+                $assignee = $releaseData['pullRequest']['assignee'];
             }
-
-            if ($nbCommitsAhead == 0) {
-                $tableRows[] = [
-                    'html' => '<tr class="table-success">
-              <th scope="row">'.$i.'</th>
-              <td><a href="https://github.com/prestashop/'.$repositoryName.'">'.$repositoryName.'</a></td>
-              <td>NO</td>
-              <td>0</td>
-              <td>' . $data['releaseDate'] . '</td>
-              <td>' . $link . ' ' . $assignee . '</td>
-            </tr>',
-                    'ahead' => 0,
-                ];
-            } else {
-                $tableRows[] = [
-                    'html' =>'<tr class="'.$trClass.'">
-              <th scope="row">'.$i.'</th>
-              <td><a href="https://github.com/prestashop/'.$repositoryName.'">'.$repositoryName.'</a></td>
-              <td>YES</td>
-              <td>' . $data['ahead'] . '</td>
-              <td>' . $data['releaseDate'] . '</td>
-              <td>' . $link . ' ' . $assignee . '</td>
-            </tr>',
-                    'ahead' => $data['ahead'],
-                ];
-            }
-
+            $tableRows[] = [
+                'html' => $this->getHTMLContent($i, $repositoryName, $numberOfCommitsAhead, $releaseData['releaseDate'], $link, $assignee),
+                'ahead' => $numberOfCommitsAhead,
+            ];
             uasort($tableRows, function ($a, $b) {
                 if ($a['ahead'] == $b['ahead']) {
                     return 0;
                 }
-
                 return ($a['ahead'] > $b['ahead']) ? -1 : 1;
             });
-
             $tableContent = array_map(function ($row) {
                 return $row['html'];
             }, $tableRows);
-
             $i++;
         }
-        file_put_contents(
-            __DIR__ . '/../../docs/index.html',
-            str_replace(
-                [
-                    '{%%placeholder%%}',
-                    '{%%latestUpdateDate%%}',
-                ],
-                [
-                    implode('', $tableContent),
-                    date('l, j F Y H:i'),
-                ],
-                $template
-            )
-        );
+        $this->writeFile($tableContent);
+        $output->writeLn(['', 'Output generated in ' . (microtime(true) - $timeStart) . 's.']);
 
-        die('Generated in ' . (microtime(true) - $timeStart) . ' seconds');
+        return 0;
     }
 
 
@@ -137,24 +155,20 @@ class GithubModuleMonitorCommand extends Command
         return $modules;
     }
 
-    function getClassByNbCommitsAhead(int $nbCommitsAhead): string
+    function getLevelByNumberOfCommitsAhead(int $nbCommitsAhead): string
     {
         switch ($nbCommitsAhead) {
+            case ($nbCommitsAhead === 0):
+                return self::LEVEL_SUCCESS;
             case ($nbCommitsAhead > 0 && $nbCommitsAhead <= 25):
-                $trClass = 'light';
-                break;
+                return self::LEVEL_LIGHT;
             case ($nbCommitsAhead > 25 && $nbCommitsAhead <= 100):
-                $trClass = 'warning';
-                break;
+                return self::LEVEL_WARNING;
             case ($nbCommitsAhead > 100):
-                $trClass = 'danger';
-                break;
+                return self::LEVEL_DANGER;
             default:
-                $trClass = 'default';
-                break;
+                return self::LEVEL_DEFAULT;
         }
-
-        return 'table-' . $trClass;
     }
 
 }
