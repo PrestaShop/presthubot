@@ -2,8 +2,9 @@
 
 namespace Console\App\Command;
 
-use Console\App\Service\Github;
 use Console\App\Service\Github\Filters;
+use Console\App\Service\Github\Github;
+use Console\App\Service\Github\GithubTypedEndpointProvider;
 use Console\App\Service\Github\Query;
 use Console\App\Service\PrestaShop\ModuleChecker;
 use Console\App\Service\PrestaShop\ModuleFetcher;
@@ -108,6 +109,17 @@ class SlackNotifierCommand extends Command
         'autoupgrade',
     ];
 
+    /**
+     * @var GithubTypedEndpointProvider
+     */
+    private $githubTypedEndpointProvider;
+
+    public function __construct(string $name = null)
+    {
+        $this->githubTypedEndpointProvider = new GithubTypedEndpointProvider();
+        parent::__construct($name);
+    }
+
     protected function configure()
     {
         $this->setName('slack:notifier')
@@ -141,7 +153,7 @@ class SlackNotifierCommand extends Command
         $slackMessageQA = $slackMessageCoreMembers = [];
 
         $this->github = new Github($input->getOption('ghtoken'));
-        $this->moduleChecker = new ModuleChecker($this->github);
+        $this->moduleChecker = new ModuleChecker($this->github, $this->githubTypedEndpointProvider);
         $this->moduleFetcher = new ModuleFetcher($this->github);
         $this->nightlyBoard = new NightlyBoard();
         $this->slack = new Slack($input->getOption('slacktoken'));
@@ -417,7 +429,7 @@ class SlackNotifierCommand extends Command
     protected function checkPRReadyToTest(): string
     {
         // Next version
-        $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'PrestaShop', 'app/AppKernel.php', 'refs/heads/develop');
+        $content = $this->githubTypedEndpointProvider->getRepoEndpoint($this->github->getClient())->contents()->download('PrestaShop', 'PrestaShop', 'app/AppKernel.php', 'refs/heads/develop');
         preg_match("#const VERSION = \'([0-9\.]+)\'#", $content, $matches);
         $nextVersion = $matches[1] ?? 'develop';
 

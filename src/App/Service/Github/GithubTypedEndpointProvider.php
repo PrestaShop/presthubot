@@ -6,9 +6,9 @@ use Github\Api\GitData;
 use Github\Api\GraphQL;
 use Github\Api\Issue;
 use Github\Api\Organization;
-use Github\Api\Search;
 use Github\Api\PullRequest;
 use Github\Api\Repo;
+use Github\Api\Search;
 use Github\Client;
 
 class GithubTypedEndpointProvider
@@ -26,7 +26,7 @@ class GithubTypedEndpointProvider
         /**
          * @var Repo $repo
          */
-        $repo =  $client->api(self::GITHUB_API_ENDPOINT_REPO);
+        $repo = $client->api(self::GITHUB_API_ENDPOINT_REPO);
 
         return $repo;
     }
@@ -36,7 +36,7 @@ class GithubTypedEndpointProvider
         /**
          * @var PullRequest $pullRequest
          */
-        $pullRequest =  $client->api(self::GITHUB_API_ENDPOINT_PULL_REQUEST);
+        $pullRequest = $client->api(self::GITHUB_API_ENDPOINT_PULL_REQUEST);
 
         return $pullRequest;
     }
@@ -46,7 +46,7 @@ class GithubTypedEndpointProvider
         /**
          * @var GitData $gitData
          */
-        $gitData =  $client->api(self::GITHUB_API_ENDPOINT_GIT_DATA);
+        $gitData = $client->api(self::GITHUB_API_ENDPOINT_GIT_DATA);
 
         return $gitData;
     }
@@ -56,7 +56,7 @@ class GithubTypedEndpointProvider
         /**
          * @var Issue $issue
          */
-        $issue =  $client->api(self::GITHUB_API_ENDPOINT_ISSUE);
+        $issue = $client->api(self::GITHUB_API_ENDPOINT_ISSUE);
 
         return $issue;
     }
@@ -66,7 +66,7 @@ class GithubTypedEndpointProvider
         /**
          * @var GraphQL $graphql
          */
-        $graphql =  $client->api(self::GITHUB_API_ENDPOINT_GRAPHQL);
+        $graphql = $client->api(self::GITHUB_API_ENDPOINT_GRAPHQL);
 
         return $graphql;
     }
@@ -76,7 +76,7 @@ class GithubTypedEndpointProvider
         /**
          * @var Search $search
          */
-        $search =  $client->api(self::GITHUB_API_ENDPOINT_SEARCH);
+        $search = $client->api(self::GITHUB_API_ENDPOINT_SEARCH);
 
         return $search;
     }
@@ -86,7 +86,7 @@ class GithubTypedEndpointProvider
         /**
          * @var Organization $organization
          */
-        $organization =  $client->api(self::GITHUB_API_ENDPOINT_ORGANIZATION);
+        $organization = $client->api(self::GITHUB_API_ENDPOINT_ORGANIZATION);
 
         return $organization;
     }

@@ -2,7 +2,8 @@
 
 namespace Console\App\Command;
 
-use Console\App\Service\Github;
+use Console\App\Service\Github\Github;
+use Console\App\Service\Github\GithubTypedEndpointProvider;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -14,6 +15,16 @@ class GithubContributorsExportCommand extends Command
      * @var Github;
      */
     protected $github;
+    /**
+     * @var GithubTypedEndpointProvider
+     */
+    private $githubTypedEndpointProvider;
+
+    public function __construct(string $name = null)
+    {
+        $this->githubTypedEndpointProvider = new GithubTypedEndpointProvider();
+        parent::__construct($name);
+    }
 
     protected function configure()
     {
@@ -86,7 +97,7 @@ class GithubContributorsExportCommand extends Command
 
         $export = [];
         foreach ($contributors as $author => $agency) {
-            $pullRequests = $this->github->getClient()->api('search')->issues('org:PrestaShop is:pr author:' . $author);
+            $pullRequests = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues('org:PrestaShop is:pr author:' . $author);
             $output->writeLn(['[' . $agency . '] ' . $author . ' (' . count($pullRequests['items']) . ')']);
 
             foreach ($pullRequests['items'] as $pullRequest) {
@@ -131,7 +142,7 @@ class GithubContributorsExportCommand extends Command
 
                     return '';
                 }, '');
-                $apiPullRequest = $this->github->getClient()->api('pr')->show('PrestaShop', $repository, $pullRequest['number']);
+                $apiPullRequest = $this->githubTypedEndpointProvider->getPullRequestEndpoint($this->github->getClient())->show('PrestaShop', $repository, $pullRequest['number']);
 
                 $severityIssue = '';
                 $linkedIssue = $this->github->getLinkedIssue($pullRequest);

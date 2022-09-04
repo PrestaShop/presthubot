@@ -2,7 +2,8 @@
 
 namespace Console\App\Service\PrestaShop;
 
-use Console\App\Service\Github;
+use Console\App\Service\Github\Github;
+use Github\Api\Repo;
 
 class ModuleFetcher
 {
@@ -18,7 +19,11 @@ class ModuleFetcher
 
     public function getModules(): array
     {
-        $contents = $this->github->getClient()->api('repo')->contents()->show('PrestaShop', 'PrestaShop-modules');
+        /**
+         * @var Repo $repository
+         */
+        $repository = $this->github->getClient()->api('repo');
+        $contents = $repository->contents()->show('PrestaShop', 'PrestaShop-modules');
 
         $modules = [];
         foreach ($contents as $content) {

@@ -2,7 +2,8 @@
 
 namespace Console\App\Command;
 
-use Console\App\Service\Github;
+use Console\App\Service\Github\Github;
+use Console\App\Service\Github\GithubTypedEndpointProvider;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
@@ -17,6 +18,17 @@ class GithubStatsCommand extends Command
      * @var Github;
      */
     protected $github;
+
+    /**
+     * @var GithubTypedEndpointProvider
+     */
+    private $githubTypedEndpointProvider;
+
+    public function __construct(string $name = null)
+    {
+        $this->githubTypedEndpointProvider = new GithubTypedEndpointProvider();
+        parent::__construct($name);
+    }
 
     protected function configure()
     {
@@ -54,12 +66,12 @@ class GithubStatsCommand extends Command
     {
         $rows[] = [new TableCell('<info> Stats PrestaShop/PrestaShop</info>', ['colspan' => 2])];
         $rows[] = new TableSeparator();
-        $repository = $this->github->getClient()->api('repo')->show('PrestaShop', 'PrestaShop');
+        $repository = $this->githubTypedEndpointProvider->getRepoEndpoint($this->github->getClient())->show('PrestaShop', 'PrestaShop');
 
         $rows[] = ['# Stars', $repository['stargazers_count']];
         $rows[] = ['# Issues', $repository['open_issues_count']];
 
-        $openPullRequests = $this->github->getClient()->api('search')->issues('repo:PrestaShop/PrestaShop is:pr is:open');
+        $openPullRequests = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues('repo:PrestaShop/PrestaShop is:pr is:open');
         $rows[] = ['# PR', $openPullRequests['total_count']];
 
         if ($input->getOption('username')) {
@@ -73,23 +85,23 @@ class GithubStatsCommand extends Command
                 $rows[] = new TableSeparator();
             }
 
-            $openPullRequests = $this->github->getClient()->api('search')->issues('repo:PrestaShop/PrestaShop is:pr is:open author:' . $input->getOption('username'));
+            $openPullRequests = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues('repo:PrestaShop/PrestaShop is:pr is:open author:' . $input->getOption('username'));
             $rows[] = ['# PR Open', $openPullRequests['total_count']];
-            $mergedPullRequests = $this->github->getClient()->api('search')->issues('repo:PrestaShop/PrestaShop is:pr is:merged author:' . $input->getOption('username'));
+            $mergedPullRequests = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues('repo:PrestaShop/PrestaShop is:pr is:merged author:' . $input->getOption('username'));
             $rows[] = ['# PR Merged', $mergedPullRequests['total_count']];
-            $closedPullRequests = $this->github->getClient()->api('search')->issues('repo:PrestaShop/PrestaShop is:pr is:closed is:unmerged author:' . $input->getOption('username'));
+            $closedPullRequests = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues('repo:PrestaShop/PrestaShop is:pr is:closed is:unmerged author:' . $input->getOption('username'));
             $rows[] = ['# PR Closed', $closedPullRequests['total_count']];
             $rows[] = new TableSeparator();
 
-            $openIssues = $this->github->getClient()->api('search')->issues('repo:PrestaShop/PrestaShop is:issue is:open author:' . $input->getOption('username'));
+            $openIssues = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues('repo:PrestaShop/PrestaShop is:issue is:open author:' . $input->getOption('username'));
             $rows[] = ['# Issue Author Open', $openIssues['total_count']];
-            $closedIssues = $this->github->getClient()->api('search')->issues('repo:PrestaShop/PrestaShop is:issue is:closed author:' . $input->getOption('username'));
+            $closedIssues = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues('repo:PrestaShop/PrestaShop is:issue is:closed author:' . $input->getOption('username'));
             $rows[] = ['# Issue Author Closed', $closedIssues['total_count']];
             $rows[] = new TableSeparator();
 
-            $openIssues = $this->github->getClient()->api('search')->issues('repo:PrestaShop/PrestaShop is:issue is:open assignee:' . $input->getOption('username'));
+            $openIssues = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues('repo:PrestaShop/PrestaShop is:issue is:open assignee:' . $input->getOption('username'));
             $rows[] = ['# Issue Assignee Open', $openIssues['total_count']];
-            $closedIssues = $this->github->getClient()->api('search')->issues('repo:PrestaShop/PrestaShop is:issue is:closed assignee:' . $input->getOption('username'));
+            $closedIssues = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues('repo:PrestaShop/PrestaShop is:issue is:closed assignee:' . $input->getOption('username'));
             $rows[] = ['# Issue Assignee Closed', $closedIssues['total_count']];
         }
 
