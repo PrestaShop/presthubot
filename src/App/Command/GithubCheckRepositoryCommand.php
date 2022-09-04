@@ -22,7 +22,6 @@ class GithubCheckRepositoryCommand extends Command
      */
     private $githubTypedEndpointProvider;
 
-
     public function __construct(string $name = null)
     {
         $this->githubTypedEndpointProvider = new GithubTypedEndpointProvider();

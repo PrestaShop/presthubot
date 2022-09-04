@@ -5,7 +5,6 @@ namespace Console\App\Command;
 use Console\App\Service\Github\BranchManager;
 use Console\App\Service\Github\Github;
 use Console\App\Service\Github\GithubTypedEndpointProvider;
-use Github\Api\Repo;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -46,7 +45,6 @@ class GithubModuleMonitorCommand extends Command
                 $_ENV['GH_TOKEN'] ?? null
             );
     }
-
 
     public function getHTMLContent(int $i, $repositoryName, $numberOfCommitsAhead, $releaseDate, string $link, $assignee): string
     {
@@ -102,7 +100,6 @@ class GithubModuleMonitorCommand extends Command
             $pullRequest['number']
         );
     }
-
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

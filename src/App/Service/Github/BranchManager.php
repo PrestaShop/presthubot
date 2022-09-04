@@ -4,9 +4,6 @@ namespace Console\App\Service\Github;
 
 use DateTime;
 use Exception;
-use Github\Api\GitData;
-use Github\Api\PullRequest;
-use Github\Api\Repo;
 use Github\Client;
 
 class BranchManager

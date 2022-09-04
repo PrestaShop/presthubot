@@ -13,12 +13,12 @@ class Search extends AbstractApi
     use AcceptHeaderTrait;
 
     /**
-     * @var int $perPage
+     * @var int
      */
     private $perPage;
 
     /**
-     * @var int $page
+     * @var int
      */
     private $page;
 
@@ -153,6 +153,4 @@ class Search extends AbstractApi
     {
         $this->page = $page;
     }
-
-
 }
