@@ -12,12 +12,15 @@ use Github\Client;
 class BranchManager
 {
     const PRESTASHOP_USERNAME = 'prestashop';
-    const REFS_HEADS_DEV = 'refs/heads/dev';
-    const REFS_HEADS_DEVELOP = 'refs/heads/develop';
-    const REFS_HEADS_MASTER = 'refs/heads/master';
-    const REFS_HEADS_MAIN = 'refs/heads/main';
-    const MASTER = 'master';
-    const MAIN = 'main';
+    const BRANCH_REFS_HEADS_DEV = 'refs/heads/dev';
+    const BRANCH_REFS_HEADS_DEVELOP = 'refs/heads/develop';
+    const BRANCH_REFS_HEADS_MASTER = 'refs/heads/master';
+    const BRANCH_REFS_HEADS_MAIN = 'refs/heads/main';
+    const BRANCH_NAME_MASTER = 'master';
+    const BRANCH_NAME_MAIN = 'main';
+    const GITHUB_API_ENDPOINT_REPO = 'repo';
+    const GITHUB_API_ENDPOINT_PULL_REQUEST = 'pull_request';
+    const GITHUB_API_ENDPOINT_GIT_DATA = 'gitData';
 
     /**
      * @var Client
@@ -34,10 +37,28 @@ class BranchManager
 
     public function getReleaseData(string $repositoryName): array
     {
+        list($masterBranchData, $devBranchData, $usedBranch) = $this->getBranches($repositoryName);
+        $devLastCommitSha = $devBranchData['object']['sha'];
+        $masterLastCommitSha = $masterBranchData['object']['sha'];
+
+        $releaseDate = $this->getReleaseDate($repositoryName);
+        $comparison = $this->getComparison($repositoryName, $masterLastCommitSha, $devLastCommitSha);
+        $openPullRequest = $this->getOpenPullRequest($repositoryName, $usedBranch);
+
+        return [
+            'behind' => $comparison['behind_by'],
+            'ahead' => $comparison['ahead_by'],
+            'releaseDate' => $releaseDate,
+            'pullRequest' => $openPullRequest,
+        ];
+    }
+
+    public function getReleaseDate(string $repositoryName): string
+    {
         /**
          * @var Repo $repository
          */
-        $repository = $this->client->api('repo');
+        $repository = $this->client->api(self::GITHUB_API_ENDPOINT_REPO);
         try {
             $release = $repository->releases()->latest(
                 self::PRESTASHOP_USERNAME,
@@ -49,55 +70,21 @@ class BranchManager
             $releaseDate = 'NA';
         }
 
-        /**
-         * @var GitData $gitData
-         */
-        $gitData = $this->client->api('gitData');
-        $references = $gitData->references()->branches(
-            self::PRESTASHOP_USERNAME,
-            $repositoryName
-        );
-        $devBranchData = $masterBranchData = [];
-        $usedBranch = self::MAIN;
-        foreach ($references as $branchData) {
-            $branchName = $branchData['ref'];
+        return $releaseDate;
+    }
 
-            if ($branchName === self::REFS_HEADS_DEV) {
-                $devBranchData = $branchData;
-            }
-            if ($branchName === self::REFS_HEADS_DEVELOP) {
-                $devBranchData = $branchData;
-            }
-            if ($branchName === self::REFS_HEADS_MASTER) {
-                $masterBranchData = $branchData;
-                $usedBranch = self::MASTER;
-            }
-            if ($branchName === self::REFS_HEADS_MAIN) {
-                $masterBranchData = $branchData;
-                $usedBranch = self::MAIN;
-            }
-        }
-
-        $devLastCommitSha = $devBranchData['object']['sha'];
-        $masterLastCommitSha = $masterBranchData['object']['sha'];
-
-        $comparison = $repository->commits()->compare(
-            self::PRESTASHOP_USERNAME,
-            $repositoryName,
-            $masterLastCommitSha,
-            $devLastCommitSha
-        );
-
+    public function getOpenPullRequest(string $repositoryName, string $usedBranch): ?array
+    {
         /**
          * @var PullRequest $pullRequests
          */
-        $pullRequests = $this->client->api('pull_request');
+        $pullRequests = $this->client->api(self::GITHUB_API_ENDPOINT_PULL_REQUEST);
         $openPullRequests = $pullRequests->all(
             self::PRESTASHOP_USERNAME,
             $repositoryName,
             [
                 'state' => 'open',
-                'base' => $usedBranch
+                'base' => $usedBranch,
             ]
         );
 
@@ -106,17 +93,61 @@ class BranchManager
             $openPullRequest = [
                 'link' => $openPullRequests[0]['html_url'],
                 'number' => $openPullRequests[0]['number'],
-                'assignee' => $assignee
+                'assignee' => $assignee,
             ];
         } else {
-            $openPullRequest = false;
+            $openPullRequest = null;
         }
 
-        return [
-            'behind' => $comparison['behind_by'],
-            'ahead' => $comparison['ahead_by'],
-            'releaseDate' => $releaseDate,
-            'pullRequest' => $openPullRequest,
-        ];
+        return $openPullRequest;
+    }
+
+    public function getBranches(string $repositoryName): array
+    {
+        /**
+         * @var GitData $gitData
+         */
+        $gitData = $this->client->api(self::GITHUB_API_ENDPOINT_GIT_DATA);
+        $references = $gitData->references()->branches(
+            self::PRESTASHOP_USERNAME,
+            $repositoryName
+        );
+        $devBranchData = $masterBranchData = [];
+        $usedBranch = self::BRANCH_NAME_MAIN;
+        foreach ($references as $branchData) {
+            $branchName = $branchData['ref'];
+
+            if ($branchName === self::BRANCH_REFS_HEADS_DEV) {
+                $devBranchData = $branchData;
+            }
+            if ($branchName === self::BRANCH_REFS_HEADS_DEVELOP) {
+                $devBranchData = $branchData;
+            }
+            if ($branchName === self::BRANCH_REFS_HEADS_MASTER) {
+                $masterBranchData = $branchData;
+                $usedBranch = self::BRANCH_NAME_MASTER;
+            }
+            if ($branchName === self::BRANCH_REFS_HEADS_MAIN) {
+                $masterBranchData = $branchData;
+                $usedBranch = self::BRANCH_NAME_MAIN;
+            }
+        }
+
+        return [$masterBranchData, $devBranchData, $usedBranch];
+    }
+
+    public function getComparison(string $repositoryName, $masterLastCommitSha, $devLastCommitSha)
+    {
+        /**
+         * @var Repo $repository
+         */
+        $repository = $this->client->api(self::GITHUB_API_ENDPOINT_REPO);
+
+        return $repository->commits()->compare(
+            self::PRESTASHOP_USERNAME,
+            $repositoryName,
+            $masterLastCommitSha,
+            $devLastCommitSha
+        );
     }
 }

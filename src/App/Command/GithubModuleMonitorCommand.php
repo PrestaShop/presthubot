@@ -50,7 +50,7 @@ class GithubModuleMonitorCommand extends Command
 
     public function writeFile(array $tableContent): void
     {
-        $template = file_get_contents(__DIR__.'/../Resources/Template/module_monitor.tpl');
+        $template = file_get_contents(__DIR__ . '/../Resources/Template/module_monitor.tpl');
 
         file_put_contents(
             __DIR__ . '/../../docs/index.html',
@@ -99,14 +99,13 @@ class GithubModuleMonitorCommand extends Command
         $tableRows = [];
         $i = 1;
 
-
         foreach ($modulesToProcess as $moduleToProcess) {
             $repositoryName = $moduleToProcess;
             $releaseData = $branchManager->getReleaseData($repositoryName);
             $numberOfCommitsAhead = $releaseData['ahead'];
             $link = '';
             $assignee = '';
-            if ($releaseData['pullRequest']) {
+            if ($releaseData['pullRequest'] !== null) {
                 $link = $this->getPullResquestLink($releaseData['pullRequest']);
                 $assignee = $releaseData['pullRequest']['assignee'];
             }
@@ -118,12 +117,13 @@ class GithubModuleMonitorCommand extends Command
                 if ($a['ahead'] == $b['ahead']) {
                     return 0;
                 }
+
                 return ($a['ahead'] > $b['ahead']) ? -1 : 1;
             });
             $tableContent = array_map(function ($row) {
                 return $row['html'];
             }, $tableRows);
-            $i++;
+            ++$i;
         }
         $this->writeFile($tableContent);
         $output->writeLn(['', 'Output generated in ' . (microtime(true) - $timeStart) . 's.']);
@@ -131,9 +131,7 @@ class GithubModuleMonitorCommand extends Command
         return 0;
     }
 
-
-
-    function getModules(): array
+    public function getModules(): array
     {
         /**
          * @var Repo $repository
@@ -155,20 +153,19 @@ class GithubModuleMonitorCommand extends Command
         return $modules;
     }
 
-    function getLevelByNumberOfCommitsAhead(int $nbCommitsAhead): string
+    public function getLevelByNumberOfCommitsAhead(int $nbCommitsAhead): string
     {
         switch ($nbCommitsAhead) {
-            case ($nbCommitsAhead === 0):
+            case $nbCommitsAhead === 0:
                 return self::LEVEL_SUCCESS;
-            case ($nbCommitsAhead > 0 && $nbCommitsAhead <= 25):
+            case $nbCommitsAhead > 0 && $nbCommitsAhead <= 25:
                 return self::LEVEL_LIGHT;
-            case ($nbCommitsAhead > 25 && $nbCommitsAhead <= 100):
+            case $nbCommitsAhead > 25 && $nbCommitsAhead <= 100:
                 return self::LEVEL_WARNING;
-            case ($nbCommitsAhead > 100):
+            case $nbCommitsAhead > 100:
                 return self::LEVEL_DANGER;
             default:
                 return self::LEVEL_DEFAULT;
         }
     }
-
 }

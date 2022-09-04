@@ -116,7 +116,7 @@ class GithubCheckModuleCommand extends Command
 
     protected function configure()
     {
-        $this->setName('github:check:module')
+        $this->setName('github:module:check')
             ->setDescription('Check Github Module')
             ->addOption(
                 'ghtoken',
