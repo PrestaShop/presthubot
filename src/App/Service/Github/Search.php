@@ -125,7 +125,7 @@ class Search extends AbstractApi
     /**
      * @return int
      */
-    public function getPerPage(): int
+    public function getPerPage(): ?int
     {
         return $this->perPage;
     }
@@ -133,7 +133,7 @@ class Search extends AbstractApi
     /**
      * @param int $perPage
      */
-    public function setPerPage(int $perPage): void
+    public function setPerPage(?int $perPage): void
     {
         $this->perPage = $perPage;
     }
@@ -141,7 +141,7 @@ class Search extends AbstractApi
     /**
      * @return int
      */
-    public function getPage(): int
+    public function getPage(): ?int
     {
         return $this->page;
     }
@@ -149,7 +149,7 @@ class Search extends AbstractApi
     /**
      * @param int $page
      */
-    public function setPage(int $page): void
+    public function setPage(?int $page): void
     {
         $this->page = $page;
     }
