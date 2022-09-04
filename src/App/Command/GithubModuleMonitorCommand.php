@@ -106,7 +106,7 @@ class GithubModuleMonitorCommand extends Command
             $numberOfCommitsAhead = $releaseData['ahead'];
             $link = '';
             $assignee = '';
-            if ($releaseData['pullRequest']) {
+            if ($releaseData['pullRequest'] !== null) {
                 $link = $this->getPullResquestLink($releaseData['pullRequest']);
                 $assignee = $releaseData['pullRequest']['assignee'];
             }
