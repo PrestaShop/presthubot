@@ -84,7 +84,7 @@ class BranchManager
             $repositoryName,
             [
                 'state' => 'open',
-                'base' => $usedBranch
+                'base' => $usedBranch,
             ]
         );
 
@@ -93,7 +93,7 @@ class BranchManager
             $openPullRequest = [
                 'link' => $openPullRequests[0]['html_url'],
                 'number' => $openPullRequests[0]['number'],
-                'assignee' => $assignee
+                'assignee' => $assignee,
             ];
         } else {
             $openPullRequest = null;
@@ -132,7 +132,8 @@ class BranchManager
                 $usedBranch = self::BRANCH_NAME_MAIN;
             }
         }
-        return array($masterBranchData, $devBranchData, $usedBranch);
+
+        return [$masterBranchData, $devBranchData, $usedBranch];
     }
 
     public function getComparison(string $repositoryName, $masterLastCommitSha, $devLastCommitSha)
@@ -141,6 +142,7 @@ class BranchManager
          * @var Repo $repository
          */
         $repository = $this->client->api(self::GITHUB_API_ENDPOINT_REPO);
+
         return $repository->commits()->compare(
             self::PRESTASHOP_USERNAME,
             $repositoryName,
