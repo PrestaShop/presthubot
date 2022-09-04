@@ -15,12 +15,12 @@ class Search extends AbstractApi
     /**
      * @var int
      */
-    private $perPage;
+    protected $perPage;
 
     /**
      * @var int
      */
-    private $page;
+    protected $page;
 
     /**
      * Search repositories by filter (q).
