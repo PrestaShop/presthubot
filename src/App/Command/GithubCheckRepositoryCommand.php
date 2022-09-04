@@ -2,7 +2,8 @@
 
 namespace Console\App\Command;
 
-use Console\App\Service\Github;
+use Console\App\Service\Github\Github;
+use Console\App\Service\Github\GithubTypedEndpointProvider;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -16,6 +17,17 @@ class GithubCheckRepositoryCommand extends Command
      * @var Github;
      */
     protected $github;
+    /**
+     * @var GithubTypedEndpointProvider
+     */
+    private $githubTypedEndpointProvider;
+
+
+    public function __construct(string $name = null)
+    {
+        $this->githubTypedEndpointProvider = new GithubTypedEndpointProvider();
+        parent::__construct($name);
+    }
 
     protected function configure()
     {
@@ -65,7 +77,7 @@ class GithubCheckRepositoryCommand extends Command
         $page = 1;
         $results = [];
         do {
-            $repos = $this->github->getClient()->api('organization')->repositories('PrestaShop', $type, $page);
+            $repos = $this->githubTypedEndpointProvider->getOrganizationEndpoint($this->github->getClient())->repositories('PrestaShop', $type, $page);
             ++$page;
             $results = array_merge($results, $repos);
         } while (!empty($repos));

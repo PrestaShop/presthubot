@@ -2,8 +2,9 @@
 
 namespace Console\App\Command;
 
-use Console\App\Service\Branch\BranchManager;
-use Console\App\Service\Github;
+use Console\App\Service\Github\BranchManager;
+use Console\App\Service\Github\Github;
+use Console\App\Service\Github\GithubTypedEndpointProvider;
 use Github\Api\Repo;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,6 +22,31 @@ class GithubModuleMonitorCommand extends Command
      * @var Github;
      */
     protected $github;
+
+    /**
+     * @var GithubTypedEndpointProvider
+     */
+    private $githubTypedEndpointProvider;
+
+    public function __construct(string $name = null)
+    {
+        $this->githubTypedEndpointProvider = new GithubTypedEndpointProvider();
+        parent::__construct($name);
+    }
+
+    protected function configure()
+    {
+        $this->setName('github:module:monitor')
+            ->setDescription('Monitor Github Module')
+            ->addOption(
+                'ghtoken',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Please pass a GitHub token as argument',
+                $_ENV['GH_TOKEN'] ?? null
+            );
+    }
+
 
     public function getHTMLContent(int $i, $repositoryName, $numberOfCommitsAhead, $releaseDate, string $link, $assignee): string
     {
@@ -77,28 +103,16 @@ class GithubModuleMonitorCommand extends Command
         );
     }
 
-    protected function configure()
-    {
-        $this->setName('github:module:monitor')
-            ->setDescription('Monitor Github Module')
-            ->addOption(
-                'ghtoken',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'Please pass a GitHub token as argument',
-                $_ENV['GH_TOKEN'] ?? null
-            );
-    }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $timeStart = microtime(true);
         $this->github = new Github($input->getOption('ghtoken'));
-        $branchManager = new BranchManager($this->github->getClient());
+        $branchManager = new BranchManager($this->github->getClient(), $this->githubTypedEndpointProvider);
         $modulesToProcess = $this->getModules();
         $tableRows = [];
         $i = 1;
-
+        $tableContent = [];
         foreach ($modulesToProcess as $moduleToProcess) {
             $repositoryName = $moduleToProcess;
             $releaseData = $branchManager->getReleaseData($repositoryName);
@@ -133,10 +147,7 @@ class GithubModuleMonitorCommand extends Command
 
     public function getModules(): array
     {
-        /**
-         * @var Repo $repository
-         */
-        $repository = $this->github->getClient()->api('repo');
+        $repository = $this->githubTypedEndpointProvider->getRepoEndpoint($this->github->getClient());
         $contents = $repository->contents()->show(
             BranchManager::PRESTASHOP_USERNAME,
             'PrestaShop-modules'

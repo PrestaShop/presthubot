@@ -2,7 +2,8 @@
 
 namespace Console\App\Command;
 
-use Console\App\Service\Github;
+use Console\App\Service\Github\Github;
+use Console\App\Service\Github\GithubTypedEndpointProvider;
 use Console\App\Service\Github\Query;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -41,6 +42,17 @@ class GithubIssuesReportCommand extends Command
         'regressions' => [],
         'duplicates' => [],
     ];
+
+    /**
+     * @var GithubTypedEndpointProvider
+     */
+    private $githubTypedEndpointProvider;
+
+    public function __construct(string $name = null)
+    {
+        $this->githubTypedEndpointProvider = new GithubTypedEndpointProvider();
+        parent::__construct($name);
+    }
 
     protected function configure()
     {
@@ -157,13 +169,13 @@ class GithubIssuesReportCommand extends Command
 
         $issuesOrigin = [];
         foreach ($this->results['duplicates'] as $duplicate) {
-            $comments = $this->github->getClient()->api('issue')->comments()->all('PrestaShop', 'PrestaShop', $duplicate['number']);
+            $comments = $this->githubTypedEndpointProvider->getIssueEndpoint($this->github->getClient())->comments()->all('PrestaShop', 'PrestaShop', $duplicate['number']);
             foreach ($comments as $comment) {
                 preg_match('/Duplicates? of #(\d+)/i', $comment['body'], $matches);
                 if (isset($matches[1])) {
                     // We got the original issue number
                     $issueNumOriginal = $matches[1];
-                    $issueOriginal = $this->github->getClient()->api('issue')->show('PrestaShop', 'PrestaShop', $issueNumOriginal);
+                    $issueOriginal = $this->githubTypedEndpointProvider->getIssueEndpoint($this->github->getClient())->show('PrestaShop', 'PrestaShop', $issueNumOriginal);
 
                     if (!isset($issuesOrigin[$issueNumOriginal])) {
                         $issuesOrigin[$issueNumOriginal] = $issueOriginal;

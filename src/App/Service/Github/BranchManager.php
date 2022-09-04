@@ -1,6 +1,6 @@
 <?php
 
-namespace Console\App\Service\Branch;
+namespace Console\App\Service\Github;
 
 use DateTime;
 use Exception;
@@ -18,21 +18,23 @@ class BranchManager
     const BRANCH_REFS_HEADS_MAIN = 'refs/heads/main';
     const BRANCH_NAME_MASTER = 'master';
     const BRANCH_NAME_MAIN = 'main';
-    const GITHUB_API_ENDPOINT_REPO = 'repo';
-    const GITHUB_API_ENDPOINT_PULL_REQUEST = 'pull_request';
-    const GITHUB_API_ENDPOINT_GIT_DATA = 'gitData';
 
     /**
      * @var Client
      */
     private $client;
+    /**
+     * @var GithubTypedEndpointProvider
+     */
+    private $githubTypedEndpointProvider;
 
     /**
      * @param Client $client
      */
-    public function __construct(Client $client)
+    public function __construct(Client $client, GithubTypedEndpointProvider $githubTypedEndpointProvider)
     {
         $this->client = $client;
+        $this->githubTypedEndpointProvider = $githubTypedEndpointProvider;
     }
 
     public function getReleaseData(string $repositoryName): array
@@ -55,10 +57,7 @@ class BranchManager
 
     public function getReleaseDate(string $repositoryName): string
     {
-        /**
-         * @var Repo $repository
-         */
-        $repository = $this->client->api(self::GITHUB_API_ENDPOINT_REPO);
+        $repository = $this->githubTypedEndpointProvider->getRepoEndpoint($this->client);
         try {
             $release = $repository->releases()->latest(
                 self::PRESTASHOP_USERNAME,
@@ -75,10 +74,7 @@ class BranchManager
 
     public function getOpenPullRequest(string $repositoryName, string $usedBranch): ?array
     {
-        /**
-         * @var PullRequest $pullRequests
-         */
-        $pullRequests = $this->client->api(self::GITHUB_API_ENDPOINT_PULL_REQUEST);
+        $pullRequests = $this->githubTypedEndpointProvider->getPullRequestEndpoint($this->client);
         $openPullRequests = $pullRequests->all(
             self::PRESTASHOP_USERNAME,
             $repositoryName,
@@ -104,10 +100,7 @@ class BranchManager
 
     public function getBranches(string $repositoryName): array
     {
-        /**
-         * @var GitData $gitData
-         */
-        $gitData = $this->client->api(self::GITHUB_API_ENDPOINT_GIT_DATA);
+        $gitData = $this->githubTypedEndpointProvider->getGitDataEndpoint($this->client);
         $references = $gitData->references()->branches(
             self::PRESTASHOP_USERNAME,
             $repositoryName
@@ -138,10 +131,7 @@ class BranchManager
 
     public function getComparison(string $repositoryName, $masterLastCommitSha, $devLastCommitSha)
     {
-        /**
-         * @var Repo $repository
-         */
-        $repository = $this->client->api(self::GITHUB_API_ENDPOINT_REPO);
+        $repository = $this->githubTypedEndpointProvider->getRepoEndpoint($this->client);
 
         return $repository->commits()->compare(
             self::PRESTASHOP_USERNAME,
