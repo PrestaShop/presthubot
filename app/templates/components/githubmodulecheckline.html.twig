@@ -1,0 +1,31 @@
+<tr class="alert" role="alert">
+    <td>{{ this.line.title|raw }}</td>
+    <td>
+        {{ this.line.kpis|raw }}
+    </td>
+    <td>
+        {{ this.line.description|raw }}
+    </td>
+    <td>
+        {{ this.line.license|raw }}
+    </td>
+    <td>
+        <ul>
+            {{ this.line.issues|raw }}
+        </ul>
+    </td>
+    <td>
+        <ul>
+            {{ this.line.labels|raw }}
+        </ul>
+    </td>
+   <td>
+        {{ this.line.branchDev|raw }}
+    </td>
+    <td>
+        {{ this.line.files|raw }}
+    </td>
+    <td>
+        {{ this.line.topics|raw }}
+    </td>
+</tr>
