@@ -87,17 +87,17 @@ class ModuleCheckCommand extends Command
         $table = $io->createTable();
         $table->setStyle((new TableStyle())->setVerticalBorderChars('|'));
         $table->setHeaders([
-                'Title',
-                'Kpis',
-                'Issues',
-                'Desc. rating',
-                'License',
-                'Labels',
-                'Branch dev',
-                'Files',
-                'GH Topics',
-                '%',
-            ]);
+            'Title',
+            'Kpis',
+            'Issues',
+            'Desc. rating',
+            'License',
+            'Labels',
+            'Branch dev',
+            'Files',
+            'GH Topics',
+            '%',
+        ]);
         /**
          * @var ModuleCheckDTO $repository
          */

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Presenter\ModuleCheck\Web;
+namespace App\Presenter\RepositoryCheck\Web;
 
-use App\Presenter\ModuleCheck\AbstractModuleCheckPresenter;
+use App\Presenter\RepositoryCheck\AbstractRepositoryCheckPresenter;
 
-class ModuleCheckPresenterWeb extends AbstractModuleCheckPresenter
+class RepositoryCheckPresenterWeb extends AbstractRepositoryCheckPresenter
 {
     protected const SYMBOL_CHECK = '<i class="fa fa-check-circle-o text-success" >&nbsp;</i>';
     protected const SYMBOL_FAIL = '<i class="fa fa-exclamation-circle text-warning" >&nbsp;</i>';

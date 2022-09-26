@@ -14,6 +14,7 @@ use App\DTO\VersionControlSystemApiResponse\PullRequestAll\PullRequestAllDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestAll\PullRequestAllsDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestSearch\PullRequestSearchDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestSearch\PullRequestSearchNodeDTO;
+use App\DTO\VersionControlSystemApiResponse\Repositories\RepositoriesDTO;
 use App\DTO\VersionControlSystemApiResponse\RepositoryContent\RepositoryContentDTO;
 use App\DTO\VersionControlSystemApiResponse\RepositoryContent\RepositoryContentsDTO;
 use App\DTO\VersionControlSystemApiResponse\RepositoryTopics\RepositoryTopicsDTO;
@@ -203,7 +204,7 @@ class Github
             dd($e);
         }
 
-         return $result;
+        return $result;
     }
 
     public function getGitDataEndpointReferencesBranches(string $org, string $repository): BranchesReferencesDTO
@@ -399,6 +400,26 @@ class Github
                 );
             }
         } while ($resultPage['data']['search']['pageInfo']['hasNextPage']);
+
+        return $result;
+    }
+
+    public function getOrganizationEndpointRepositories(string $org, ?string $type, ?string $page): ?RepositoriesDTO
+    {
+        $result = new RepositoriesDTO();
+        $repositories = $this->serializer->denormalize(
+            $this->getOrganizationEndpoint()->repositories($org, $type, $page),
+            RepositoryDTO::class.'[]',
+            null,
+            [
+                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s\Z',
+                DenormalizerInterface::COLLECT_DENORMALIZATION_ERRORS => true,
+            ]
+        );
+        if ([] === $repositories) {
+            return null;
+        }
+        $result->repositories = $repositories;
 
         return $result;
     }

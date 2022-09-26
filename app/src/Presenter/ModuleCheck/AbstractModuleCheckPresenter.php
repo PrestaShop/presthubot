@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Presenter\ModuleCheck\Web;
+namespace App\Presenter\ModuleCheck;
 
 use App\DTO\VersionControlSystemApiResponse\ModuleCheck\ModuleCheckDTO;
-use App\Presenter\ModuleCheck\ModuleCheckPresenterInterface;
 use App\Service\PrestaShop\ModuleFlagAndRate;
 
 class AbstractModuleCheckPresenter implements ModuleCheckPresenterInterface
@@ -12,11 +11,11 @@ class AbstractModuleCheckPresenter implements ModuleCheckPresenterInterface
     protected const SYMBOL_FAIL = 'fail';
     protected const SYMBOL_CRLF = 'crlf';
 
-    public ModuleCheckWebViewModel $viewModel;
+    public ModuleCheckViewModel $viewModel;
 
     public function present(ModuleCheckDTO $githubModuleCheckDTO): void
     {
-        $this->viewModel = new ModuleCheckWebViewModel(
+        $this->viewModel = new ModuleCheckViewModel(
             $this->getFormattedLink(
                 $githubModuleCheckDTO->repositoryLink,
                 $githubModuleCheckDTO->repositoryName

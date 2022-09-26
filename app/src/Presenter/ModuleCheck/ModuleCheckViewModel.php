@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Presenter\ModuleCheck\Web;
+namespace App\Presenter\ModuleCheck;
 
-class ModuleCheckWebViewModel
+class ModuleCheckViewModel
 {
     public function __construct(
         public readonly string $title,

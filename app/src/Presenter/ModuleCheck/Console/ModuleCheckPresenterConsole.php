@@ -2,7 +2,7 @@
 
 namespace App\Presenter\ModuleCheck\Console;
 
-use App\Presenter\ModuleCheck\Web\AbstractModuleCheckPresenter;
+use App\Presenter\ModuleCheck\AbstractModuleCheckPresenter;
 
 class ModuleCheckPresenterConsole extends AbstractModuleCheckPresenter
 {

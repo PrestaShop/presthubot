@@ -10,6 +10,7 @@ use App\DTO\VersionControlSystemApiResponse\IssuesSearch\IssuesSearchDTO;
 use App\DTO\VersionControlSystemApiResponse\LabelsAll\LabelsAllDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestAll\PullRequestAllsDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestSearch\PullRequestSearchNodeDTO;
+use App\DTO\VersionControlSystemApiResponse\Repositories\RepositoriesDTO;
 use App\DTO\VersionControlSystemApiResponse\RepositoryContent\RepositoryContentsDTO;
 use App\DTO\VersionControlSystemApiResponse\RepositoryTopics\RepositoryTopicsDTO;
 use Github\Client;
@@ -230,6 +231,20 @@ class GithubApiCache
                 $item->expiresAfter($this->numberOfHourCacheValidity * 3600);
 
                 return $this->github->getRepoTopics($org, $repository);
+            }
+        );
+    }
+
+    public function getOrganizationEndpointRepositories(string $org, ?string $type, ?string $page): ?RepositoriesDTO
+    {
+        $token = __FUNCTION__.md5(__FUNCTION__.$org.$type.$page);
+
+        return $this->cache->get(
+            $token,
+            function (ItemInterface $item) use ($org, $type, $page) {
+                $item->expiresAfter($this->numberOfHourCacheValidity * 3600);
+
+                return $this->github->getOrganizationEndpointRepositories($org, $type, $page);
             }
         );
     }

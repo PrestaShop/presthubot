@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-class GithubCheckModuleController extends AbstractController
+class ModuleCheckController extends AbstractController
 {
     #[Route('/module/check', name: 'app_module_check')]
     public function index(

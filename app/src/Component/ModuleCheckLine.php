@@ -2,13 +2,13 @@
 
 namespace App\Component;
 
-use App\Presenter\ModuleCheck\Web\ModuleCheckWebViewModel;
+use App\Presenter\ModuleCheck\ModuleCheckViewModel;
 use Symfony\UX\TwigComponent\Attribute\AsTwigComponent;
 
-#[AsTwigComponent('githubmodulecheckline')]
-class GithubModuleCheckLine
+#[AsTwigComponent('modulecheckline')]
+class ModuleCheckLine
 {
-    public ModuleCheckWebViewModel $line;
+    public ModuleCheckViewModel $line;
     public int $lineNumber;
 
     public function getConstValue(string $type): int
