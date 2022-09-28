@@ -3,6 +3,7 @@
 namespace App\Service\Github;
 
 use App\DTO\VersionControlSystemApiResponse\BranchesReferences\BranchesReferencesDTO;
+use App\DTO\VersionControlSystemApiResponse\CodeSearch\SearchCodeDTO;
 use App\DTO\VersionControlSystemApiResponse\CommitsCompare\CommitsCompareDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\IssueDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\RepositoryDTO;
@@ -245,6 +246,20 @@ class GithubApiCache
                 $item->expiresAfter($this->numberOfHourCacheValidity * 3600);
 
                 return $this->github->getOrganizationEndpointRepositories($org, $type, $page);
+            }
+        );
+    }
+
+    public function getSearchCode(string $query, int $numberPerPage, int $page): SearchCodeDTO
+    {
+        $token = __FUNCTION__.md5(__FUNCTION__.$query.$numberPerPage.$page);
+
+        return $this->cache->get(
+            $token,
+            function (ItemInterface $item) use ($query, $numberPerPage, $page) {
+                $item->expiresAfter($this->numberOfHourCacheValidity * 3600);
+
+                return $this->github->getSearchCode($query, $numberPerPage, $page);
             }
         );
     }

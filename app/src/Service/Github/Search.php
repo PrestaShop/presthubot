@@ -2,8 +2,8 @@
 
 namespace App\Service\Github;
 
-use Github\Api\AbstractApi;
 use Github\Api\AcceptHeaderTrait;
+use Github\Client;
 
 /**
  * Implement the Search API. To override the default class that not support per_page and page parameters,.
@@ -14,6 +14,11 @@ class Search extends AbstractApi
 
     protected int $perPage;
     protected int $page;
+
+    public function setClient(Client $client): void
+    {
+        parent::setClient($client);
+    }
 
     /**
      * Search repositories by filter (q).

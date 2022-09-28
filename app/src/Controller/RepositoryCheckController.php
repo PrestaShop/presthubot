@@ -17,10 +17,7 @@ class RepositoryCheckController extends AbstractController
         CheckRepository $checkRepository,
         RepositoryCheckPresenterWeb $repositoryCheckWebPresenter,
     ): Response {
-        $branch = '';
-        $from = 1;
-        $numberOfItems = 100;
-
+        $lines = [];
         foreach (
             $checkRepository->getCheckedRepositories(
                 'Prestashop',

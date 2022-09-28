@@ -11,7 +11,7 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-6 text-center mb-5">
-            <h2 class="heading-section">Presthubot</h2>
+            <h2 class="heading-section">CQRS Endpoints</h2>
         </div>
     </div>
 </div>
@@ -20,27 +20,21 @@
     <table class="table table-striped">
         <thead>
         <tr>
+            <th scope="col">Domain</th>
+            <th scope="col">Type</th>
             <th scope="col">Name</th>
-            <th scope="col">Desc.</th>
-            <th scope="col">link</th>
         </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>Module Check</td>
-                <td>Checks states of modules to reveal for each module all kind of update needed</td>
-                <td><a href="{{ path('app_module_check') }}">click here</a></td>
-            </tr>
-            <tr>
-                <td>Repository Check</td>
-                <td>Checks states of repositories to reveal for each repository all kind of update needed</td>
-                <td><a href="{{ path('app_repository_check') }}">click here</a></td>
-            </tr>
-            <tr>
-                <td>CQRS Endpoints</td>
-                <td>List all CQRS Endpoints</td>
-                <td><a href="{{ path('app_cqrs_endpoints') }}">click here</a></td>
-            </tr>
+        {% for line in lines %}
+
+           {{ component(
+                'cqrsendpointline',
+                {
+                    line: line,
+                }
+            ) }}
+        {% endfor %}
         </tbody>
     </table>
 </div>

@@ -4,6 +4,7 @@ namespace App\Service\Github;
 
 use App\DTO\VersionControlSystemApiResponse\BranchesReferences\BranchesReferenceDTO;
 use App\DTO\VersionControlSystemApiResponse\BranchesReferences\BranchesReferencesDTO;
+use App\DTO\VersionControlSystemApiResponse\CodeSearch\SearchCodeDTO;
 use App\DTO\VersionControlSystemApiResponse\CommitsCompare\CommitsCompareDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\IssueDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\LabelDTO;
@@ -26,7 +27,7 @@ use Github\Api\Issue;
 use Github\Api\Organization;
 use Github\Api\PullRequest;
 use Github\Api\Repo;
-use Github\Api\Search;
+use Github\Api\Search as SearchAlias;
 use Github\Client;
 use Github\Exception\RuntimeException;
 use League\Flysystem\Adapter\Local;
@@ -50,9 +51,11 @@ class Github
     public const PULL_REQUEST_STATE_REQUEST_CHANGES = 'REQUEST_CHANGES';
     public const PULL_REQUEST_STATE_COMMENT = 'COMMENT';
     private SerializerInterface $serializer;
+    private Search $search;
 
     public function __construct(
         string $githubToken,
+        Search $search,
         SerializerInterface $serializer,
     ) {
         $filesystemAdapter = new Local(__DIR__.'/../../../var/');
@@ -66,6 +69,7 @@ class Github
             $this->client->authenticate($githubToken, null, Client::AUTH_ACCESS_TOKEN);
         }
         $this->serializer = $serializer;
+        $this->search = $search;
     }
 
     public function getClient(): Client
@@ -134,6 +138,26 @@ class Github
                 DenormalizerInterface::COLLECT_DENORMALIZATION_ERRORS => true,
             ]
         );
+    }
+
+    public function getSearchCode(string $query, int $numberPerPage, int $page): SearchCodeDTO
+    {
+        $this->search->setClient($this->client);
+        $this->search->setPerPage($numberPerPage);
+        $this->search->setPage($page);
+        try {
+            return $this->serializer->denormalize(
+                $this->search->code($query),
+                SearchCodeDTO::class,
+                null,
+                [
+                    DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s\Z',
+                    DenormalizerInterface::COLLECT_DENORMALIZATION_ERRORS => true,
+                ]
+            );
+        } catch (Exception $exception) {
+            dd($exception);
+        }
     }
 
     public function getSearchEndpointIssues(string $search): IssuesSearchDTO
@@ -485,10 +509,10 @@ class Github
         return $graphql;
     }
 
-    public function getSearchEndpoint(): Search
+    public function getSearchEndpoint(): SearchAlias
     {
         /**
-         * @var Search $search
+         * @var SearchAlias $search
          */
         $search = $this->client->api(self::GITHUB_API_ENDPOINT_SEARCH);
 

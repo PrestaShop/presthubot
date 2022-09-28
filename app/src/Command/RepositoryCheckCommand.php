@@ -47,7 +47,7 @@ class RepositoryCheckCommand extends Command
 
     protected function configure()
     {
-        $this->setName('github:repository:check')
+        $this->setName('presthubot:repository:check')
             ->setDescription('Check Github Repositories')
             ->addOption(
                 'public',

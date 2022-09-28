@@ -35,7 +35,7 @@ class ModuleCheckCommand extends Command
 
     protected function configure()
     {
-        $this->setName('github:module:check')
+        $this->setName('presthubot:module:check')
             ->setDescription('Check Github Module')
             ->addOption(
                 'module',
