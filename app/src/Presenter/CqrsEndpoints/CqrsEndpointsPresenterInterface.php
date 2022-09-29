@@ -6,5 +6,5 @@ use App\DTO\VersionControlSystemApiResponse\CqrsEndpoints\CqrsEndpointDTO;
 
 interface CqrsEndpointsPresenterInterface
 {
-    public function present(CqrsEndpointDTO $cqrsEndpointDTO): void;
+    public function present(CqrsEndpointDTO $contributorDTO): void;
 }

@@ -37,14 +37,7 @@ class CqrsEndpointsCommand extends Command
     protected function configure()
     {
         $this->setName('presthubot:cqrs:endpoints')
-            ->setDescription('Get list of cqrs endpoints')
-            ->addOption(
-                'ghtoken',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                '',
-                $_ENV['GH_TOKEN'] ?? null
-            );
+            ->setDescription('Get list of cqrs endpoints');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -64,10 +57,6 @@ class CqrsEndpointsCommand extends Command
         }
 
         $table->setRows($rows);
-
-        $table->setStyle('box-double');
-        $table->render();
-
         $table->render();
         $event = $stopwatch->stop('command');
         $output->writeLn(['', 'Output generated in '.(int) ($event->getDuration() / 1000).'s.']);

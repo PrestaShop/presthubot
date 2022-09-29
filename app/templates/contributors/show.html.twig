@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Github Module Check</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center mb-5">
+            <h2 class="heading-section">Contributors</h2>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <table class="table table-striped">
+        <tbody>
+        {% for line in lines %}
+           {% if line.numberOfIssues is defined %}
+                <tr style="background-color: #17a2b8;">
+                    <th>Contributor</th>
+                    <th>Number of PR handled</th>
+                    <th colspan="12"></th>
+                </tr>
+               <tr><td>{{ line.author.login }}</td><td>{{ line.numberOfIssues }}</td><td colspan="12"></td></tr>
+               <tr style="background-color: #1fa750;">
+                   <th>Repository</th>
+                   <th>PR link</th>
+                   <th>Bug VS Impr.</th>
+                   <th>Status</th>
+                   <th>Branch</th>
+                   <th>Created at</th>
+                   <th>Closed At</th>
+                   <th>Merged</th>
+                   <th>Linked issue</th>
+                   <th>Severity</th>
+                   <th>Issue comm.</th>
+                   <th>PR comm.</th>
+               </tr>
+            {% else %}
+                <tr>
+                    <td>{{ line.repository }}</td>
+                    <td>{{ line.pullRequestUrl|raw }}</td>
+                    <td>{{ line.isBugOrImprovement }}</td>
+                    <td>{{ line.status }}</td>
+                    <td>{{ line.branch }}</td>
+                    <td>{{ line.pullRequestCreatedAt }}</td>
+                    <td>{{ line.pullRequestClosedAt }}</td>
+                    <td>{{ line.merged }}</td>
+                    <td>{{ line.linkedIssueUrl|raw }}</td>
+                    <td>{{ line.severityIssue }}</td>
+                    <td>{{ line.linkedIssueComment }}</td>
+                    <td>{{ line.pullRequestComments }}</td>
+                </tr>
+                {% endif %}
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

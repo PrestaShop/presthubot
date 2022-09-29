@@ -3,9 +3,10 @@
 namespace App\DTO\VersionControlSystemApiResponse\PullRequestSearch;
 
 use App\DTO\VersionControlSystemApiResponse\Common\MilestoneDTO;
+use App\DTO\VersionControlSystemApiResponse\PullResquestResultInterface;
 use DateTimeImmutable;
 
-class PullRequestSearchNodeDTO
+class PullRequestSearchNodeDTO implements PullResquestResultInterface
 {
     public int $number;
     public PullRequestSearchAuthorDTO $author;

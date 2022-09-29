@@ -3,6 +3,7 @@
 namespace App\DTO\VersionControlSystemApiResponse\PullRequestAll;
 
 use App\DTO\VersionControlSystemApiResponse\Common\LabelDTO;
+use App\DTO\VersionControlSystemApiResponse\Common\LinksDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\MilestoneDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\UserDTO;
 use DateTimeImmutable;
@@ -45,7 +46,7 @@ class PullRequestAllDTO
     public array $requested_teams;
     public PullRequestAllBaseDTO $head;
     public PullRequestAllBaseDTO $base;
-    public PullRequestAllLinksDTO $_links;
+    public LinksDTO $_links;
     public string $author_association;
     public $auto_merge;
     public bool $draft;

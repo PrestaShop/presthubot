@@ -9,12 +9,16 @@ use App\DTO\VersionControlSystemApiResponse\CommitsCompare\CommitsCompareDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\IssueDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\LabelDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\RepositoryDTO;
+use App\DTO\VersionControlSystemApiResponse\Common\UserDTO;
+use App\DTO\VersionControlSystemApiResponse\Contributors\ContributorsDTO;
 use App\DTO\VersionControlSystemApiResponse\IssuesSearch\IssuesSearchDTO;
 use App\DTO\VersionControlSystemApiResponse\LabelsAll\LabelsAllDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestAll\PullRequestAllDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestAll\PullRequestAllsDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestSearch\PullRequestSearchDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestSearch\PullRequestSearchNodeDTO;
+use App\DTO\VersionControlSystemApiResponse\PullRequestShow\PullRequestShowDTO;
+use App\DTO\VersionControlSystemApiResponse\PullResquestResultInterface;
 use App\DTO\VersionControlSystemApiResponse\Repositories\RepositoriesDTO;
 use App\DTO\VersionControlSystemApiResponse\RepositoryContent\RepositoryContentDTO;
 use App\DTO\VersionControlSystemApiResponse\RepositoryContent\RepositoryContentsDTO;
@@ -145,32 +149,49 @@ class Github
         $this->search->setClient($this->client);
         $this->search->setPerPage($numberPerPage);
         $this->search->setPage($page);
-        try {
-            return $this->serializer->denormalize(
-                $this->search->code($query),
-                SearchCodeDTO::class,
-                null,
-                [
-                    DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s\Z',
-                    DenormalizerInterface::COLLECT_DENORMALIZATION_ERRORS => true,
-                ]
-            );
-        } catch (Exception $exception) {
-            dd($exception);
-        }
-    }
-
-    public function getSearchEndpointIssues(string $search): IssuesSearchDTO
-    {
         return $this->serializer->denormalize(
-            $this->getSearchEndpoint()->issues($search),
-            IssuesSearchDTO::class,
+            $this->search->code($query),
+            SearchCodeDTO::class,
             null,
             [
                 DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s\Z',
                 DenormalizerInterface::COLLECT_DENORMALIZATION_ERRORS => true,
             ]
         );
+    }
+
+    public function getContributors(string $org, string $repository): ContributorsDTO
+    {
+        $contributors = new ContributorsDTO();
+        $contributors->contributors = $this->serializer->denormalize(
+            $this->getRepoEndpoint()->contributors('Prestashop', 'Prestashop'),
+            UserDTO::class . '[]',
+            null,
+            [
+                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s\Z',
+                DenormalizerInterface::COLLECT_DENORMALIZATION_ERRORS => true,
+            ]
+        );
+
+        return $contributors;
+    }
+
+
+    public function getSearchEndpointIssues(string $search): IssuesSearchDTO
+    {
+        try {
+            return $this->serializer->denormalize(
+                $this->getSearchEndpoint()->issues($search),
+                IssuesSearchDTO::class,
+                null,
+                [
+                    DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s\Z',
+                    DenormalizerInterface::COLLECT_DENORMALIZATION_ERRORS => true,
+                ]
+            );
+        } catch (Exception $e) {
+            dd($e);
+        }
     }
 
     public function getIssueEndpointLabelsAll(string $org, string $repository): LabelsAllDTO
@@ -214,10 +235,25 @@ class Github
     public function getPullRequestEndpointAll(string $org, string $repository, array $arguments): PullRequestAllsDTO
     {
         $result = new PullRequestAllsDTO();
+        $result->items = $this->serializer->denormalize(
+            $this->getPullRequestEndpoint()->all($org, $repository, $arguments),
+            PullRequestAllDTO::class.'[]',
+            null,
+            [
+                DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s\Z',
+                DenormalizerInterface::COLLECT_DENORMALIZATION_ERRORS => true,
+            ]
+        );
+
+        return $result;
+    }
+
+    public function getPullRequestEndpointShow(string $username, string $repository, int $id): PullRequestShowDTO
+    {
         try {
-            $result->items = $this->serializer->denormalize(
-                $this->getPullRequestEndpoint()->all($org, $repository, $arguments),
-                PullRequestAllDTO::class.'[]',
+            return $this->serializer->denormalize(
+                $this->getPullRequestEndpoint()->show($username, $repository, $id),
+                PullRequestShowDTO::class,
                 null,
                 [
                     DateTimeNormalizer::FORMAT_KEY => 'Y-m-d\TH:i:s\Z',
@@ -225,11 +261,10 @@ class Github
                 ]
             );
         } catch (Exception $e) {
-            dd($e);
+            dump($e);
         }
-
-        return $result;
     }
+
 
     public function getGitDataEndpointReferencesBranches(string $org, string $repository): BranchesReferencesDTO
     {
@@ -260,7 +295,7 @@ class Github
         );
     }
 
-    public function getLinkedIssue(PullRequestSearchNodeDTO $pullRequest): ?IssueDTO
+    public function getLinkedIssue(PullResquestResultInterface $pullRequest): ?IssueDTO
     {
         preg_match('#Fixes\s\#([0-9]{1,5})#', $pullRequest->body, $matches);
         $issueId = !empty($matches) && !empty($matches[1]) ? $matches[1] : null;

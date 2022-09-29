@@ -7,10 +7,13 @@ use App\DTO\VersionControlSystemApiResponse\CodeSearch\SearchCodeDTO;
 use App\DTO\VersionControlSystemApiResponse\CommitsCompare\CommitsCompareDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\IssueDTO;
 use App\DTO\VersionControlSystemApiResponse\Common\RepositoryDTO;
+use App\DTO\VersionControlSystemApiResponse\Contributors\ContributorsDTO;
 use App\DTO\VersionControlSystemApiResponse\IssuesSearch\IssuesSearchDTO;
 use App\DTO\VersionControlSystemApiResponse\LabelsAll\LabelsAllDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestAll\PullRequestAllsDTO;
 use App\DTO\VersionControlSystemApiResponse\PullRequestSearch\PullRequestSearchNodeDTO;
+use App\DTO\VersionControlSystemApiResponse\PullRequestShow\PullRequestShowDTO;
+use App\DTO\VersionControlSystemApiResponse\PullResquestResultInterface;
 use App\DTO\VersionControlSystemApiResponse\Repositories\RepositoriesDTO;
 use App\DTO\VersionControlSystemApiResponse\RepositoryContent\RepositoryContentsDTO;
 use App\DTO\VersionControlSystemApiResponse\RepositoryTopics\RepositoryTopicsDTO;
@@ -39,7 +42,7 @@ class GithubApiCache
         return $this->github->getClient();
     }
 
-    public function getLinkedIssue(PullRequestSearchNodeDTO $pullRequest): ?IssueDTO
+    public function getLinkedIssue(PullResquestResultInterface $pullRequest): ?IssueDTO
     {
         $token = __FUNCTION__.md5(__FUNCTION__.json_encode($pullRequest));
 
@@ -105,6 +108,20 @@ class GithubApiCache
                 $item->expiresAfter($this->numberOfHourCacheValidity * 3600);
 
                 return $this->github->getPullRequestEndpointAll($org, $repository, $arguments);
+            }
+        );
+    }
+
+    public function getPullRequestEndpointShow(string $username, string $repository, int $id): PullRequestShowDTO
+    {
+        $token = __FUNCTION__.md5(__FUNCTION__.$username.$repository.$id);
+
+        return $this->cache->get(
+            $token,
+            function (ItemInterface $item) use ($username, $repository, $id) {
+                $item->expiresAfter($this->numberOfHourCacheValidity * 3600);
+
+                return $this->github->getPullRequestEndpointShow($username, $repository, $id);
             }
         );
     }
@@ -263,4 +280,20 @@ class GithubApiCache
             }
         );
     }
+
+    public function getContributors(string $org, string $repository): ContributorsDTO
+    {
+        $token = __FUNCTION__.md5(__FUNCTION__.$org.$repository);
+
+        return $this->cache->get(
+            $token,
+            function (ItemInterface $item) use ($org, $repository) {
+                $item->expiresAfter($this->numberOfHourCacheValidity * 3600);
+
+                return $this->github->getContributors($org, $repository);
+            }
+        );
+    }
+
+
 }

@@ -1,10 +1,8 @@
 <?php
 
-namespace App\DTO\VersionControlSystemApiResponse\PullRequestAll;
+namespace App\DTO\VersionControlSystemApiResponse\Common;
 
-use App\DTO\VersionControlSystemApiResponse\Common\HrefDTO;
-
-class PullRequestAllLinksDTO
+class LinksDTO
 {
     public HrefDTO $self;
     public HrefDTO $html;

@@ -2,9 +2,10 @@
 
 namespace App\DTO\VersionControlSystemApiResponse\Common;
 
+use App\DTO\VersionControlSystemApiResponse\PullResquestResultInterface;
 use DateTimeImmutable;
 
-class IssueDTO
+class IssueDTO implements PullResquestResultInterface
 {
     public string $url;
     public string $repository_url;
@@ -33,7 +34,7 @@ class IssueDTO
     public ?string $active_lock_reason;
     public bool $draft;
     public PullRequestAbstractDTO $pull_request;
-    public string $body;
+    public ?string $body;
     public ?UserDTO $closed_by;
     public ReactionsDTO $reactions;
     public string $timeline_url;

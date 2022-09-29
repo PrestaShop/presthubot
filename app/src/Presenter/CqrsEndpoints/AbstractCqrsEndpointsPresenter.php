@@ -8,12 +8,12 @@ class AbstractCqrsEndpointsPresenter implements CqrsEndpointsPresenterInterface
 {
     public CqrsEndpointViewModel $viewModel;
 
-    public function present(CqrsEndpointDTO $cqrsEndpointDTO): void
+    public function present(CqrsEndpointDTO $contributorDTO): void
     {
         $this->viewModel = new CqrsEndpointViewModel(
-            $cqrsEndpointDTO->domain,
-            $cqrsEndpointDTO->type,
-            $cqrsEndpointDTO->name
+            $contributorDTO->domain,
+            $contributorDTO->type,
+            $contributorDTO->name
         );
     }
 }
