@@ -39,7 +39,11 @@ class SlackNotifierCommand extends Command
     /**
      * @var string;
      */
-    protected $slackChannelQA;
+    protected $slackChannelQAAutomation;
+    /**
+     * @var string;
+     */
+    protected $slackChannelQAFunctional;
 
     /**
      * @var int
@@ -127,39 +131,46 @@ class SlackNotifierCommand extends Command
                 $_ENV['SLACK_TOKEN'] ?? null
             )
             ->addOption(
-                'slackchannelQA',
+                'slackChannelQAAutomation',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 '',
-                $_ENV['SLACK_CHANNEL_QA'] ?? null
+                $_ENV['SLACK_CHANNEL_QA_AUTOMATION'] ?? null
+            )
+            ->addOption(
+                'slackChannelQAFunctional',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                '',
+                $_ENV['SLACK_CHANNEL_QA_FUNCTIONAL'] ?? null
             );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Local Variable
-        $slackMessageQA = $slackMessageCoreMembers = [];
+        $slackMessageQAAutomation = $slackMessageQAFunctional = $slackMessageCoreMembers = [];
 
         $this->github = new Github($input->getOption('ghtoken'));
         $this->moduleChecker = new ModuleChecker($this->github);
         $this->moduleFetcher = new ModuleFetcher($this->github);
         $this->nightlyBoard = new NightlyBoard();
         $this->slack = new Slack($input->getOption('slacktoken'));
-        $this->slackChannelQA = $input->getOption('slackchannelQA');
+        $this->slackChannelQAAutomation = $input->getOption('slackChannelQAAutomation');
+        $this->slackChannelQAFunctional = $input->getOption('slackChannelQAFunctional');
 
         $title = ':preston::date: Welcome to the PrestHubot Report of the day :date:';
-        $slackMessageQA[] = $title;
+        $slackMessageQAAutomation[] = $title;
+        $slackMessageQAFunctional[] = $title;
 
         // Check Status
-        $statusNightly = $this->checkStatusNightly();
-        $slackMessageQA[] = $statusNightly;
+        $slackMessageQAAutomation[] = $this->checkStatusNightly();
 
         // Check QA Stats
-        $slackMessageQA[] = $this->checkStatsQA();
+        $slackMessageQAFunctional[] = $this->checkStatsQA();
 
         // Check PR Priority to Test
-        $prReadyToTest = $this->checkPRReadyToTest();
-        $slackMessageQA[] = $prReadyToTest;
+        $slackMessageQAFunctional[] = $this->checkPRReadyToTest();
 
         // Get PR to Review for Core Team
         $slackMessageCoreMembers[] = $this->checkPRReadyToReviewForCoreTeam();
@@ -170,8 +181,12 @@ class SlackNotifierCommand extends Command
         // Send Message to Merge to Develop for CoreTeam
         $slackMessageCoreMembers[] = $this->needMergeToDevelop();
 
-        foreach ($slackMessageQA as $message) {
-            $this->slack->sendNotification($this->slackChannelQA, $message);
+        // Send message to Slack
+        foreach ($slackMessageQAAutomation as $message) {
+            $this->slack->sendNotification($this->slackChannelQAAutomation, $message);
+        }
+        foreach ($slackMessageQAFunctional as $message) {
+            $this->slack->sendNotification($this->slackChannelQAFunctional, $message);
         }
         foreach ($slackMessageCoreMembers as $messages) {
             foreach ($messages as $slackChannelPrivateMaintainer => $message) {
@@ -199,7 +214,7 @@ class SlackNotifierCommand extends Command
                 $status = ($hasFailed && $report['tests']['failed'] == 0);
                 $emoji = $status ? ':greenlight:' : ':redlight:';
 
-                $slackMessage .= ' - <https://nightly.prestashop.com/report/' . $report['id'] . '|' . $emoji . ' Report -' . $branch . '(' . $campaign . ')>';
+                $slackMessage .= ' - <https://nightly.prestashop.com/report/' . $report['id'] . '|' . $emoji . ' Report - ' . $branch . ' (' . $campaign . ')>';
                 $slackMessage .= ' : ';
                 $slackMessage .= $hasPassed ? ':heavy_check_mark: ' . $report['tests']['passed'] : '';
                 $slackMessage .= ($hasPassed && ($hasFailed || $hasPending) ? ' - ' : '');
@@ -498,7 +513,7 @@ class SlackNotifierCommand extends Command
             if (empty($milestone)) {
                 $milestone = $pullRequest['milestone'];
             }
-            if ($milestone !== $pullRequest['milestone'] || $milestoneCount == 3) {
+            if ($milestone !== $pullRequest['milestone'] || $milestoneCount == 5) {
                 if ($milestone == $pullRequest['milestone']) {
                     continue;
                 }
