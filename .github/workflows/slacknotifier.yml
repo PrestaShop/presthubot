@@ -30,7 +30,8 @@ jobs:
               echo 'GH_TOKEN='${{ secrets.GH_TOKEN }} > .env && \
               echo 'SLACK_TOKEN='${{ secrets.SLACK_TOKEN }} >> .env && \
               echo 'SLACK_CHANNEL_CORE='${{ secrets.SLACK_CHANNEL_CORE }} >> .env && \
-              echo 'SLACK_CHANNEL_QA='${{ secrets.SLACK_CHANNEL_QA }} >> .env
+              echo 'SLACK_CHANNEL_QA_AUTOMATION='${{ secrets.SLACK_CHANNEL_QA_AUTOMATION }} >> .env && \
+              echo 'SLACK_CHANNEL_QA_FUNCTIONAL='${{ secrets.SLACK_CHANNEL_QA_FUNCTIONAL }} >> .env
 
       -   name: Execute script
           run: php bin/console slack:notifier
