@@ -2,7 +2,9 @@
 
 namespace Console\App\Service\PrestaShop;
 
-use Console\App\Service\Github;
+use Console\App\Service\Github\Github;
+use Console\App\Service\Github\GithubTypedEndpointProvider;
+use Github\Api\Repo;
 use JsonSchema\Validator;
 use Symfony\Component\Yaml\Yaml;
 
@@ -134,10 +136,15 @@ class ModuleChecker
      * @var array
      */
     protected $report = [];
+    /**
+     * @var GithubTypedEndpointProvider
+     */
+    private $githubTypedEndpointProvider;
 
-    public function __construct(Github $github)
+    public function __construct(Github $github, GithubTypedEndpointProvider $githubTypedEndpointProvider)
     {
         $this->github = $github;
+        $this->githubTypedEndpointProvider = $githubTypedEndpointProvider;
     }
 
     public function resetChecker(): self
@@ -160,7 +167,11 @@ class ModuleChecker
 
     public function checkRepository(string $org, string $repository, string $branch = 'master')
     {
-        $repositoryInfo = $this->github->getClient()->api('repo')->show($org, $repository);
+        /**
+         * @var Repo $repositoryEndpoint
+         */
+        $repositoryEndpoint = $this->github->getClient()->api('repo');
+        $repositoryInfo = $repositoryEndpoint->show($org, $repository);
         $this->report['archived'] = $repositoryInfo['archived'];
         if ($this->report['archived']) {
             return;
@@ -175,7 +186,7 @@ class ModuleChecker
         //...
 
         // #
-        $numOpenPR = $this->github->getClient()->api('search')->issues('repo:' . $org . '/' . $repository . ' is:open is:pr');
+        $numOpenPR = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues('repo:' . $org . '/' . $repository . ' is:open is:pr');
         $this->report['numStargazers'] = $repositoryInfo['stargazers_count'];
         $this->report['numPROpened'] = $numOpenPR['total_count'];
         $this->report['numFiles'] = $this->github->countRepoFiles($org, $repository);
@@ -184,7 +195,7 @@ class ModuleChecker
         $this->report['hasIssuesOpened'] = $repositoryInfo['has_issues'];
         $this->report['numIssuesOpened'] = $repositoryInfo['open_issues_count'];
         if (!$this->report['hasIssuesOpened']) {
-            $this->report['numIssuesOpened'] = $this->github->getClient()->api('search')->issues(
+            $this->report['numIssuesOpened'] = $this->githubTypedEndpointProvider->getSearchEndpoint($this->github->getClient())->issues(
                 'repo:' . $org . '/PrestaShop is:open is:issue label:"' . $repository . '"'
             );
             $this->report['numIssuesOpened'] = $this->report['numIssuesOpened']['total_count'];
@@ -233,7 +244,7 @@ class ModuleChecker
     {
         $this->report['files'] = [];
         foreach (self::CHECK_FILES as $path => $checks) {
-            $dirPHPStan = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, 'tests/php/phpstan', 'refs/heads/' . $branch)
+            $dirPHPStan = $this->githubTypedEndpointProvider->getRepoEndpoint($this->github->getClient())->contents()->exists($org, $repository, 'tests/php/phpstan', 'refs/heads/' . $branch)
                 ? 'tests/php/phpstan' : 'tests/phpstan';
             $path = str_replace('%dirPHPStan%', $dirPHPStan, $path);
             $this->report['files'][$path] = [];
@@ -242,7 +253,7 @@ class ModuleChecker
                     case self::CHECK_COMPOSER_VALID:
                         $status = false;
                         if ($this->report['files'][$path][self::CHECK_FILES_EXIST]) {
-                            $data = $this->github->getClient()->api('repo')->contents()->download($org, $repository, 'composer.json', 'refs/heads/' . $branch);
+                            $data = $this->githubTypedEndpointProvider->getRepoEndpoint($this->github->getClient())->contents()->download($org, $repository, 'composer.json', 'refs/heads/' . $branch);
                             $data = json_decode($data);
                             $validator = new Validator();
                             $validator->validate($data, (object) ['$ref' => 'https://getcomposer.org/schema.json']);
@@ -252,13 +263,13 @@ class ModuleChecker
                         $this->rating[self::RATING_FILES] += $status ? 1 : 0;
                     break;
                     case self::CHECK_FILES_EXIST:
-                        $isExist = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, $path, 'refs/heads/' . $branch);
+                        $isExist = $this->githubTypedEndpointProvider->getRepoEndpoint($this->github->getClient())->contents()->exists($org, $repository, $path, 'refs/heads/' . $branch);
                         $this->report['files'][$path][$checkType] = ($isExist == $checkData);
                         $this->rating[self::RATING_FILES] += ($isExist == $checkData) ? 1 : 0;
                     break;
                     case self::CHECK_FILES_CONTAIN:
                         $contents = $this->report['files'][$path][self::CHECK_FILES_EXIST]
-                            ? $this->github->getClient()->api('repo')->contents()->download($org, $repository, $path, 'refs/heads/' . $branch)
+                            ? $this->githubTypedEndpointProvider->getRepoEndpoint($this->github->getClient())->contents()->download($org, $repository, $path, 'refs/heads/' . $branch)
                             : '';
                         $allContains = true;
                         foreach ($checkData as $value) {
@@ -274,7 +285,7 @@ class ModuleChecker
                         $status = false;
                         if ($this->report['files'][$path][self::CHECK_FILES_EXIST]) {
                             // File available on the repository
-                            $contents = $this->github->getClient()->api('repo')->contents()->download($org, $repository, $path, 'refs/heads/' . $branch);
+                            $contents = $this->githubTypedEndpointProvider->getRepoEndpoint($this->github->getClient())->contents()->download($org, $repository, $path, 'refs/heads/' . $branch);
                             // Template
                             $checkData = \is_array($checkData) ? $checkData : [$checkData];
                             foreach ($checkData as $checkDataPath) {
@@ -320,7 +331,7 @@ class ModuleChecker
 
     protected function checkLabels(string $org, string $repository)
     {
-        $labelsInfo = $this->github->getClient()->api('issue')->labels()->all($org, $repository);
+        $labelsInfo = $this->githubTypedEndpointProvider->getIssueEndpoint($this->github->getClient())->labels()->all($org, $repository);
         $labels = [];
         foreach ($labelsInfo as $info) {
             $labels[$info['name']] = $info['color'];
@@ -338,18 +349,18 @@ class ModuleChecker
     public function checkBranches(string $org, string $repository): array
     {
         // Fetch main branch from the repository
-        $repositoryInfo = $this->github->getClient()->api('repo')->show($org, $repository);
+        $repositoryInfo = $this->githubTypedEndpointProvider->getRepoEndpoint($this->github->getClient())->show($org, $repository);
         $mainBranch = $repositoryInfo['default_branch'];
 
         // Fetch branches from Github
-        $references = $this->github->getClient()->api('gitData')->references()->branches($org, $repository);
+        $references = $this->githubTypedEndpointProvider->getGitDataEndpoint($this->github->getClient())->references()->branches($org, $repository);
         $branches = [];
         foreach ($references as $info) {
             $branches[str_replace('refs/heads/', '', $info['ref'])] = $info['object']['sha'];
         }
 
         // Fetch pulls requests
-        $pullRequests = $this->github->getClient()->api('pull_request')->all($org, $repository);
+        $pullRequests = $this->githubTypedEndpointProvider->getPullRequestEndpoint($this->github->getClient())->all($org, $repository);
         $hasPRRelease = array_reduce(
             $pullRequests,
             function (bool $carry, array $item) {
@@ -400,7 +411,7 @@ class ModuleChecker
         $devLastCommitSha = $devBranchData['object']['sha'];
         $masterLastCommitSha = $masterBranchData['object']['sha'];
 
-        $comparison = $this->github->getClient()->api('repo')->commits()->compare(
+        $comparison = $this->githubTypedEndpointProvider->getRepoEndpoint($this->github->getClient())->commits()->compare(
             $org,
             $repository,
             $masterLastCommitSha,

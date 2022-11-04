@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Console\App\Command;
 
-use Console\App\Service\Github;
+use Console\App\Service\Github\Github;
 use Console\App\Service\Github\Query;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;

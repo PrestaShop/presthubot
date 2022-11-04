@@ -1,6 +1,6 @@
 <?php
 
-use Console\App\Service\Github;
+use Console\App\Service\Github\Github;
 use Console\App\Service\PrestaShop\ModuleFetcher;
 use Github\Api\Repo;
 use Github\Api\Repository\Contents;

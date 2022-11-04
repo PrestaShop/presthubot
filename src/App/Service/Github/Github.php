@@ -1,9 +1,8 @@
 <?php
 
-namespace Console\App\Service;
+namespace Console\App\Service\Github;
 
 use Cache\Adapter\Filesystem\FilesystemCachePool;
-use Console\App\Service\Github\Filters;
 use Exception;
 use Github\Client;
 use Github\Exception\RuntimeException;
@@ -36,8 +35,12 @@ class Github
     public const PULL_REQUEST_STATE_APPROVED = 'APPROVED';
     public const PULL_REQUEST_STATE_REQUEST_CHANGES = 'REQUEST_CHANGES';
     public const PULL_REQUEST_STATE_COMMENT = 'COMMENT';
+    /**
+     * @var GithubTypedEndpointProvider
+     */
+    private $githubTypedEndpointProvider;
 
-    public function __construct(string $ghToken = null)
+    public function __construct(GithubTypedEndpointProvider $githubTypedEndpointProvider, string $ghToken = null)
     {
         $filesystemAdapter = new Local(__DIR__ . '/../../../var/');
         $filesystem = new Filesystem($filesystemAdapter);
@@ -49,6 +52,7 @@ class Github
         if (!empty($ghToken)) {
             $this->client->authenticate($ghToken, null, Client::AUTH_ACCESS_TOKEN);
         }
+        $this->githubTypedEndpointProvider = $githubTypedEndpointProvider;
     }
 
     public function getClient(): Client
@@ -59,7 +63,7 @@ class Github
     /**
      * @return array<array<mixed>>
      */
-    public function search(Github\Query $graphQLQuery): array
+    public function search(Query $graphQLQuery): array
     {
         $result = [];
         do {
@@ -73,7 +77,7 @@ class Github
         return $result;
     }
 
-    public function countSearch(Github\Query $graphQLQuery): int
+    public function countSearch(Query $graphQLQuery): int
     {
         $resultPage = $this->apiSearchGraphQL((string) $graphQLQuery);
 
@@ -84,7 +88,7 @@ class Github
     {
         $numFiles = 0;
 
-        $arrayPath = $this->client->api('repo')->contents()->show($org, $repository, $path);
+        $arrayPath = $this->githubTypedEndpointProvider->getRepoEndpoint($this->client)->contents()->show($org, $repository, $path);
         foreach ($arrayPath as $itemPath) {
             if ($itemPath['type'] == 'file') {
                 ++$numFiles;
@@ -113,7 +117,7 @@ class Github
             $issueId = !empty($matches) && !empty($matches[1]) ? $matches[1] : null;
         }
         try {
-            $issue = is_null($issueId) ? null : $this->client->api('issue')->show('PrestaShop', 'PrestaShop', $issueId);
+            $issue = is_null($issueId) ? null : $this->githubTypedEndpointProvider->getIssueEndpoint($this->client)->show('PrestaShop', 'PrestaShop', $issueId);
         } catch (RuntimeException $e) {
             if ($e->getMessage() == 'Not Found') {
                 throw new Exception(sprintf('Cannot find linked issue #%s in PR #%s', $issueId, $pullRequest['number']));
@@ -390,7 +394,7 @@ class Github
     {
         do {
             try {
-                $resultPage = $this->client->api('graphql')->execute($graphQLQuery, []);
+                $resultPage = $this->githubTypedEndpointProvider->getGraphQLEndpoint($this->client)->execute($graphQLQuery, []);
             } catch (\RuntimeException $e) {
             }
         } while (!isset($resultPage));

@@ -13,6 +13,16 @@ class Search extends AbstractApi
     use AcceptHeaderTrait;
 
     /**
+     * @var int
+     */
+    protected $perPage;
+
+    /**
+     * @var int
+     */
+    protected $page;
+
+    /**
      * Search repositories by filter (q).
      *
      * @see https://developer.github.com/v3/search/#search-repositories
@@ -110,5 +120,37 @@ class Search extends AbstractApi
         $this->acceptHeaderValue = 'application/vnd.github.mercy-preview+json';
 
         return $this->get('/search/topics', ['q' => $q]);
+    }
+
+    /**
+     * @return int
+     */
+    public function getPerPage(): ?int
+    {
+        return $this->perPage;
+    }
+
+    /**
+     * @param int $perPage
+     */
+    public function setPerPage(?int $perPage): void
+    {
+        $this->perPage = $perPage;
+    }
+
+    /**
+     * @return int
+     */
+    public function getPage(): ?int
+    {
+        return $this->page;
+    }
+
+    /**
+     * @param int $page
+     */
+    public function setPage(?int $page): void
+    {
+        $this->page = $page;
     }
 }

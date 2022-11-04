@@ -2,7 +2,8 @@
 
 namespace Console\App\Command;
 
-use Console\App\Service\Github;
+use Console\App\Service\Github\Github;
+use Console\App\Service\Github\GithubTypedEndpointProvider;
 use Console\App\Service\PrestaShop\ModuleChecker;
 use Console\App\Service\PrestaShop\ModuleFetcher;
 use Symfony\Component\Console\Command\Command;
@@ -114,9 +115,20 @@ class GithubCheckModuleCommand extends Command
         self::COL_TOPICS => 0,
     ];
 
+    /**
+     * @var GithubTypedEndpointProvider
+     */
+    private $githubTypedEndpointProvider;
+
+    public function __construct(string $name = null)
+    {
+        $this->githubTypedEndpointProvider = new GithubTypedEndpointProvider();
+        parent::__construct($name);
+    }
+
     protected function configure()
     {
-        $this->setName('github:check:module')
+        $this->setName('github:module:check')
             ->setDescription('Check Github Module')
             ->addOption(
                 'ghtoken',
@@ -149,7 +161,7 @@ class GithubCheckModuleCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->github = new Github($input->getOption('ghtoken'));
-        $this->moduleChecker = new ModuleChecker($this->github);
+        $this->moduleChecker = new ModuleChecker($this->github, $this->githubTypedEndpointProvider);
         $moduleFetcher = new ModuleFetcher($this->github);
 
         $module = $input->getOption('module');
