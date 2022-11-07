@@ -29,6 +29,14 @@ class Github
         'sowbiba',
     ];
 
+    private const SOFTWARE_DEVELOPERS_IN_TEST_MEMBERS = [
+        'boubkerbribri',
+        'cfarhani06',
+        'Progi1984',
+        'nesrineabdmouleh',
+        'SD1982',
+    ];
+
     public const REPOSITORIES_IGNORED = [
         'PrestaShop-1.6',
     ];
@@ -368,7 +376,8 @@ class Github
         $statesByLogin = [];
         foreach ($pullRequest['reviews']['nodes'] as $node) {
             $login = $node['author']['login'];
-            if (!in_array($login, self::MAINTAINER_MEMBERS)) {
+            if (!in_array($login, self::MAINTAINER_MEMBERS)
+                || !in_array($login, self::SOFTWARE_DEVELOPERS_IN_TEST_MEMBERS)) {
                 continue;
             }
             if ($node['state'] == $state) {

@@ -191,22 +191,7 @@ Notify on Slack :
 - Modules improvements
 
 ```bash
-php bin/console slack:notifier:core
-```
-
-#### Parameters
-| Parameter | Required | Notes |
-| ------------- | ------------- | ------------- |
-| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
-| `--slacktoken=<slacktoken>` | Yes/No | Use it or use .env |
-| `--slackchannel=<slackchannel>` | Yes/No | Use it or use .env |
-
-### Slack Notifier for QA Team
-Notify on Slack :
-- Nightly Build Status
-
-```bash
-php bin/console slack:notifier:qa
+php bin/console slack:notifier
 ```
 
 #### Parameters
