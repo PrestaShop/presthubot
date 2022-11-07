@@ -343,7 +343,7 @@ class SlackNotifierCommand extends Command
             foreach ($prReviews as $pullRequest) {
                 $pullRequest = $pullRequest['node'];
                 $pullRequest['approved'] = $this->github->extractPullRequestState($pullRequest, Github::PULL_REQUEST_STATE_APPROVED);
-                
+
                 if (!$this->github->isPRValid($pullRequest, $filters)) {
                     continue;
                 }

@@ -39,6 +39,7 @@ class Slack
     {
         $message = str_replace(array_keys(self::MAINTAINER_MEMBERS), array_values(self::MAINTAINER_MEMBERS), $message);
         $message = str_replace(array_keys(self::SOFTWARE_DEVELOPERS_IN_TEST), array_values(self::SOFTWARE_DEVELOPERS_IN_TEST), $message);
+
         return $message;
     }
 
