@@ -351,7 +351,7 @@ class SlackNotifierCommand extends Command
             }
         }
         if (empty($prReadyToReview)) {
-            return [];
+            return '';
         }
 
         // Slack Messages
