@@ -17,11 +17,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SlackNotifierCommand extends Command
 {
     /**
-     * @var Github;
+     * @var Github
      */
     protected $github;
     /**
-     * @var ModuleChecker;
+     * @var ModuleChecker
      */
     protected $moduleChecker;
     /**
@@ -29,19 +29,19 @@ class SlackNotifierCommand extends Command
      */
     protected $moduleFetcher;
     /**
-     * @var NightlyBoard;
+     * @var NightlyBoard
      */
     protected $nightlyBoard;
     /**
-     * @var Slack;
+     * @var Slack
      */
     protected $slack;
     /**
-     * @var string;
+     * @var string
      */
     protected $slackChannelQAAutomation;
     /**
-     * @var string;
+     * @var string
      */
     protected $slackChannelQAFunctional;
 
@@ -165,6 +165,9 @@ class SlackNotifierCommand extends Command
 
         // Check Status
         $slackMessageQAAutomation[] = $this->checkStatusNightly();
+
+        // Check PR Priority to Test
+        $slackMessageQAAutomation[] = $this->checkPRE2EToReview();
 
         // Check QA Stats
         $slackMessageQAFunctional[] = $this->checkStatsQA();
@@ -320,6 +323,52 @@ class SlackNotifierCommand extends Command
         }
 
         return $arrayMessage;
+    }
+
+    protected function checkPRE2EToReview(): string
+    {
+        $requests = Query::getRequests();
+        $graphQLQuery = new Query();
+        $graphQLQuery->setQuery(
+            'org:PrestaShop is:pr is:open draft:false label:TE label:\"E2E Tests\" -label:\"Waiting for author\" -label:Blocked'
+        );
+        $prReviews = $this->github->search($graphQLQuery);
+        $prReadyToReview = [];
+        $filters = new Filters();
+        $filters->addFilter(Filters::FILTER_REPOSITORY_PRIVATE, [false], true);
+        // 1st PR with already a review (indicate who has ever)
+        // 2nd PR without review
+        foreach ([5, 4, 3, 2, 1, 0] as $numApproved) {
+            $filters->addFilter(Filters::FILTER_NUM_APPROVED, [$numApproved], true);
+            foreach ($prReviews as $pullRequest) {
+                $pullRequest = $pullRequest['node'];
+                $pullRequest['approved'] = $this->github->extractPullRequestState($pullRequest, Github::PULL_REQUEST_STATE_APPROVED);
+
+                if (!$this->github->isPRValid($pullRequest, $filters)) {
+                    continue;
+                }
+                $prReadyToReview[] = $pullRequest;
+            }
+        }
+        if (empty($prReadyToReview)) {
+            return '';
+        }
+
+        // Slack Messages
+        $slackMessage = ':pray: Could you review these PRs ? :pray:' . PHP_EOL;
+        foreach ($prReadyToReview as $pullRequest) {
+            $slackMessage .= ' - <' . $pullRequest['url'] . '|:preston: ' . $pullRequest['repository']['name'] . '#' . $pullRequest['number'] . '>'
+                . ' : ' . $pullRequest['title'];
+            if (!empty($pullRequest['approved'])) {
+                $slackMessage .= PHP_EOL;
+                $slackMessage .= '    - :heavy_check_mark: ' . implode(', ', $pullRequest['approved']);
+            }
+            $slackMessage .= PHP_EOL;
+            $slackMessage .= PHP_EOL;
+        }
+        $slackMessage = $this->slack->linkGithubUsername($slackMessage);
+
+        return $slackMessage;
     }
 
     protected function checkPRReadyToReviewForCoreTeam(): array

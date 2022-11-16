@@ -20,6 +20,14 @@ class Slack
         'sowbiba' => '<@USKJT4C4Q>',
     ];
 
+    public const SOFTWARE_DEVELOPERS_IN_TEST = [
+        'boubkerbribri' => '<@UGTRLG51N>',
+        'cfarhani06' => '<@U03V3N293L7>',
+        'Progi1984' => '<@UL16KUPC5>',
+        'nesrineabdmouleh' => '<@U4YBPGMA8>',
+        'SD1982' => '<@UTHRY2ZFY>',
+    ];
+
     public const MAINTAINER_LEAD = 'eternoendless';
 
     public function __construct(string $slackToken = null)
@@ -29,7 +37,10 @@ class Slack
 
     public function linkGithubUsername(string $message): string
     {
-        return str_replace(array_keys(self::MAINTAINER_MEMBERS), array_values(self::MAINTAINER_MEMBERS), $message);
+        $message = str_replace(array_keys(self::MAINTAINER_MEMBERS), array_values(self::MAINTAINER_MEMBERS), $message);
+        $message = str_replace(array_keys(self::SOFTWARE_DEVELOPERS_IN_TEST), array_values(self::SOFTWARE_DEVELOPERS_IN_TEST), $message);
+
+        return $message;
     }
 
     /**
@@ -41,7 +52,7 @@ class Slack
         if (empty($message)) {
             return true;
         }
-        $ch = curl_init('https://slack.com/api/chat.postMessage');
+        $ch = \curl_init('https://slack.com/api/chat.postMessage');
         $data = http_build_query([
             'token' => $this->slackToken,
             'username' => 'PrestHubot',
