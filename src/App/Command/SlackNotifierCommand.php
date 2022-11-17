@@ -330,7 +330,7 @@ class SlackNotifierCommand extends Command
         $requests = Query::getRequests();
         $graphQLQuery = new Query();
         $graphQLQuery->setQuery(
-            'org:PrestaShop is:pr is:open draft:false label:TE label:\"E2E Tests\" -label:\"Waiting for author\" -label:Blocked'
+            'org:PrestaShop is:pr is:open draft:false label:TE label:\"E2E Tests\" -label:\"Waiting for author\" -label:Blocked -label:\"QA ✔️\"'
         );
         $prReviews = $this->github->search($graphQLQuery);
         $prReadyToReview = [];
