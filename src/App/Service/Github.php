@@ -377,7 +377,7 @@ class Github
         foreach ($pullRequest['reviews']['nodes'] as $node) {
             $login = $node['author']['login'];
             if (!in_array($login, self::MAINTAINER_MEMBERS)
-                || !in_array($login, self::SOFTWARE_DEVELOPERS_IN_TEST_MEMBERS)) {
+                && !in_array($login, self::SOFTWARE_DEVELOPERS_IN_TEST_MEMBERS)) {
                 continue;
             }
             if ($node['state'] == $state) {
