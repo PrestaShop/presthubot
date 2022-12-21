@@ -36,10 +36,6 @@ class GitHubMonthlyReportCommand extends Command
         '1.7.8.x',
     ];
 
-    private const BOT_USERS = [
-        'dependabot',
-    ];
-
     private const IGNORED_REPOSITORIES = '-repo:prestashop/prestashop.github.io';
 
     /**
@@ -58,7 +54,7 @@ class GitHubMonthlyReportCommand extends Command
     protected $dateEnd;
 
     /**
-     * @var array{'issues_opened': int, 'issues_closed': int, 'issues_fixed': int, 'prs_opened': int, 'prs_closed': int, 'prs_merged': int, 'releases': array, 'core_prs': string, 'other_prs': string, 'contributors': string}
+     * @var array{'issues_opened': int, 'issues_closed': int, 'issues_fixed': int, 'prs_opened': int, 'prs_closed': int, 'prs_merged': int, 'releases': string, 'core_prs': string, 'other_prs': string, 'contributors': string}
      */
     protected $results = [
         'issues_opened' => 0,
@@ -67,7 +63,7 @@ class GitHubMonthlyReportCommand extends Command
         'prs_opened' => 0,
         'prs_closed' => 0,
         'prs_merged' => 0,
-        'releases' => [],
+        'releases' => '',
         'core_prs' => '',
         'other_prs' => '',
         'contributors' => '',
@@ -212,17 +208,17 @@ class GitHubMonthlyReportCommand extends Command
     private function searchForPullRequests(): void
     {
         $graphQLQuery = new Query();
-        $graphQLQuery->setQuery('org:PrestaShop is:pr is:public created:' . $this->dateStart . '..' . $this->dateEnd . ' sort:created-desc ' . static::IGNORED_REPOSITORIES);
+        $graphQLQuery->setQuery('org:PrestaShop is:pr is:public created:' . $this->dateStart . '..' . $this->dateEnd . ' sort:created-desc ' . self::IGNORED_REPOSITORIES);
         $pullRequestsOpened = $this->github->search($graphQLQuery);
         $this->results['prs_opened'] = count($pullRequestsOpened);
 
         $graphQLQuery = new Query();
-        $graphQLQuery->setQuery('org:PrestaShop is:pr is:public closed:' . $this->dateStart . '..' . $this->dateEnd . ' sort:created-desc ' . static::IGNORED_REPOSITORIES);
+        $graphQLQuery->setQuery('org:PrestaShop is:pr is:public closed:' . $this->dateStart . '..' . $this->dateEnd . ' sort:created-desc ' . self::IGNORED_REPOSITORIES);
         $pullRequestsClosed = $this->github->search($graphQLQuery);
         $this->results['prs_closed'] = count($pullRequestsClosed);
 
         $graphQLQuery = new Query();
-        $graphQLQuery->setQuery('org:PrestaShop is:pr is:public merged:' . $this->dateStart . '..' . $this->dateEnd . ' sort:created-desc ' . static::IGNORED_REPOSITORIES);
+        $graphQLQuery->setQuery('org:PrestaShop is:pr is:public merged:' . $this->dateStart . '..' . $this->dateEnd . ' sort:created-desc ' . self::IGNORED_REPOSITORIES);
         $pullRequestsMerged = $this->github->search($graphQLQuery);
         $this->results['prs_merged'] = count($pullRequestsMerged);
 
@@ -237,7 +233,7 @@ class GitHubMonthlyReportCommand extends Command
             $branchName = $this->extractInformationFromBody($body, 'Branch');
             $category = $this->extractInformationFromBody($body, 'Category');
 
-            if (in_array($category, static::CATEGORIES_REJECT_LIST)) {
+            if (in_array($category, self::CATEGORIES_REJECT_LIST)) {
                 continue;
             }
 
@@ -258,7 +254,7 @@ class GitHubMonthlyReportCommand extends Command
                     $category = 'TE';
                 }
 
-                if (!in_array($branchName, static::CORE_BRANCHES)) {
+                if (!in_array($branchName, self::CORE_BRANCHES)) {
                     continue;
                 }
 
@@ -324,8 +320,8 @@ class GitHubMonthlyReportCommand extends Command
     {
         $category = trim($category);
 
-        if (isset(static::CATEGORIES[$category])) {
-            return static::CATEGORIES[$category];
+        if (isset(self::CATEGORIES[$category])) {
+            return self::CATEGORIES[$category];
         }
 
         return $category;
@@ -399,7 +395,7 @@ class GitHubMonthlyReportCommand extends Command
 
         foreach ($matches[1] as $key => $match) {
             if (strpos($match, $information) !== false) {
-                return trim($matches[2][$key]) ?? 'other';
+                return trim($matches[2][$key]);
             }
         }
 

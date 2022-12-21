@@ -33,11 +33,6 @@ class GithubReleaseNoteCommand extends Command
     protected $countRows = 0;
 
     /**
-     * @var string
-     */
-    private $tag;
-
-    /**
      * @var SymfonyStyle
      */
     private $io;
