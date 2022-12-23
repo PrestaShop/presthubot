@@ -32,7 +32,7 @@ class GithubContributorsStatsCommand extends Command
                 null,
                 InputOption::VALUE_OPTIONAL,
                 '',
-                'contributors.csv' ?? null
+                'contributors.csv'
             )
             ->addOption(
                 'outputFile',

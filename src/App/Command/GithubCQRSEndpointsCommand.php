@@ -98,7 +98,7 @@ class GithubCQRSEndpointsCommand extends Command
                 ];
             ksort($path);
             foreach ($path as $file) {
-                $fileName = pathinfo($file['name'])['filename'] ?? $file['name'];
+                $fileName = pathinfo($file['name'])['filename'];
                 $rows[] = [
                     str_contains($pathName, self::COMMAND_HANDLER) ? '<comment> Command </comment>' : '<comment> Query </comment>',
                     substr($fileName, 0, strpos($fileName, self::HANDLER_SUFFIX)),

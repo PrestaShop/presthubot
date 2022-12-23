@@ -15,7 +15,7 @@
         "phpunit/phpunit": "^8.5",
         "friendsofphp/php-cs-fixer": "^2.18",
         "prestashop/php-coding-standards": "^3.14",
-        "phpstan/phpstan": "^0.12.75",
+        "phpstan/phpstan": "^1",
         "symfony/var-dumper": "^5.4"
     },
     "autoload": {

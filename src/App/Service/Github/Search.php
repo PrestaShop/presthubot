@@ -25,7 +25,7 @@ class Search extends AbstractApi
      */
     public function repositories($q, $sort = 'updated', $order = 'desc')
     {
-        return $this->get('/search/repositories', ['q' => $q, 'sort' => $sort, 'order' => $order, 'per_page' => $this->getPerPage(), 'page' => $this->getPage()]);
+        return $this->get('/search/repositories', ['q' => $q, 'sort' => $sort, 'order' => $order]);
     }
 
     /**
@@ -41,7 +41,7 @@ class Search extends AbstractApi
      */
     public function issues($q, $sort = 'updated', $order = 'desc')
     {
-        return $this->get('/search/issues', ['q' => $q, 'sort' => $sort, 'order' => $order, 'per_page' => $this->getPerPage(), 'page' => $this->getPage()]);
+        return $this->get('/search/issues', ['q' => $q, 'sort' => $sort, 'order' => $order]);
     }
 
     /**
@@ -57,7 +57,7 @@ class Search extends AbstractApi
      */
     public function code($q, $sort = 'updated', $order = 'desc')
     {
-        return $this->get('/search/code', ['q' => $q, 'sort' => $sort, 'order' => $order, 'per_page' => $this->getPerPage(), 'page' => $this->getPage()]);
+        return $this->get('/search/code', ['q' => $q, 'sort' => $sort, 'order' => $order]);
     }
 
     /**
@@ -73,7 +73,7 @@ class Search extends AbstractApi
      */
     public function users($q, $sort = 'updated', $order = 'desc')
     {
-        return $this->get('/search/users', ['q' => $q, 'sort' => $sort, 'order' => $order, 'per_page' => $this->getPerPage(), 'page' => $this->getPage()]);
+        return $this->get('/search/users', ['q' => $q, 'sort' => $sort, 'order' => $order]);
     }
 
     /**
@@ -92,7 +92,7 @@ class Search extends AbstractApi
         //This api is in preview mode, so set the correct accept-header
         $this->acceptHeaderValue = 'application/vnd.github.cloak-preview';
 
-        return $this->get('/search/commits', ['q' => $q, 'sort' => $sort, 'order' => $order, 'per_page' => $this->getPerPage(), 'page' => $this->getPage()]);
+        return $this->get('/search/commits', ['q' => $q, 'sort' => $sort, 'order' => $order]);
     }
 
     /**

@@ -32,7 +32,7 @@ class GithubIssuesReportCommand extends Command
      */
     protected $dateEndFormatted;
     /**
-     * @var array{'open': int, 'closed': int, 'regressions_TE': int, 'regressions': array<int, array>, 'duplicates': array<int, array>}
+     * @var array{'open': int, 'closed': int, 'regressions_TE': int, 'regressions': array<int, array>, 'duplicates': array<string, mixed>}
      */
     protected $results = [
         'open' => 0,

@@ -155,8 +155,8 @@ class RepositoryNameConverter
 
     public static function getName($repository)
     {
-        if (isset(static::REPOSITORIES_MAPPING[$repository])) {
-            return static::REPOSITORIES_MAPPING[$repository];
+        if (isset(self::REPOSITORIES_MAPPING[$repository])) {
+            return self::REPOSITORIES_MAPPING[$repository];
         }
 
         return $repository;
