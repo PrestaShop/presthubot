@@ -3,9 +3,9 @@ layout: post
 title:  "PrestaShop Core Monthly - {month_name}"
 subtitle: "An inside look at the PrestaShop codebase"
 date:   YYYY-MM-DD
-authors: [ PrestaShop ]
-image: /assets/images/2017/04/core_weekly_banner.jpg
-twitter_image: /assets/images/theme/banner-core-weekly.jpg
+authors: [ kpodemski ]
+image: /assets/images/theme/banner-core-monthly.jpg
+twitter_image: /assets/images/theme/banner-core-monthly.jpg
 icon: icon-calendar
 tags:
  - core-monthly
@@ -13,7 +13,7 @@ tags:
 
 This edition of the Core Monthly report highlights changes in PrestaShop's core codebase from {month_name}
 
-![Core Weekly banner](/assets/images/2018/12/banner-core-weekly.jpg)
+![Core Monthly banner](/assets/images/theme/banner-core-monthly-wide.jpg)
 
 [Editorial part]
 
