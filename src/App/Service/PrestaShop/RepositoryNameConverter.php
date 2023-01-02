@@ -6,6 +6,7 @@ class RepositoryNameConverter
 {
     private const REPOSITORIES_MAPPING = [
         // tools and libs
+        'autoload' => 'PrestaShop Core Autoloader',
         'core-weekly-generator' => 'Core Weekly Generator tool',
         'CsaGuzzleBundle' => 'CsaGuzzle Bundle (fork)',
         'docker' => 'Docker images',

@@ -284,13 +284,19 @@ class GitHubMonthlyReportCommand extends Command
         // Modules, tools, etc.
         $otherPullRequestsContent = '';
         $lastRepositoryName = '';
+        $toolsPullRequests = [];
 
-        ksort($otherPullRequests, SORT_NATURAL);
+        // Change keys to repository names
+        foreach ($otherPullRequests as $repositoryName => $pullRequest) {
+            $toolsPullRequests[ucfirst(RepositoryNameConverter::getName($repositoryName))] = $pullRequest;
+        }
 
-        foreach ($otherPullRequests as $repositoryName => $pullRequests) {
+        ksort($toolsPullRequests, SORT_NATURAL);
+
+        foreach ($toolsPullRequests as $repositoryName => $pullRequests) {
             if ($lastRepositoryName != $repositoryName) {
                 $lastRepositoryName = $repositoryName;
-                $otherPullRequestsContent .= '### ' . RepositoryNameConverter::getName($repositoryName) . PHP_EOL;
+                $otherPullRequestsContent .= '### ' . $repositoryName . PHP_EOL;
             }
 
             foreach ($pullRequests as $pullRequest) {
@@ -303,7 +309,7 @@ class GitHubMonthlyReportCommand extends Command
         asort($contributors);
         $contributorsFormatted = [];
         foreach ($contributors as $contributor) {
-            $contributorsFormatted[] = '@' . $contributor;
+            $contributorsFormatted[] = '[@' . $contributor . '](https://github.com/' . $contributor . ')';
         }
 
         $this->results['contributors'] = implode(', ', $contributorsFormatted);
