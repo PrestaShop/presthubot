@@ -336,8 +336,7 @@ class GitHubMonthlyReportCommand extends Command
     private function searchForReleases(): void
     {
         $moduleFetcher = new ModuleFetcher($this->github);
-        $modules = $moduleFetcher->getModules();
-        $repositories = ['PrestaShop'] + $modules;
+        $repositories = ['PrestaShop'] + $moduleFetcher->getModules();
         $releasesData = [];
 
         foreach ($repositories as $repository) {
@@ -352,7 +351,7 @@ class GitHubMonthlyReportCommand extends Command
                     $release['published_at']
                 );
 
-                if ($publishedAt < new \DateTime($this->dateEnd)) {
+                if (new \DateTime($this->dateEnd) < $publishedAt || new \DateTime($this->dateStart) > $publishedAt) {
                     continue;
                 }
 
