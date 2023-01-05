@@ -11,11 +11,13 @@ tags:
  - core-monthly
 ---
 
-This edition of the Core Monthly report highlights changes in PrestaShop's core codebase from {month_name}
+[Introduction part]
 
 ![Core Monthly banner](/assets/images/theme/banner-core-monthly-wide.jpg)
 
-[Editorial part]
+Dear community,
+
+[Editorial part about the previous month]
 
 {releases}
 
@@ -41,7 +43,7 @@ Thank you to the contributors whose PRs haven't been merged yet! And of course, 
 
 Coding is only just one of the ways you can contribute. Here are some ideas on how you can [get involved in the project](https://www.prestashop-project.org/get-involved/).
 
-If you need help with contributing or have questions about it, feel free to contact me on [project's Slack](https://www.prestashop-project.org/slack/) (@kpodemski).
+If you need help with contributing or have questions about it, feel free to contact me, **@kpodemski**, on the [project's Slack](https://www.prestashop-project.org/slack/).
 
 Happy contributin' everyone!
 
