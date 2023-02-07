@@ -101,6 +101,7 @@ class SlackNotifierCommand extends Command
     private const BRANCH_SUPPORT = [
         '1.7.8.x',
         '8.0.x',
+        '8.1.x',
         'develop',
     ];
 
