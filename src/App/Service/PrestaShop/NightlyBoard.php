@@ -32,7 +32,7 @@ class NightlyBoard
      */
     protected function getReports(): string
     {
-        $session = curl_init('https://api-nightly.prestashop.com/reports');
+        $session = curl_init('https://api-nightly.prestashop-project.org/reports');
         curl_setopt($session, CURLOPT_CUSTOMREQUEST, 'GET');
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);

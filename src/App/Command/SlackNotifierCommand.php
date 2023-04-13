@@ -218,7 +218,7 @@ class SlackNotifierCommand extends Command
                 $status = ($hasFailed && $report['tests']['failed'] == 0);
                 $emoji = $status ? ':greenlight:' : ':redlight:';
 
-                $slackMessage .= ' - <https://nightly.prestashop.com/report/' . $report['id'] . '|' . $emoji . ' Report - ' . $branch . ' (' . $campaign . ')>';
+                $slackMessage .= ' - <https://nightly.prestashop-project.org/report/' . $report['id'] . '|' . $emoji . ' Report - ' . $branch . ' (' . $campaign . ')>';
                 $slackMessage .= ' : ';
                 $slackMessage .= $hasPassed ? ':heavy_check_mark: ' . $report['tests']['passed'] : '';
                 $slackMessage .= ($hasPassed && ($hasFailed || $hasPending) ? ' - ' : '');
