@@ -107,6 +107,11 @@ class Github
         return $numFiles;
     }
 
+    public function hasRepoFile(string $org, string $repository, string $path): bool
+    {
+        return $this->client->api('repo')->contents()->exists($org, $repository, $path);
+    }
+
     public function getLinkedIssue(array $pullRequest)
     {
         // Linked Issue

@@ -5,6 +5,7 @@ namespace Console\App\Command;
 use Console\App\Service\Github;
 use Console\App\Service\Github\Filters;
 use Console\App\Service\Github\Query;
+use Console\App\Service\JIRA;
 use Console\App\Service\PrestaShop\ModuleChecker;
 use Console\App\Service\PrestaShop\ModuleFetcher;
 use Console\App\Service\PrestaShop\NightlyBoard;
@@ -36,6 +37,10 @@ class SlackNotifierCommand extends Command
      * @var Slack
      */
     protected $slack;
+    /**
+     * @var JIRA
+     */
+    protected $jira;
     /**
      * @var string
      */
@@ -144,6 +149,13 @@ class SlackNotifierCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 '',
                 $_ENV['SLACK_CHANNEL_QA_FUNCTIONAL'] ?? null
+            )
+            ->addOption(
+                'jiraToken',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                '',
+                $_ENV['JIRA_TOKEN'] ?? null
             );
     }
 
@@ -159,6 +171,7 @@ class SlackNotifierCommand extends Command
         $this->slack = new Slack($input->getOption('slacktoken'));
         $this->slackChannelQAAutomation = $input->getOption('slackChannelQAAutomation');
         $this->slackChannelQAFunctional = $input->getOption('slackChannelQAFunctional');
+        $this->jira = new JIRA($input->getOption('jiraToken'));
 
         $title = ':preston::date: Welcome to the PrestHubot Report of the day :date:';
         $slackMessageQAAutomation[] = $title;
@@ -167,8 +180,14 @@ class SlackNotifierCommand extends Command
         // Check Status
         $slackMessageQAAutomation[] = $this->checkStatusNightly();
 
-        // Check PR Priority to Test
+        // Check PR Priority to Review
         $slackMessageQAAutomation[] = $this->checkPRE2EToReview();
+
+        // Check Scenarios on JIRA (which are automated and need a Github Path)
+        $slackMessageQAAutomation[] = $this->checkScenariosJIRANeedPath();
+
+        // Check Scenarios on JIRA (which are automated and have an invalid Github Path)
+        $slackMessageQAAutomation[] = $this->checkScenariosJIRAInvalidPath();
 
         // Check QA Stats
         $slackMessageQAFunctional[] = $this->checkStatsQA();
@@ -199,6 +218,52 @@ class SlackNotifierCommand extends Command
         }
 
         return 0;
+    }
+
+    protected function checkScenariosJIRANeedPath(): string
+    {
+        $results = $this->jira->findScenarios(5, false);
+        if (empty($results)) {
+            return '';
+        }
+
+        $slackMessage = ':large_blue_diamond: JIRA (Need a Github Path) :large_blue_diamond:' . PHP_EOL;
+
+        foreach ($results as $resultIssue) {
+            $slackMessage .= ' • :large_blue_diamond: <https://forge.prestashop.com/browse/' . $resultIssue['key'] . '|' . $resultIssue['key'] . '> : ' . $resultIssue['fields']['summary'];
+            $slackMessage .= PHP_EOL;
+        }
+
+        return $slackMessage;
+    }
+
+    protected function checkScenariosJIRAInvalidPath(): string
+    {
+        $results = $this->jira->findScenarios(null, true);
+        if (empty($results)) {
+            return '';
+        }
+
+        $slackMessage = ':large_blue_diamond: JIRA (Have an invalid Github Path) :large_blue_diamond:' . PHP_EOL;
+        $numInvalidPaths = 0;
+
+        foreach ($results as $resultIssue) {
+            // Custom Field : Github Path
+            $scenarioPath = $resultIssue['fields']['customfield_12692'] . '.ts';
+            if ($this->github->hasRepoFile('PrestaShop', 'PrestaShop', $scenarioPath)) {
+                continue;
+            }
+            ++$numInvalidPaths;
+
+            $slackMessage .= ' • :large_blue_diamond: <https://forge.prestashop.com/browse/' . $resultIssue['key'] . '|' . $resultIssue['key'] . '> : ' . $resultIssue['fields']['summary'] . ' (`' . $scenarioPath . '`)';
+            $slackMessage .= PHP_EOL;
+
+            if ($numInvalidPaths === 5) {
+                break;
+            }
+        }
+
+        return $numInvalidPaths ? $slackMessage : '';
     }
 
     protected function checkStatusNightly(): string
