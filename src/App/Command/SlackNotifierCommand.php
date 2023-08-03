@@ -205,8 +205,9 @@ class SlackNotifierCommand extends Command
     {
         $slackMessage = ':notebook_with_decorative_cover: Nightly Board :notebook_with_decorative_cover:' . PHP_EOL;
 
-        foreach (self::BRANCH_SUPPORT as $branch) {
-            foreach (self::CAMPAIGN_SUPPORT as $campaign) {
+        foreach (self::CAMPAIGN_SUPPORT as $campaign) {
+            $slackMessage .= ' • Campaign `' . $campaign . '`' . PHP_EOL;
+            foreach (self::BRANCH_SUPPORT as $branch) {
                 $report = $this->nightlyBoard->getReport(date('Y-m-d'), $branch, $campaign);
                 if (empty($report)) {
                     continue;
@@ -218,7 +219,7 @@ class SlackNotifierCommand extends Command
                 $status = ($hasFailed && $report['tests']['failed'] == 0);
                 $emoji = $status ? ':greenlight:' : ':redlight:';
 
-                $slackMessage .= ' - <https://nightly.prestashop-project.org/report/' . $report['id'] . '|' . $emoji . ' Report - ' . $branch . ' (' . $campaign . ')>';
+                $slackMessage .= '   ◦ <https://nightly.prestashop-project.org/report/' . $report['id'] . '|' . $emoji . ' Report - ' . $branch . '>';
                 $slackMessage .= ' : ';
                 $slackMessage .= $hasPassed ? ':heavy_check_mark: ' . $report['tests']['passed'] : '';
                 $slackMessage .= ($hasPassed && ($hasFailed || $hasPending) ? ' - ' : '');
@@ -500,7 +501,7 @@ class SlackNotifierCommand extends Command
             // Labels
             $issueLabels = array_map(function ($value) {
                 return $value['name'];
-            }, is_array($result['linkedIssue']['labels']) ? $result['linkedIssue']['labels'] : []);
+            }, $result['linkedIssue'] && is_array($result['linkedIssue']['labels']) ? $result['linkedIssue']['labels'] : []);
             // Priority
             $result['priority'] = array_reduce($issueLabels, function ($carry, $item) {
                 if ($carry < 2 && $item === 'Must-have') {
