@@ -5,6 +5,11 @@ namespace Console\App\Service;
 class JIRA
 {
     /**
+     * @var int
+     */
+    protected const NUM_PER_PAGE = 50;
+
+    /**
      * @var string
      */
     protected $jiraToken;
@@ -14,7 +19,7 @@ class JIRA
         $this->jiraToken = $jiraToken;
     }
 
-    public function findScenarios(?int $maxResults, bool $hasGithubPath): array
+    public function findScenarios(?int $maxResults, bool $hasGithubPath, int $startAt = 0): array
     {
         $url = 'https://forge.prestashop.com/rest/api/2/search?jql=' . urlencode(
             'type = Test'
@@ -22,7 +27,7 @@ class JIRA
             . ' AND status = "[Test] Automated"'
             . ' AND "Github Path" is ' . ($hasGithubPath ? 'NOT EMPTY' : 'EMPTY')
             . ' ORDER BY updated ASC'
-        ) . ($maxResults ? '&maxResults=' . $maxResults : '');
+        ) . '&maxResults=' . ($maxResults ?: self::NUM_PER_PAGE) . '&startAt=' . $startAt;
         $ch = curl_init();
         $headers = [
             'Accept: application/json',
@@ -39,7 +44,21 @@ class JIRA
         curl_close($ch);
 
         $result = json_decode($result, true);
+        $issues = $result['issues'] ?? [];
 
-        return $result['issues'] ?? [];
+        if (!is_null($maxResults)) {
+            return $issues;
+        }
+
+        $sumResult = $issues;
+
+        do {
+            $startAt += 50;
+
+            $issues = $this->findScenarios(self::NUM_PER_PAGE, $hasGithubPath, $startAt);
+            $sumResult = array_merge($sumResult, $issues);
+        } while (count($issues) > 0);
+
+        return $sumResult;
     }
 }
