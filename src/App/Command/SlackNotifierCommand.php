@@ -2,6 +2,7 @@
 
 namespace Console\App\Command;
 
+use Console\App\Service\FileSystem;
 use Console\App\Service\Github;
 use Console\App\Service\Github\Filters;
 use Console\App\Service\Github\Query;
@@ -41,6 +42,10 @@ class SlackNotifierCommand extends Command
      * @var JIRA
      */
     protected $jira;
+    /**
+     * @var string
+     */
+    protected $psDirectory;
     /**
      * @var string
      */
@@ -156,6 +161,13 @@ class SlackNotifierCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 '',
                 $_ENV['JIRA_TOKEN'] ?? null
+            )
+            ->addOption(
+                'prestashopDirectory',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                '',
+                $_ENV['PS_DIR'] ?? null
             );
     }
 
@@ -172,6 +184,7 @@ class SlackNotifierCommand extends Command
         $this->slackChannelQAAutomation = $input->getOption('slackChannelQAAutomation');
         $this->slackChannelQAFunctional = $input->getOption('slackChannelQAFunctional');
         $this->jira = new JIRA($input->getOption('jiraToken'));
+        $this->psDirectory = $input->getOption('prestashopDirectory');
 
         $title = ':preston::date: Welcome to the PrestHubot Report of the day :date:';
         $slackMessageQAAutomation[] = $title;
@@ -188,6 +201,9 @@ class SlackNotifierCommand extends Command
 
         // Check Scenarios on JIRA (which are automated and have an invalid Github Path)
         $slackMessageQAAutomation[] = $this->checkScenariosJIRAInvalidPath();
+
+        // Check ToDo on JIRA (which should be closed after being solved)
+        $slackMessageQAAutomation[] = $this->checkToDoJIRA();
 
         // Check QA Stats
         $slackMessageQAFunctional[] = $this->checkStatsQA();
@@ -264,6 +280,60 @@ class SlackNotifierCommand extends Command
         }
 
         return $numInvalidPaths ? $slackMessage : '';
+    }
+
+    protected function checkToDoJIRA(): string
+    {
+        // Search in file
+        $results = FileSystem::search($this->psDirectory . 'tests/UI', '// @todo : ');
+        // Check each result
+        $issues = [];
+        foreach ($results as $result) {
+            // Fetch the URL from the @todo
+            preg_match('@(https?://([-\w\.]+[-\w])+(:\d+)?(/([\w/_\.#-]*(\?\S+)?[^\.\s])?)?)@', $result['line'], $resultUrl);
+
+            if (!isset($resultUrl[0])) {
+                continue;
+            }
+
+            preg_match('@https:\/\/github.com\/([\w]+)\/([\w]+)\/issues\/([0-9]+)@', $resultUrl[0], $resultIssue);
+            if (!isset($resultIssue[1]) || !isset($resultIssue[2]) || !isset($resultIssue[3])) {
+                continue;
+            }
+
+            $issue = $this->github->getClient()->api('issue')->show($resultIssue[1], $resultIssue[2], (int) $resultIssue[3]);
+            if ($issue['state'] !== 'open') {
+                $issues[] = [
+                    'issue' => $issue,
+                    'search' => $result,
+                    'repo' => $resultIssue[1] . '/' . $resultIssue[2],
+                ];
+            }
+        }
+
+        if (empty($issues)) {
+            return '';
+        }
+
+        $slackMessage = ':key: Github issues (ToDo exist but GH are closed) :key:' . PHP_EOL;
+        foreach ($issues as $issue) {
+            $slackMessage .= sprintf(
+                ' • :key: <%s|%s#%s> : Found in <%s|`%s`:`%d`>' . PHP_EOL,
+                $issue['issue']['html_url'],
+                $issue['repo'],
+                $issue['issue']['number'],
+                sprintf(
+                    'https://github.com/%s/tree/develop/%s#L%d',
+                    $issue['repo'],
+                    str_replace($this->psDirectory, '', $issue['search']['file']),
+                    $issue['search']['num'],
+                ),
+                str_replace($this->psDirectory, '', $issue['search']['file']),
+                $issue['search']['num'],
+            );
+        }
+
+        return $slackMessage;
     }
 
     protected function checkStatusNightly(): string
