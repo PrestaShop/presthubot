@@ -285,7 +285,7 @@ class SlackNotifierCommand extends Command
     protected function checkToDoJIRA(): string
     {
         // Search in file
-        $results = FileSystem::search($this->psDirectory . 'tests/UI', '// @todo : ');
+        $results = FileSystem::search($this->psDirectory . '/tests/UI', '// @todo : ');
         // Check each result
         $issues = [];
         foreach ($results as $result) {
