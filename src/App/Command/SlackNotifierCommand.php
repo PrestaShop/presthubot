@@ -205,6 +205,9 @@ class SlackNotifierCommand extends Command
         // Check ToDo on JIRA (which should be closed after being solved)
         $slackMessageQAAutomation[] = $this->checkToDoJIRA();
 
+        // Check updates to make on UI Tests
+        $slackMessageQAAutomation[] = $this->checkUITestUpdates();
+
         // Check QA Stats
         $slackMessageQAFunctional[] = $this->checkStatsQA();
 
@@ -332,6 +335,46 @@ class SlackNotifierCommand extends Command
                 $issue['search']['num'],
             );
         }
+
+        return $slackMessage;
+    }
+
+    protected function checkUITestUpdates(): string
+    {
+        $slackMessage = ':scroll: UI Tests (Modules & Theme updates) :scroll:' . PHP_EOL;
+
+        // Check modules
+        $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'PrestaShop', 'tests/UI/data/demo/modules.ts', 'refs/heads/develop');
+        // Search version in code
+        preg_match_all(
+            '/{\s+tag: \'([a-z_]+)\',\s+name: \'([A-za-z0-9\s]+)\',\s+releaseZip: \'([A-za-z_0-9:\/\.]+)\',\s+}/m',
+            $content,
+            $matches
+        );
+        foreach ($matches[1] as $keyMatch => $match) {
+            preg_match('#https:\/\/github.com\/PrestaShop\/' . $match . '\/releases\/download\/([v\.0-9]+)\/' . $match . '.zip#', $matches[3][$keyMatch], $matchesVersion);
+            $curVersion = $matchesVersion[1];
+
+            // Search release in Github
+            $data = $this->github->getClient()->api('repo')->releases()->latest('PrestaShop', $match);
+            $emoji = $data['name'] === $curVersion ? ':white_check_mark:' : ':warning:';
+
+            $slackMessage .= ' • :gear: <https://github.com/PrestaShop/PrestaShop/blob/develop/tests/UI/data/demo/modules.ts|' . $match . '>: Code (`' . $curVersion . '`) - Release (' . $emoji . ' `' . $data['name'] . '`)';
+            $slackMessage .= PHP_EOL;
+        }
+
+        // Check theme Hummingbird
+        $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'PrestaShop', 'tests/UI/commonTests/FO/hummingbird.ts', 'refs/heads/develop');
+        // Search version in code
+        preg_match('#https:\/\/github.com\/PrestaShop\/hummingbird\/releases\/download\/([v\.0-9]+)\/hummingbird.zip#m', $content, $matches);
+        $curVersion = $matches[1];
+
+        // Search release in Github
+        $data = $this->github->getClient()->api('repo')->releases()->latest('PrestaShop', 'hummingbird');
+        $emoji = $data['name'] === $curVersion ? ':white_check_mark:' : ':warning:';
+
+        $slackMessage .= ' • :bird: <https://github.com/PrestaShop/PrestaShop/blob/develop/tests/UI/commonTests/FO/hummingbird.ts|hummingbird>: Code (`' . $curVersion . '`) - Release (' . $emoji . ' `' . $data['name'] . '`)';
+        $slackMessage .= PHP_EOL;
 
         return $slackMessage;
     }
