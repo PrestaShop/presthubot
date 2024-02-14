@@ -343,7 +343,7 @@ class SlackNotifierCommand extends Command
     {
         $slackMessage = ':scroll: UI Tests (Modules & Theme updates) :scroll:' . PHP_EOL;
 
-        ##### Check modules
+        // Check modules
         $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'PrestaShop', 'tests/UI/data/demo/modules.ts', 'refs/heads/develop');
         // Search version in code
         preg_match_all(
@@ -351,8 +351,8 @@ class SlackNotifierCommand extends Command
             $content,
             $matches
         );
-        foreach($matches[1] as $keyMatch => $match) {
-            preg_match('#https:\/\/github.com\/PrestaShop\/'.$match.'\/releases\/download\/([v\.0-9]+)\/'.$match.'.zip#', $matches[3][$keyMatch], $matchesVersion);
+        foreach ($matches[1] as $keyMatch => $match) {
+            preg_match('#https:\/\/github.com\/PrestaShop\/' . $match . '\/releases\/download\/([v\.0-9]+)\/' . $match . '.zip#', $matches[3][$keyMatch], $matchesVersion);
             $curVersion = $matchesVersion[1];
 
             // Search release in Github
@@ -363,16 +363,16 @@ class SlackNotifierCommand extends Command
             $slackMessage .= PHP_EOL;
         }
 
-        ##### Check theme Hummingbird
+        // Check theme Hummingbird
         $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'PrestaShop', 'tests/UI/commonTests/FO/hummingbird.ts', 'refs/heads/develop');
         // Search version in code
         preg_match('#https:\/\/github.com\/PrestaShop\/hummingbird\/releases\/download\/([v\.0-9]+)\/hummingbird.zip#m', $content, $matches);
         $curVersion = $matches[1];
-        
+
         // Search release in Github
         $data = $this->github->getClient()->api('repo')->releases()->latest('PrestaShop', 'hummingbird');
         $emoji = $data['name'] === $curVersion ? ':white_check_mark:' : ':warning:';
-        
+
         $slackMessage .= ' • :bird: <https://github.com/PrestaShop/PrestaShop/blob/develop/tests/UI/commonTests/FO/hummingbird.ts|hummingbird>: Code (`' . $curVersion . '`) - Release (' . $emoji . ' `' . $data['name'] . '`)';
         $slackMessage .= PHP_EOL;
 
