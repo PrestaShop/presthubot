@@ -116,11 +116,26 @@ class SlackNotifierCommand extends Command
     ];
 
     /**
-     * @var array<string>
+     * @var array<string, array<string>>
      */
     private const CAMPAIGN_SUPPORT = [
-        'functional',
-        'autoupgrade',
+        'functional' => [
+            '1.7.8.x',
+            '8.0.x',
+            '8.1.x',
+            'develop',
+        ],
+        'autoupgrade' => [
+            '1.7.8.x',
+            '8.0.x',
+            '8.1.x',
+            'develop',
+        ],
+        'blockwishlist' => [
+            '8.0.5',
+            '8.1.4',
+            'nightly',
+        ],
     ];
 
     protected function configure()
@@ -383,9 +398,9 @@ class SlackNotifierCommand extends Command
     {
         $slackMessage = ':notebook_with_decorative_cover: Nightly Board :notebook_with_decorative_cover:' . PHP_EOL;
 
-        foreach (self::CAMPAIGN_SUPPORT as $campaign) {
+        foreach (self::CAMPAIGN_SUPPORT as $campaign => $branches) {
             $slackMessage .= ' • Campaign `' . $campaign . '`' . PHP_EOL;
-            foreach (self::BRANCH_SUPPORT as $branch) {
+            foreach ($branches as $branch) {
                 $report = $this->nightlyBoard->getReport(date('Y-m-d'), $branch, $campaign);
                 if (empty($report)) {
                     continue;
