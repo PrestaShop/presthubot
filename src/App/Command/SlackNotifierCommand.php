@@ -357,6 +357,7 @@ class SlackNotifierCommand extends Command
     protected function checkUITestUpdates(): string
     {
         $slackMessage = ':scroll: UI Tests (Modules & Theme updates) :scroll:' . PHP_EOL;
+        $hasUpdates = false;
 
         // Check modules
         $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'PrestaShop', 'tests/UI/data/demo/modules.ts', 'refs/heads/develop');
@@ -372,10 +373,12 @@ class SlackNotifierCommand extends Command
 
             // Search release in Github
             $data = $this->github->getClient()->api('repo')->releases()->latest('PrestaShop', $match);
-            $emoji = $data['name'] === $curVersion ? ':white_check_mark:' : ':warning:';
 
-            $slackMessage .= ' • :gear: <https://github.com/PrestaShop/PrestaShop/blob/develop/tests/UI/data/demo/modules.ts|' . $match . '>: Code (`' . $curVersion . '`) - Release (' . $emoji . ' `' . $data['name'] . '`)';
-            $slackMessage .= PHP_EOL;
+            if ($data['name'] !== $curVersion) {
+                $hasUpdates = true;
+                $slackMessage .= ' • :gear: <https://github.com/PrestaShop/PrestaShop/blob/develop/tests/UI/data/demo/modules.ts|' . $match . '>: Code (`' . $curVersion . '`) - Release (:warning: `' . $data['name'] . '`)';
+                $slackMessage .= PHP_EOL;
+            }
         }
 
         // Check theme Hummingbird
@@ -386,12 +389,14 @@ class SlackNotifierCommand extends Command
 
         // Search release in Github
         $data = $this->github->getClient()->api('repo')->releases()->latest('PrestaShop', 'hummingbird');
-        $emoji = $data['name'] === $curVersion ? ':white_check_mark:' : ':warning:';
 
-        $slackMessage .= ' • :bird: <https://github.com/PrestaShop/PrestaShop/blob/develop/tests/UI/commonTests/FO/hummingbird.ts|hummingbird>: Code (`' . $curVersion . '`) - Release (' . $emoji . ' `' . $data['name'] . '`)';
-        $slackMessage .= PHP_EOL;
+        if ($data['name'] !== $curVersion) {
+            $hasUpdates = true;
+            $slackMessage .= ' • :bird: <https://github.com/PrestaShop/PrestaShop/blob/develop/tests/UI/commonTests/FO/hummingbird.ts|hummingbird>: Code (`' . $curVersion . '`) - Release (:warning: `' . $data['name'] . '`)';
+            $slackMessage .= PHP_EOL;
+        }
 
-        return $slackMessage;
+        return $hasUpdates ? $slackMessage : '';
     }
 
     protected function checkStatusNightly(): string
