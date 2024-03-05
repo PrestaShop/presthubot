@@ -382,7 +382,7 @@ class SlackNotifierCommand extends Command
         }
 
         // Check theme Hummingbird
-        $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'PrestaShop', 'tests/UI/commonTests/FO/hummingbird.ts', 'refs/heads/develop');
+        $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'PrestaShop', 'tests/UI/commonTests/BO/design/hummingbird.ts', 'refs/heads/develop');
         // Search version in code
         preg_match('#https:\/\/github.com\/PrestaShop\/hummingbird\/releases\/download\/([v\.0-9]+)\/hummingbird.zip#m', $content, $matches);
         $curVersion = $matches[1];
@@ -392,7 +392,7 @@ class SlackNotifierCommand extends Command
 
         if ($data['name'] !== $curVersion) {
             $hasUpdates = true;
-            $slackMessage .= ' • :bird: <https://github.com/PrestaShop/PrestaShop/blob/develop/tests/UI/commonTests/FO/hummingbird.ts|hummingbird>: Code (`' . $curVersion . '`) - Release (:warning: `' . $data['name'] . '`)';
+            $slackMessage .= ' • :bird: <https://github.com/PrestaShop/PrestaShop/blob/develop/tests/UI/commonTests/BO/design/hummingbird.ts|hummingbird>: Code (`' . $curVersion . '`) - Release (:warning: `' . $data['name'] . '`)';
             $slackMessage .= PHP_EOL;
         }
 
