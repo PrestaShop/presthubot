@@ -229,6 +229,9 @@ class SlackNotifierCommand extends Command
         // Check PR Priority to Test
         $slackMessageQAFunctional[] = $this->checkPRReadyToTest();
 
+        // Check PR Priority to Test
+        $slackMessageQAFunctional[] = $this->checkIssuesNeedUITests();
+
         // Get PR to Review for Core Team
         $slackMessageCoreMembers[] = $this->checkPRReadyToReviewForCoreTeam();
 
@@ -252,6 +255,25 @@ class SlackNotifierCommand extends Command
         }
 
         return 0;
+    }
+
+    protected function checkIssuesNeedUITests(): string
+    {
+        $results = $this->github->getClient()->api('issue')->all('PrestaShop', 'PrestaShop', [
+            'labels' => 'Needs Tests UI',
+            'state' => 'closed',
+        ]);
+        if (empty($results)) {
+            return '';
+        }
+
+        $slackMessage = ':ladybug: Github (Issues finished which need new Scenarios) :ladybug:' . PHP_EOL;
+        foreach ($results as $result) {
+            $slackMessage .= ' • :ladybug: <' . $result['html_url'] . '|#' . $result['number'] . '> : ' . $result['title'];
+            $slackMessage .= PHP_EOL;
+        }
+
+        return $slackMessage;
     }
 
     protected function checkScenariosJIRANeedPath(): string
