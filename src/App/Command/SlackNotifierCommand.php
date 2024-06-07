@@ -382,7 +382,7 @@ class SlackNotifierCommand extends Command
         $hasUpdates = false;
 
         // Check modules
-        $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'PrestaShop', 'tests/UI/data/demo/modules.ts', 'refs/heads/develop');
+        $content = $this->github->getClient()->api('repo')->contents()->download('PrestaShop', 'ui-testing-library', 'src/data/demo/modules.ts', 'refs/heads/main');
         // Search version in code
         preg_match_all(
             '/{\s+tag: \'([a-z_]+)\',\s+name: \'([A-za-z0-9\s]+)\',\s+releaseZip: \'([A-za-z_0-9:\/\.]+)\',\s+}/m',
