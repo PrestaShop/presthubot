@@ -476,18 +476,18 @@ class SlackNotifierCommand extends Command
             // Category
             $category = '';
             if (preg_match(
-                    str_replace(['%propertyName%', '%captureGroup%'], ['Category', '<category>[a-z]{2}'], $buildPattern),
-                    $pullRequest['body'],
-                    $matches
+                str_replace(['%propertyName%', '%captureGroup%'], ['Category', '<category>[a-z]{2}'], $buildPattern),
+                $pullRequest['body'],
+                $matches
             )) {
                 $category = trim(strtoupper($matches['category']));
             }
             // Type
             $type = '';
             if (preg_match(
-                    str_replace(['%propertyName%', '%captureGroup%'], ['Type', '<type>[a-zA-Z\\s]+'], $buildPattern),
-                    $pullRequest['body'],
-                    $matches
+                str_replace(['%propertyName%', '%captureGroup%'], ['Type', '<type>[a-zA-Z\\s]+'], $buildPattern),
+                $pullRequest['body'],
+                $matches
             )) {
                 $type = trim(strtolower($matches['type']));
             }
@@ -795,7 +795,8 @@ class SlackNotifierCommand extends Command
 
             $slackMessage .= ' - '
                 . '*[' . (empty($pullRequest['milestone']) ? 'Modules' : $pullRequest['milestone']) . ']* '
-                . ($pullRequest['priority'] > 0 ?
+                . (
+                    $pullRequest['priority'] > 0 ?
                     ('*_[' . ($pullRequest['priority'] === 2 ? 'Must Have' : 'Nice-to-have') . ']_* ')
                     : ''
                 )

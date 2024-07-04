@@ -120,7 +120,8 @@ class GithubReleaseNoteCommand extends Command
                     sprintf(
                         '<bg=blue;options=bold> Issues involved in the milestone %s (%s)</>',
                         $milestone,
-                        count($issues)),
+                        count($issues)
+                    ),
                     ['colspan' => 3]
                 )],
                 new TableSeparator(),
