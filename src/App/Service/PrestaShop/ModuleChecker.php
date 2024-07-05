@@ -250,12 +250,12 @@ class ModuleChecker
                         }
                         $this->report['files'][$path][$checkType] = $status;
                         $this->rating[self::RATING_FILES] += $status ? 1 : 0;
-                    break;
+                        break;
                     case self::CHECK_FILES_EXIST:
                         $isExist = $this->github->getClient()->api('repo')->contents()->exists($org, $repository, $path, 'refs/heads/' . $branch);
                         $this->report['files'][$path][$checkType] = ($isExist == $checkData);
                         $this->rating[self::RATING_FILES] += ($isExist == $checkData) ? 1 : 0;
-                    break;
+                        break;
                     case self::CHECK_FILES_CONTAIN:
                         $contents = $this->report['files'][$path][self::CHECK_FILES_EXIST]
                             ? $this->github->getClient()->api('repo')->contents()->download($org, $repository, $path, 'refs/heads/' . $branch)
@@ -269,7 +269,7 @@ class ModuleChecker
                         }
                         $this->report['files'][$path][$checkType] = $allContains;
                         $this->rating[self::RATING_FILES] += $allContains ? 1 : 0;
-                    break;
+                        break;
                     case self::CHECK_FILES_TEMPLATE:
                         $status = false;
                         if ($this->report['files'][$path][self::CHECK_FILES_EXIST]) {
@@ -302,7 +302,7 @@ class ModuleChecker
 
                         $this->report['files'][$path][$checkType] = $status;
                         $this->rating[self::RATING_FILES] += $status ? 1 : 0;
-                    break;
+                        break;
                 }
             }
         }

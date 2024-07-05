@@ -25,7 +25,7 @@ jobs:
       -   name: Composer Install
           run: composer install --ansi --prefer-dist --no-interaction --no-progress --quiet
       -   name: Run PHPCSFixer
-          run: ./vendor/bin/php-cs-fixer fix --dry-run --diff
+          run: ./vendor/bin/php-cs-fixer fix . --dry-run --diff
 
   phpstan:
     name: PHP Static Analysis

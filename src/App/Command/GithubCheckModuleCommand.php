@@ -94,14 +94,14 @@ class GithubCheckModuleCommand extends Command
         'welcome',
     ];
 
-    const COL_ALL = 'all';
-    const COL_BRANCH = 'branch';
-    const COL_DESCRIPTION = 'description';
-    const COL_FILES = 'files';
-    const COL_ISSUES = 'issues';
-    const COL_LABELS = 'labels';
-    const COL_LICENSE = 'license';
-    const COL_TOPICS = 'topics';
+    public const COL_ALL = 'all';
+    public const COL_BRANCH = 'branch';
+    public const COL_DESCRIPTION = 'description';
+    public const COL_FILES = 'files';
+    public const COL_ISSUES = 'issues';
+    public const COL_LABELS = 'labels';
+    public const COL_LICENSE = 'license';
+    public const COL_TOPICS = 'topics';
 
     protected $stats = [
         self::COL_ALL => 0,
