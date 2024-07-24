@@ -54,6 +54,10 @@ class SlackNotifierCommand extends Command
      * @var string
      */
     protected $slackChannelQAFunctional;
+    /**
+     * @var string
+     */
+    protected $slackChannelTeamAutoUpgrade;
 
     /**
      * @var int
@@ -120,21 +124,26 @@ class SlackNotifierCommand extends Command
      */
     private const CAMPAIGN_SUPPORT = [
         'functional' => [
-            '1.7.8.x',
-            '8.0.x',
-            '8.1.x',
-            'develop',
+            '1.7.8.x' => ['mysql'],
+            '8.0.x' => ['mysql'],
+            '8.1.x' => ['mysql'],
+            'develop' => ['mysql', 'mariadb'],
         ],
-        'autoupgrade' => [
-            '1.7.8.x',
-            '8.0.x',
-            '8.1.x',
-            'develop',
-        ],
+        // autoupgrade (Done in specific report)
+        // blockwishlist : https://github.com/PrestaShop/blockwishlist/blob/dev/.github/workflows/ui-test.yml#L28-L33
         'blockwishlist' => [
-            '8.0.5',
-            '8.1.4',
-            'nightly',
+            '8.0.5' => ['mysql'],
+            '8.1.7' => ['mysql'],
+            'nightly' => ['mysql'],
+        ],
+        // ps_cashondelivery: https://github.com/PrestaShop/ps_cashondelivery/blob/dev/.github/workflows/ui-test.yml#L24-L30
+        'ps_cashondelivery' => [
+            '1.7.6.9' => ['mysql'],
+            '1.7.7.8' => ['mysql'],
+            '1.7.8.11' => ['mysql'],
+            '8.0.5' => ['mysql'],
+            '8.1.6' => ['mysql'],
+            'nightly' => ['mysql'],
         ],
     ];
 
@@ -171,6 +180,13 @@ class SlackNotifierCommand extends Command
                 $_ENV['SLACK_CHANNEL_QA_FUNCTIONAL'] ?? null
             )
             ->addOption(
+                'slackChannelTeamAutoUpgrade',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                '',
+                $_ENV['SLACK_CHANNEL_TEAM_AUTOUPGRADE'] ?? null
+            )
+            ->addOption(
                 'jiraToken',
                 null,
                 InputOption::VALUE_OPTIONAL,
@@ -189,7 +205,7 @@ class SlackNotifierCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Local Variable
-        $slackMessageQAAutomation = $slackMessageQAFunctional = $slackMessageCoreMembers = [];
+        $slackMessageQAAutomation = $slackMessageQAFunctional = $slackMessageTeamAutoUpgrade = $slackMessageCoreMembers = [];
 
         $this->github = new Github($input->getOption('ghtoken'));
         $this->moduleChecker = new ModuleChecker($this->github);
@@ -198,15 +214,21 @@ class SlackNotifierCommand extends Command
         $this->slack = new Slack($input->getOption('slacktoken'));
         $this->slackChannelQAAutomation = $input->getOption('slackChannelQAAutomation');
         $this->slackChannelQAFunctional = $input->getOption('slackChannelQAFunctional');
+        $this->slackChannelTeamAutoUpgrade = $input->getOption('slackChannelTeamAutoUpgrade');
         $this->jira = new JIRA($input->getOption('jiraToken'));
         $this->psDirectory = $input->getOption('prestashopDirectory');
 
         $title = ':preston::date: Welcome to the PrestHubot Report of the day :date:';
         $slackMessageQAAutomation[] = $title;
+        $slackMessageTeamAutoUpgrade[] = $title;
         $slackMessageQAFunctional[] = $title;
 
         // Check Status
         $slackMessageQAAutomation[] = $this->checkStatusNightly();
+
+        // Check Status AutoUpgrade
+        $slackMessageQAAutomation = array_merge($slackMessageQAAutomation, $this->checkStatusNightlyAutoUpgrade());
+        $slackMessageTeamAutoUpgrade = array_merge($slackMessageTeamAutoUpgrade, $this->checkStatusNightlyAutoUpgrade());
 
         // Check PR Priority to Review
         $slackMessageQAAutomation[] = $this->checkPRE2EToReview();
@@ -244,6 +266,9 @@ class SlackNotifierCommand extends Command
         }
         foreach ($slackMessageQAFunctional as $message) {
             $this->slack->sendNotification($this->slackChannelQAFunctional, $message);
+        }
+        foreach ($slackMessageTeamAutoUpgrade as $message) {
+            $this->slack->sendNotification($this->slackChannelTeamAutoUpgrade, $message);
         }
         foreach ($slackMessageCoreMembers as $messages) {
             foreach ($messages as $slackChannelPrivateMaintainer => $message) {
@@ -379,32 +404,90 @@ class SlackNotifierCommand extends Command
 
         foreach (self::CAMPAIGN_SUPPORT as $campaign => $branches) {
             $slackMessage .= ' • Campaign `' . $campaign . '`' . PHP_EOL;
-            foreach ($branches as $branch) {
-                $report = $this->nightlyBoard->getReport(date('Y-m-d'), $branch, $campaign);
-                if (empty($report)) {
-                    continue;
-                }
-                $hasPassed = isset($report['tests'], $report['tests']['passed']);
-                $hasFailed = isset($report['tests'], $report['tests']['failed']);
-                $hasPending = isset($report['tests'], $report['tests']['pending']);
-                $duration = strtotime($report['end_date']) - strtotime($report['start_date']);
-                $status = ($hasFailed && $report['tests']['failed'] == 0);
-                $emoji = $status ? ':greenlight:' : ':redlight:';
+            foreach ($branches as $branch => $databases) {
+                foreach ($databases as $database) {
+                    $report = $this->nightlyBoard->getReport(date('Y-m-d'), $branch, $campaign, $database);
+                    if (empty($report)) {
+                        continue;
+                    }
+                    $hasPassed = isset($report['tests'], $report['tests']['passed']);
+                    $hasFailed = isset($report['tests'], $report['tests']['failed']);
+                    $hasPending = isset($report['tests'], $report['tests']['pending']);
+                    $duration = strtotime($report['end_date']) - strtotime($report['start_date']);
+                    $status = ($hasFailed && $report['tests']['failed'] == 0);
+                    $emoji = $status ? ':greenlight:' : ':redlight:';
 
-                $slackMessage .= '   ◦ <https://nightly.prestashop-project.org/report/' . $report['id'] . '|' . $emoji . ' Report - ' . $branch . '>';
-                $slackMessage .= ' : ';
-                $slackMessage .= $hasPassed ? ':heavy_check_mark: ' . $report['tests']['passed'] : '';
-                $slackMessage .= ($hasPassed && ($hasFailed || $hasPending) ? ' - ' : '');
-                $slackMessage .= $hasFailed ? ':x: ' . $report['tests']['failed'] : '';
-                $slackMessage .= (($hasPassed || $hasFailed) && ($hasPending) ? ' - ' : '');
-                $slackMessage .= $hasPending ? '⏸️ ' . $report['tests']['pending'] : '';
-                $slackMessage .= (($hasPassed || $hasFailed || $hasPending) ? ' - ' : '');
-                $slackMessage .= ':timer_clock: ' . gmdate("H\h i\m s\s", $duration);
-                $slackMessage .= PHP_EOL;
+                    $slackMessage .= '   ◦ <https://nightly.prestashop-project.org/report/' . $report['id'] . '|' . $emoji . ($database === 'mysql' ? ':dolphin:': ':seal:') . ' Report - ' . $branch . ' ' .'>';
+                    $slackMessage .= ' : ';
+                    $slackMessage .= $hasPassed ? ':heavy_check_mark: ' . $report['tests']['passed'] : '';
+                    $slackMessage .= ($hasPassed && ($hasFailed || $hasPending) ? ' - ' : '');
+                    $slackMessage .= $hasFailed ? ':x: ' . $report['tests']['failed'] : '';
+                    $slackMessage .= (($hasPassed || $hasFailed) && ($hasPending) ? ' - ' : '');
+                    $slackMessage .= $hasPending ? '⏸️ ' . $report['tests']['pending'] : '';
+                    $slackMessage .= (($hasPassed || $hasFailed || $hasPending) ? ' - ' : '');
+                    $slackMessage .= ':timer_clock: ' . gmdate("H\h i\m s\s", $duration);
+                    $slackMessage .= PHP_EOL;
+                }
             }
         }
 
         return $slackMessage;
+    }
+
+    protected function checkStatusNightlyAutoUpgrade(): array
+    {
+        $messages = [];
+        $messages[] = ':notebook_with_decorative_cover::up: Nightly Board (AutoUpgrade) :up::notebook_with_decorative_cover:' . PHP_EOL;
+
+        $reports = [];
+        foreach ($this->nightlyBoard->getCampaignReports(date('Y-m-d'), 'autoupgrade') as $report) {
+            $reports[$report['version']] = $report;
+        }
+        ksort($reports, SORT_NATURAL);
+        
+        $oldVersion = $oldChannel = $oldMinorVersion = null; 
+        $numOK = $numKO = 0;
+        $slackMessage = '';
+        foreach ($reports as $report) {
+            // Fetch informations
+            preg_match('/([0-9\.]+)\s\(Channel:\s([a-z]+)\sPHP:\s([0-9+\.]+)\)/', $report['version'], $datumReport);
+            list(, $version, $channel, $php) = $datumReport;
+            $minorVersion = substr_count($version, '.') === 3 ? substr($version, 0, 5) : substr($version, 0, 3);
+
+            if ($version !== $oldVersion || $channel !== $oldChannel) {
+                $slackMessage .= ($numOK > 0 ? $numOK . ' :greenlight:' : '');
+                $slackMessage .= ($numOK > 0 && $numKO > 0 ? ' - ' : '');
+                $slackMessage .= ($numKO > 0 ? $numOK . ' :redlight:' : '');
+                $slackMessage .= PHP_EOL;
+
+                // Change of campaign
+                if ($minorVersion !== $oldMinorVersion) {
+                    $oldMinorVersion = $minorVersion;
+                    if (!empty(trim($slackMessage))) {
+                        $messages[] = $slackMessage;
+                    }
+                    $slackMessage = '> Campaign ' . $minorVersion . PHP_EOL;
+                }
+                $oldVersion = $version;
+                $oldChannel = $channel;
+                $numOK = $numKO = 0;
+                $slackMessage .= '• Version `' . $version . '` / Channel : `' . $channel . '` : ';
+            }
+
+            $hasFailed = isset($report['tests'], $report['tests']['failed']);
+            $status = ($hasFailed && $report['tests']['failed'] == 0);
+            $numOK += $status ? 1 : 0;
+            $numKO += $status ? 0 : 1;
+        }
+        
+        $slackMessage .= ($numOK > 0 ? $numOK . ' :greenlight:' : '');
+        $slackMessage .= ($numOK > 0 && $numKO > 0 ? ' - ' : '');
+        $slackMessage .= ($numKO > 0 ? $numOK . ' :redlight:' : '');
+        $slackMessage .= PHP_EOL;
+
+        $messages[] = $slackMessage;
+
+        return $messages;
     }
 
     protected function checkPRNaming(): array
