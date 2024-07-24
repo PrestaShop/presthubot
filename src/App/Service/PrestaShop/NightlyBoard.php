@@ -5,7 +5,7 @@ namespace Console\App\Service\PrestaShop;
 class NightlyBoard
 {
     private $jsonResults = '';
- 
+
     /**
      * @param string $date
      * @param string $version
