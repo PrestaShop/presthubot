@@ -395,7 +395,7 @@ class GitHubMonthlyReportCommand extends Command
     {
         preg_match_all('/(.*)\|(.*)/mi', $body, $matches);
 
-        if (empty($matches)) {
+        if (empty($matches[1])) {
             return 'other';
         }
 
