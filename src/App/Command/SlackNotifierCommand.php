@@ -130,7 +130,7 @@ class SlackNotifierCommand extends Command
             '8.0.x' => ['mysql'],
             '8.1.x' => ['mysql'],
             '8.2.x' => ['mysql'],
-            '9.0.x' => ['mysql'],
+            '9.0.x' => ['mysql', 'mariadb'],
             'develop' => ['mysql', 'mariadb'],
         ],
         // autoupgrade (Done in specific report)
