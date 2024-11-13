@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class GithubStatsCommand extends Command
 {
     /**
-     * @var Github;
+     * @var Github
      */
     protected $github;
 

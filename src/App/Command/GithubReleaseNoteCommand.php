@@ -18,17 +18,17 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class GithubReleaseNoteCommand extends Command
 {
     /**
-     * @var Github;
+     * @var Github
      */
     protected $github;
 
     /**
-     * @var OutputInterface;
+     * @var OutputInterface
      */
     protected $output;
 
     /**
-     * @var int;
+     * @var int
      */
     protected $countRows = 0;
 

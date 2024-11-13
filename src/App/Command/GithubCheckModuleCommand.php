@@ -16,11 +16,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class GithubCheckModuleCommand extends Command
 {
     /**
-     * @var Github;
+     * @var Github
      */
     protected $github;
     /**
-     * @var ModuleChecker;
+     * @var ModuleChecker
      */
     protected $moduleChecker;
 

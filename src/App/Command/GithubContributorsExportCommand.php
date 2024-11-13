@@ -11,7 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class GithubContributorsExportCommand extends Command
 {
     /**
-     * @var Github;
+     * @var Github
      */
     protected $github;
 
@@ -121,7 +121,7 @@ class GithubContributorsExportCommand extends Command
 
                     return '';
                 }, '');
-                $branch = array_reduce($pullRequest['labels'], function (bool $carry, array $item) {
+                $branch = array_reduce($pullRequest['labels'], function (string $carry, array $item) {
                     if (!empty($carry)) {
                         return $carry;
                     }

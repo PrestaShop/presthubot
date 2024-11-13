@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class GithubNotificationsCommand extends Command
 {
     /**
-     * @var Github;
+     * @var Github
      */
     protected $github;
 

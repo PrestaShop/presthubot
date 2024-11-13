@@ -27,23 +27,23 @@ class GithubCheckPRCommand extends Command
     ];
 
     /**
-     * @var Filters;
+     * @var Filters
      */
     protected $filters;
     /**
-     * @var Github;
+     * @var Github
      */
     protected $github;
     /**
-     * @var array;
+     * @var array
      */
     protected $orderBy;
     /**
-     * @var OutputInterface;
+     * @var OutputInterface
      */
     protected $output;
     /**
-     * @var int;
+     * @var int
      */
     protected $countRows = 0;
 

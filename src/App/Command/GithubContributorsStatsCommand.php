@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class GithubContributorsStatsCommand extends Command
 {
     /**
-     * @var Github;
+     * @var Github
      */
     protected $github;
 
@@ -104,7 +104,7 @@ class GithubContributorsStatsCommand extends Command
                 $pullRequest = $pullRequest['node'];
                 $repository = $pullRequest['repository']['name'];
                 $createdKey = substr($pullRequest['createdAt'], 0, 10);
-                $branch = array_reduce($pullRequest['labels']['nodes'], function (bool $carry, array $item) {
+                $branch = array_reduce($pullRequest['labels']['nodes'], function (string $carry, array $item) {
                     if (!empty($carry)) {
                         return $carry;
                     }

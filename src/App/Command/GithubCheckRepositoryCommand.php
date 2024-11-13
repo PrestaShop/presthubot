@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class GithubCheckRepositoryCommand extends Command
 {
     /**
-     * @var Github;
+     * @var Github
      */
     protected $github;
 
@@ -63,8 +63,10 @@ class GithubCheckRepositoryCommand extends Command
         }
 
         $page = 1;
+        /** @var array<array<string, mixed>> $results */
         $results = [];
         do {
+            /** @var array<array<string, mixed>> */
             $repos = $this->github->getClient()->api('organization')->repositories('PrestaShop', $type, $page);
             ++$page;
             $results = array_merge($results, $repos);
