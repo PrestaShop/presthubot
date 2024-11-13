@@ -15,7 +15,7 @@
         "phpunit/phpunit": "^9.5",
         "friendsofphp/php-cs-fixer": "^3.59",
         "prestashop/php-coding-standards": "^5",
-        "phpstan/phpstan": "^1",
+        "phpstan/phpstan": "^2",
         "symfony/var-dumper": "^5.4"
     },
     "autoload": {
@@ -25,5 +25,10 @@
          },
          "classmap": ["src"]
     },
-    "license": "MIT"
+    "license": "MIT",
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
 }

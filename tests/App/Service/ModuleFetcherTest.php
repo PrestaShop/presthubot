@@ -17,7 +17,6 @@ class ModuleFetcherTest extends TestCase
         $moduleFetcher = new ModuleFetcher($this->getMockGithub($apiReturn));
         $modules = $moduleFetcher->getModules();
 
-        $this->assertIsArray($modules);
         $this->assertEquals($expected, $modules);
     }
 

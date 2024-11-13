@@ -13,7 +13,7 @@ use League\Flysystem\Filesystem;
 class Github
 {
     /**
-     * @var Client;
+     * @var Client
      */
     protected $client;
 
