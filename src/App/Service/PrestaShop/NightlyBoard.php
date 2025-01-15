@@ -21,7 +21,7 @@ class NightlyBoard
             return [];
         }
         $json = json_decode($json, true);
-        $data = array_filter($json, function ($item) use ($date, $version, $campaign, $database) {
+        $data = array_filter($json['reports'], function ($item) use ($date, $version, $campaign, $database) {
             return $item['date'] === $date
                 && $item['version'] === $version
                 && $item['campaign'] === $campaign
