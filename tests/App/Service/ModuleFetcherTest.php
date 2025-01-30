@@ -37,7 +37,7 @@ class ModuleFetcherTest extends TestCase
         return $mockGithub;
     }
 
-    public function getCases()
+    public static function getCases(): iterable
     {
         yield [
             [['download_url' => '', 'name' => 'TestA']],
