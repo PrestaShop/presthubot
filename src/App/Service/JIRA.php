@@ -14,7 +14,7 @@ class JIRA
      */
     protected $jiraToken;
 
-    public function __construct(string $jiraToken = null)
+    public function __construct(?string $jiraToken = null)
     {
         $this->jiraToken = $jiraToken;
     }

@@ -45,7 +45,7 @@ class Github
     public const PULL_REQUEST_STATE_REQUEST_CHANGES = 'REQUEST_CHANGES';
     public const PULL_REQUEST_STATE_COMMENT = 'COMMENT';
 
-    public function __construct(string $ghToken = null)
+    public function __construct(?string $ghToken = null)
     {
         $filesystemAdapter = new Local(__DIR__ . '/../../../var/');
         $filesystem = new Filesystem($filesystemAdapter);
@@ -88,7 +88,7 @@ class Github
         return $resultPage['data']['search']['issueCount'];
     }
 
-    public function countRepoFiles(string $org, string $repository, string $path = null): int
+    public function countRepoFiles(string $org, string $repository, ?string $path = null): int
     {
         $numFiles = 0;
 

@@ -30,7 +30,7 @@ class Slack
 
     public const MAINTAINER_LEAD = 'eternoendless';
 
-    public function __construct(string $slackToken = null)
+    public function __construct(?string $slackToken = null)
     {
         $this->slackToken = $slackToken;
     }
