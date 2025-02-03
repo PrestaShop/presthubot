@@ -30,10 +30,14 @@ class GitHubMonthlyReportCommand extends Command
         'PM',
     ];
 
+    private const AUTHORS_REJECT_LIST = [
+        'dependabot',
+    ];
+
     private const CORE_BRANCHES = [
+        '9.0.x',
         'develop',
-        '8.1.x',
-        '8.0.x',
+        '8.2.x',
         '1.7.8.x',
     ];
 
@@ -234,7 +238,7 @@ class GitHubMonthlyReportCommand extends Command
             $branchName = $this->extractInformationFromBody($body, 'Branch');
             $category = $this->extractInformationFromBody($body, 'Category');
 
-            if (in_array($category, self::CATEGORIES_REJECT_LIST)) {
+            if (in_array($category, self::CATEGORIES_REJECT_LIST) || in_array($pullRequest['author']['login'], self::AUTHORS_REJECT_LIST)) {
                 continue;
             }
 
