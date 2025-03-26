@@ -147,6 +147,12 @@ class RepositoryNameConverter
         'ps-project-metrics' => 'PrestaShop Project Metrics',
         'ps_distributionapiclient' => 'Distribution API Client',
         'ps-monitor-module-releases' => 'Module Releases Monitor',
+        'prestashop-flashlight' => 'PrestaShop Flashlight',
+        'LocalizationFiles' => 'Localization Files',
+        'ps_apiresources' => 'API Resources',
+        'ps_fixturescreator' => 'Fixtures Creator',
+        'SeamlessUpgradeToolbox' => 'Seamless Upgrade Toolbox',
+        'ui-testing-library' => 'UI Testing Library',
     ];
 
     public function __construct()
