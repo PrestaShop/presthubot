@@ -5,13 +5,12 @@ use Console\App\Service\PrestaShop\ModuleFetcher;
 use Github\Api\Repo;
 use Github\Api\Repository\Contents;
 use Github\Client;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ModuleFetcherTest extends TestCase
 {
-    /**
-     * @dataProvider getCases
-     */
+    #[DataProvider('getCases')]
     public function testGetModules(array $apiReturn, array $expected)
     {
         $moduleFetcher = new ModuleFetcher($this->getMockGithub($apiReturn));
