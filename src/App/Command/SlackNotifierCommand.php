@@ -126,7 +126,6 @@ class SlackNotifierCommand extends Command
      */
     private const CAMPAIGN_SUPPORT = [
         'functional' => [
-            '1.7.8.x' => ['mysql'],
             '8.0.x' => ['mysql'],
             '8.1.x' => ['mysql'],
             '8.2.x' => ['mysql'],
@@ -138,6 +137,7 @@ class SlackNotifierCommand extends Command
         'blockwishlist' => [
             '8.0.5' => ['mysql'],
             '8.1.7' => ['mysql'],
+            '9.0.x' => ['mysql'],
             'nightly' => ['mysql'],
         ],
         // ps_cashondelivery: https://github.com/PrestaShop/ps_cashondelivery/blob/dev/.github/workflows/ui-test.yml#L24-L30
@@ -147,6 +147,8 @@ class SlackNotifierCommand extends Command
             '1.7.8.11' => ['mysql'],
             '8.0.5' => ['mysql'],
             '8.1.6' => ['mysql'],
+            '8.2.1' => ['mysql'],
+            '9.0.x' => ['mysql'],
             'nightly' => ['mysql'],
         ],
     ];
@@ -452,7 +454,7 @@ class SlackNotifierCommand extends Command
         $numOK = $numKO = 0;
         foreach ($reports as $report) {
             // Fetch informations
-            preg_match('/([0-9\.]+)\s\(Channel:\s([a-z]+)\sPHP:\s([0-9+\.]+)\)/', $report['version'], $datumReport);
+            preg_match('/([0-9\.]+)\s\(Channel:\s([a-z]+)?\sPHP:\s([0-9+\.]+)\)/', $report['version'], $datumReport);
             list(, $version, $channel, $php) = $datumReport;
             $minorVersion = substr_count($version, '.') === 3 ? substr($version, 0, 5) : substr($version, 0, 3);
 
