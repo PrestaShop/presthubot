@@ -245,6 +245,9 @@ class SlackNotifierCommand extends Command
         // Check Scenarios on JIRA (which are automated and have an invalid Github Path)
         $slackMessageQAAutomation[] = $this->checkScenariosJIRAInvalidPath();
 
+        // Check Scenarios on JIRA (which are automated and have an invalid Title)
+        $slackMessageQAAutomation[] = $this->checkScenariosJIRAInvalidTitle();
+
         // Check ToDo on JIRA (which should be closed after being solved)
         $slackMessageQAAutomation[] = $this->checkToDoJIRA();
 
@@ -348,6 +351,53 @@ class SlackNotifierCommand extends Command
         }
 
         return $numInvalidPaths ? $slackMessage : '';
+    }
+
+    protected function checkScenariosJIRAInvalidTitle(): string
+    {
+        $results = $this->jira->findScenarios(null, true);
+        if (empty($results)) {
+            return '';
+        }
+
+        $slackMessage = ':large_blue_diamond: JIRA (Have an invalid Title) :large_blue_diamond:' . PHP_EOL;
+        $numInvalidTitles = 0;
+        $numInvalidTitlesLimit = 10;
+
+        foreach ($results as $resultIssue) {
+            // Custom Field : Github Path
+            $scenarioPath = $resultIssue['fields']['customfield_12692'] . '.ts';
+            if (!$this->github->hasRepoFile('PrestaShop', 'PrestaShop', $scenarioPath)) {
+                continue;
+            }
+
+            $data = $this->github->getRepoFile('PrestaShop', 'PrestaShop', $scenarioPath);
+            preg_match("#describe\('(.+)', async \(\) => {#m", $data, $matches);
+            if (!isset($matches[1])) {
+                ++$numInvalidTitles;
+                $slackMessage .= ' • :large_blue_diamond: <https://forge.prestashop.com/browse/' . $resultIssue['key'] . '|' . $resultIssue['key'] . '> : ' . $resultIssue['fields']['summary'] . ' (No title found : `' . $scenarioPath . '`)';
+            } else {
+                if ($resultIssue['fields']['summary'] !== $matches[1]) {
+                    ++$numInvalidTitles;
+                    $slackMessage .= ' • :large_blue_diamond: <https://forge.prestashop.com/browse/'
+                        . $resultIssue['key']
+                        . '|'
+                        . $resultIssue['key']
+                        . '> : [JIRA] `'
+                        . $resultIssue['fields']['summary']
+                        . '` (Title is different : [GH] `' .
+                        $matches[1]
+                        . '`)'
+                        . PHP_EOL;
+                }
+            }
+
+            if ($numInvalidTitles == $numInvalidTitlesLimit) {
+                break;
+            }
+        }
+
+        return $numInvalidTitles ? $slackMessage : '';
     }
 
     protected function checkToDoJIRA(): string

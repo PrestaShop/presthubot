@@ -107,6 +107,11 @@ class Github
         return $numFiles;
     }
 
+    public function getRepoFile(string $org, string $repository, string $path): string
+    {
+        return $this->client->api('repo')->contents()->download($org, $repository, $path);
+    }
+
     public function hasRepoFile(string $org, string $repository, string $path): bool
     {
         return $this->client->api('repo')->contents()->exists($org, $repository, $path);
