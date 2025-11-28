@@ -905,10 +905,22 @@ class SlackNotifierCommand extends Command
         }
 
         // Number of PR for Modules
-        $searchPRModules = 'org:PrestaShop archived:false -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM . ' -' . Query::LABEL_BLOCKED;
+        $searchPRModules = 'org:PrestaShop archived:false -repo:PrestaShop/PrestaShop -repo:PrestaShop/prestashop-specs -repo:PrestaShop/hummingbird -repo:PrestaShop/autoupgrade is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM . ' -' . Query::LABEL_BLOCKED;
         $graphQLQuery->setQuery($searchPRModules);
         $countModules = $this->github->countSearch($graphQLQuery);
         $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRModules)) . '|PR Modules> : *' . $countModules . '*' . PHP_EOL;
+
+        // Number of PR for Hummingbird
+        $searchPRModules = 'repo:PrestaShop/hummingbird archived:false is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM . ' -' . Query::LABEL_BLOCKED;
+        $graphQLQuery->setQuery($searchPRModules);
+        $countModules = $this->github->countSearch($graphQLQuery);
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRModules)) . '|PR Hummingbird :bird:> : *' . $countModules . '*' . PHP_EOL;
+
+        // Number of PR for Autoupgrade
+        $searchPRModules = 'repo:PrestaShop/autoupgrade archived:false is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM . ' -' . Query::LABEL_BLOCKED;
+        $graphQLQuery->setQuery($searchPRModules);
+        $countModules = $this->github->countSearch($graphQLQuery);
+        $slackMessage .= '- <https://github.com/search?q=' . urlencode(stripslashes($searchPRModules)) . '|PR Autoupgrade :seamless-upgrade:> : *' . $countModules . '*' . PHP_EOL;
 
         // Number of PR for Specs
         $searchPRSpecs = 'repo:PrestaShop/prestashop-specs is:pr is:open ' . Query::LABEL_WAITING_FOR_QA . ' -' . Query::LABEL_WAITING_FOR_AUTHOR . ' -' . Query::LABEL_WAITING_FOR_DEV . ' -' . Query::LABEL_WAITING_FOR_PM . ' -' . Query::LABEL_BLOCKED;
