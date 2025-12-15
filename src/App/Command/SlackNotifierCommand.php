@@ -118,6 +118,7 @@ class SlackNotifierCommand extends Command
         '8.1.x',
         '8.2.x',
         '9.0.x',
+        '9.1.x',
         'develop',
     ];
 
@@ -130,6 +131,7 @@ class SlackNotifierCommand extends Command
             '8.1.x' => ['mysql'],
             '8.2.x' => ['mysql'],
             '9.0.x' => ['mysql', 'mariadb'],
+            '9.1.x' => ['mysql', 'mariadb'],
             'develop' => ['mysql', 'mariadb'],
         ],
         // autoupgrade (Done in specific report)
@@ -138,6 +140,7 @@ class SlackNotifierCommand extends Command
             '8.0.5' => ['mysql'],
             '8.1.7' => ['mysql'],
             '9.0.x' => ['mysql'],
+            '9.1.x' => ['mysql'],
             'nightly' => ['mysql'],
         ],
         // ps_cashondelivery: https://github.com/PrestaShop/ps_cashondelivery/blob/dev/.github/workflows/ui-test.yml#L24-L30
@@ -149,6 +152,7 @@ class SlackNotifierCommand extends Command
             '8.1.6' => ['mysql'],
             '8.2.1' => ['mysql'],
             '9.0.x' => ['mysql'],
+            '9.1.x' => ['mysql'],
             'nightly' => ['mysql'],
         ],
     ];
