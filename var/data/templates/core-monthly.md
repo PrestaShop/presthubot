@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "PrestaShop Core Monthly - {month_name}"
+title:  "PrestaShop Core Monthly - {month_name} {year}"
 subtitle: "An inside look at the PrestaShop codebase"
 date:   YYYY-MM-DD
 authors: [ kpodemski ]
@@ -37,9 +37,13 @@ Dear community,
 
 <hr />
 
-Thank you to the contributors whose pull requests were merged since the last Core Monthly Report: {contributors}!
+## Acknowledgments
 
-Thank you to the contributors whose PRs haven't been merged yet! And of course, a big thank you to all those who contribute with issues and comments [on GitHub](https://github.com/PrestaShop/PrestaShop)!
+{{< contributors-grid {contributors} >}}
+<p><strong>Thank you</strong> to all contributors this month!</p>
+
+Thank you to the contributors whose PRs haven't been merged yet! And of course, a big thank you to all those who contribute with issues and comments <a href="https://github.com/PrestaShop/PrestaShop">on GitHub</a>!
+{{< /contributors-grid >}}
 
 Coding is only just one of the ways you can contribute. Here are some ideas on how you can [get involved in the project](https://www.prestashop-project.org/get-involved/).
 

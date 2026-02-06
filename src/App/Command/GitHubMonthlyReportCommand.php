@@ -32,13 +32,14 @@ class GitHubMonthlyReportCommand extends Command
 
     private const AUTHORS_REJECT_LIST = [
         'dependabot',
+        'github-actions',
     ];
 
     private const CORE_BRANCHES = [
-        '9.0.x',
+        '9.1.x',
         'develop',
+        '9.0.x',
         '8.2.x',
-        '1.7.8.x',
     ];
 
     private const IGNORED_REPOSITORIES = '-repo:prestashop/prestashop.github.io';
@@ -312,12 +313,8 @@ class GitHubMonthlyReportCommand extends Command
         // Contributors
         $contributors = array_unique($contributors);
         asort($contributors);
-        $contributorsFormatted = [];
-        foreach ($contributors as $contributor) {
-            $contributorsFormatted[] = '[@' . $contributor . '](https://github.com/' . $contributor . ')';
-        }
 
-        $this->results['contributors'] = implode(', ', $contributorsFormatted);
+        $this->results['contributors'] = '"' . implode('" "', $contributors) . '"';
         $this->results['core_prs'] = $corePullRequestsContent;
         $this->results['other_prs'] = $otherPullRequestsContent;
     }
