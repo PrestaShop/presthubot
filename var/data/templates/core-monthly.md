@@ -6,6 +6,7 @@ date:   YYYY-MM-DD
 authors: [ kpodemski ]
 image: /assets/images/theme/banner-core-monthly.jpg
 twitter_image: /assets/images/theme/banner-core-monthly.jpg
+opengraph_image: /assets/images/theme/banner-core-monthly.jpg
 icon: icon-calendar
 tags:
  - core-monthly
