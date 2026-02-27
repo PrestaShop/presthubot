@@ -58,9 +58,6 @@ class GithubCheckRepositoryCommand extends Command
         } elseif ($onlyPublic) {
             $type = 'public';
         }
-        if (empty($type)) {
-            return 1;
-        }
 
         $page = 1;
         /** @var array<array<string, mixed>> $results */
