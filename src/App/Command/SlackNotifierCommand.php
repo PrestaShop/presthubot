@@ -419,7 +419,7 @@ class SlackNotifierCommand extends Command
             }
 
             preg_match('@https:\/\/github.com\/([\w]+)\/([\w]+)\/issues\/([0-9]+)@', $resultUrl[0], $resultIssue);
-            if (!isset($resultIssue[1]) || !isset($resultIssue[2]) || !isset($resultIssue[3])) {
+            if (!isset($resultIssue[1])) {
                 continue;
             }
 
