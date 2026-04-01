@@ -50,14 +50,8 @@ class SlackNotifierCommand extends Command
      * @var string
      */
     protected $slackChannelQAAutomation;
-    /**
-     * @var string
-     */
-    protected $slackChannelQAFunctional;
-    /**
-     * @var string
-     */
-    protected $slackChannelTeamAutoUpgrade;
+    protected string $slackChannelQAFunctional;
+    protected string $slackChannelTeamAutoUpgrade;
 
     /**
      * @var int
@@ -113,9 +107,6 @@ class SlackNotifierCommand extends Command
      * @var array<string>
      */
     private const BRANCH_SUPPORT = [
-        '1.7.8.x',
-        '8.0.x',
-        '8.1.x',
         '8.2.x',
         '9.0.x',
         '9.1.x',
