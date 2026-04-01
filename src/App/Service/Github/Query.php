@@ -13,7 +13,8 @@ class Query
     public const LABEL_WAITING_FOR_AUTHOR = 'label:\"waiting for author\"';
     public const LABEL_WAITING_FOR_DEV = 'label:\"waiting for dev\"';
     public const LABEL_WAITING_FOR_PM = 'label:\"waiting for PM\"';
-    public const LABEL_WAITING_FOR_QA = 'label:\"waiting for QA\"';
+    public const LABEL_WAITING_FOR_QA = 'label:\"Waiting for QA\"';
+    public const LABEL_WAITING_FOR_QA_BY_COMMUNITY = 'label:\"Waiting for QA by Community\"';
     public const LABEL_WAITING_FOR_REBASE = 'label:\"waiting for rebase\"';
     public const LABEL_WAITING_FOR_UX = 'label:\"waiting for UX\"';
     public const LABEL_WAITING_FOR_WORDING = 'label:\"waiting for Wording\"';
@@ -30,6 +31,7 @@ class Query
             . ' -' . self::LABEL_BLOCKED,
         // Check PR waiting for QA
         self::REQUEST_PR_WAITING_FOR_QA => 'is:open archived:false ' . self::LABEL_WAITING_FOR_QA
+          . ' -' . self::LABEL_WAITING_FOR_QA_BY_COMMUNITY
           . ' -' . self::LABEL_WAITING_FOR_AUTHOR
           . ' -' . self::LABEL_WAITING_FOR_DEV
           . ' -' . self::LABEL_WAITING_FOR_PM
@@ -53,10 +55,10 @@ class Query
             . ' -' . self::LABEL_WAITING_FOR_AUTHOR
             . ' -' . self::LABEL_WAITING_FOR_PM
             . ' -' . self::LABEL_WAITING_FOR_QA
+            . ' -' . self::LABEL_WAITING_FOR_QA_BY_COMMUNITY
             . ' -' . self::LABEL_WAITING_FOR_REBASE
             . ' -' . self::LABEL_WAITING_FOR_UX
             . ' -' . self::LABEL_WAITING_FOR_WORDING
-            . ' -' . self::LABEL_WAITING_FOR_QA
             . ' -' . self::LABEL_WIP
             . ' -' . self::LABEL_BLOCKED,
     ];
