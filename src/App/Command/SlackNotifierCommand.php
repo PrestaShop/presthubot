@@ -108,7 +108,6 @@ class SlackNotifierCommand extends Command
      */
     private const BRANCH_SUPPORT = [
         '8.2.x',
-        '9.0.x',
         '9.1.x',
         'develop',
     ];
@@ -118,10 +117,7 @@ class SlackNotifierCommand extends Command
      */
     private const CAMPAIGN_SUPPORT = [
         'functional' => [
-            '8.0.x' => ['mysql'],
-            '8.1.x' => ['mysql'],
             '8.2.x' => ['mysql'],
-            '9.0.x' => ['mysql', 'mariadb'],
             '9.1.x' => ['mysql', 'mariadb'],
             'develop' => ['mysql', 'mariadb'],
         ],
@@ -130,7 +126,7 @@ class SlackNotifierCommand extends Command
         'blockwishlist' => [
             '8.0.5' => ['mysql'],
             '8.1.7' => ['mysql'],
-            '9.0.x' => ['mysql'],
+            '9.0.3' => ['mysql'],
             '9.1.x' => ['mysql'],
             'nightly' => ['mysql'],
         ],
@@ -142,7 +138,7 @@ class SlackNotifierCommand extends Command
             '8.0.5' => ['mysql'],
             '8.1.6' => ['mysql'],
             '8.2.1' => ['mysql'],
-            '9.0.x' => ['mysql'],
+            '9.0.3' => ['mysql'],
             '9.1.x' => ['mysql'],
             'nightly' => ['mysql'],
         ],
