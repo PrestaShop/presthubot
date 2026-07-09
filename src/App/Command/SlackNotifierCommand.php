@@ -109,6 +109,7 @@ class SlackNotifierCommand extends Command
     private const BRANCH_SUPPORT = [
         '8.2.x',
         '9.1.x',
+        '9.2.x',
         'develop',
     ];
 
@@ -119,6 +120,7 @@ class SlackNotifierCommand extends Command
         'functional' => [
             '8.2.x' => ['mysql'],
             '9.1.x' => ['mysql', 'mariadb'],
+            '9.2.x' => ['mysql', 'mariadb'],
             'develop' => ['mysql', 'mariadb'],
         ],
         // autoupgrade (Done in specific report)
