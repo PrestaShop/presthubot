@@ -37,6 +37,7 @@ class GitHubMonthlyReportCommand extends Command
 
     private const CORE_BRANCHES = [
         'develop',
+        '9.2.x',
         '9.1.x',
         '8.2.x',
     ];
