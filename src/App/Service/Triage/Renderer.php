@@ -21,10 +21,11 @@ class Renderer
     ];
 
     /**
-     * Items shown per band before the rest is rolled up. The overflow is always
-     * announced - a silently truncated list reads as "that was everything".
+     * Items listed in the attention block before the rest is rolled up. The
+     * overflow is always announced - a silently truncated list reads as "that
+     * was everything".
      */
-    private const PER_BAND = 8;
+    private const PER_BAND = 5;
 
     /**
      * The short list the sheriff reads if they read nothing else.
@@ -92,8 +93,23 @@ class Renderer
     /**
      * @param array<int, array<string, mixed>> $items
      */
-    public function renderSlack(array $items, string $since, string $until): string
-    {
+    /**
+     * The Monday digest.
+     *
+     * Deliberately not a copy of the report. Slack collapses anything much past
+     * four thousand characters behind a "See more", so listing every Minor
+     * would hide the part that matters. What survives here is what the sheriff
+     * has to act on - the attention list and any Critical - plus a census of
+     * the rest and a link to the full report.
+     *
+     * @param array<int, array<string, mixed>> $items
+     */
+    public function renderSlack(
+        array $items,
+        string $since,
+        string $until,
+        ?string $runUrl = null,
+    ): string {
         $bugs = $this->bugReports($items);
         $prs = array_values(array_filter($items, fn (array $i): bool => $i['type'] === 'pull_request'));
 
@@ -115,75 +131,242 @@ class Renderer
                     ':red_circle: <%s|#%d> %s — _%s_',
                     $entry['item']['url'],
                     $entry['item']['number'],
-                    $this->trim($entry['item']['title'], 80),
+                    $this->trim($entry['item']['title'], 70),
                     implode(', ', $entry['reasons'])
                 );
             }
-            $lines[] = $this->overflow(count($flagged));
+            if (count($flagged) > self::PER_BAND) {
+                $lines[] = sprintf('_+ %d more in the full report_', count($flagged) - self::PER_BAND);
+            }
         }
 
+        // Critical is the one band worth listing in full: there are rarely more
+        // than a couple, and each one is a decision the sheriff has to make now.
+        $critical = $this->bySeverity($bugs, 'Critical');
+        if ($critical !== []) {
+            $lines[] = '';
+            $lines[] = sprintf('*Proposed Critical (%d)*', count($critical));
+            foreach ($critical as $item) {
+                $lines[] = sprintf(
+                    '%s <%s|#%d> %s — _%s_',
+                    self::SEVERITY_ICON['Critical'],
+                    $item['url'],
+                    $item['number'],
+                    $this->trim($item['title'], 70),
+                    $this->trim($item['verdict']['rationale'], 120)
+                );
+            }
+        }
+
+        $census = [];
+        foreach (['Major', 'Minor', 'Trivial'] as $severity) {
+            $count = count($this->bySeverity($bugs, $severity));
+            if ($count > 0) {
+                $census[] = sprintf('%s %d', $severity, $count);
+            }
+        }
+        $prCensus = [];
+        foreach (['blocking', 'soon'] as $level) {
+            $count = count(array_filter(
+                $prs,
+                fn (array $i): bool => ($i['verdict']['attention'] ?? '') === $level
+            ));
+            if ($count > 0) {
+                $prCensus[] = sprintf('%d %s', $count, $level);
+            }
+        }
+
+        if ($census !== [] || $prCensus !== []) {
+            $lines[] = '';
+            $parts = [];
+            if ($census !== []) {
+                $parts[] = 'Issues — ' . implode(' · ', $census);
+            }
+            if ($prCensus !== []) {
+                $parts[] = 'PRs — ' . implode(' · ', $prCensus);
+            }
+            $lines[] = '*The rest:* ' . implode('  |  ', $parts);
+        }
+
+        if ($runUrl !== null) {
+            $lines[] = '';
+            $lines[] = sprintf('_<%s|Full report, with every item and the reasoning.>_', $runUrl);
+        }
+
+        return implode(PHP_EOL, $lines);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $bugs
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function bySeverity(array $bugs, string $severity): array
+    {
+        return array_values(array_filter(
+            $bugs,
+            fn (array $i): bool => ($i['verdict']['severity'] ?? '') === $severity
+        ));
+    }
+
+    /**
+     * The full report - every item, no caps. This is what the Slack digest
+     * links to, and the only place the trimmed overflow can be read.
+     *
+     * @param array<int, array<string, mixed>> $items
+     */
+    public function renderMarkdown(array $items, string $since, string $until): string
+    {
+        $bugs = $this->bugReports($items);
+        $prs = array_values(array_filter($items, fn (array $i): bool => $i['type'] === 'pull_request'));
+        $others = array_values(array_filter(
+            $items,
+            fn (array $i): bool => $i['type'] === 'issue'
+                && ($i['verdict']['kind'] ?? 'bug_report') !== 'bug_report'
+        ));
+
+        $out = [
+            sprintf('# Weekly pre-qualification — %s to %s', $since, $until),
+            '',
+            sprintf(
+                '%d bug reports, %d other issues and %d open pull requests touched this week.',
+                count($bugs),
+                count($others),
+                count($prs)
+            ),
+            '',
+            '> **These are proposals.** Nothing was labelled and no board card was moved. '
+                . 'Every line below is a suggestion for the sheriff to accept, correct, or ignore.',
+            '',
+        ];
+
+        $flagged = $this->needsAttention($items);
+        $out[] = sprintf('## Needs you this week (%d)', count($flagged));
+        $out[] = '';
+        if ($flagged === []) {
+            $out[] = '_Nothing flagged._';
+        }
+        foreach ($flagged as $entry) {
+            $out[] = sprintf(
+                '- [#%d](%s) %s — **%s**',
+                $entry['item']['number'],
+                $entry['item']['url'],
+                $entry['item']['title'],
+                implode(', ', $entry['reasons'])
+            );
+        }
+        $out[] = '';
+
+        $out[] = '## Issues by proposed severity';
+        $out[] = '';
         foreach (self::SEVERITIES as $severity) {
             $band = array_values(array_filter(
                 $bugs,
                 fn (array $i): bool => ($i['verdict']['severity'] ?? '') === $severity
             ));
+            $out[] = sprintf('### %s (%d)', $severity, count($band));
+            $out[] = '';
             if ($band === []) {
+                $out[] = '_None._';
+                $out[] = '';
+
                 continue;
             }
-            $lines[] = '';
-            $lines[] = sprintf('*Issues · proposed %s (%d)*', $severity, count($band));
-            foreach (array_slice($band, 0, self::PER_BAND) as $item) {
+            $out[] = '| Issue | Confidence | Next step | Why |';
+            $out[] = '|---|---|---|---|';
+            foreach ($band as $item) {
                 $marks = [];
                 if (!empty($item['verdict']['looks_like_regression'])) {
-                    $marks[] = 'regression';
+                    $marks[] = '`regression`';
                 }
                 if (!empty($item['verdict']['security_suspicion'])) {
-                    $marks[] = 'security?';
+                    $marks[] = '`security?`';
                 }
-                $lines[] = sprintf(
-                    '%s <%s|#%d> %s%s — _%s_',
-                    self::SEVERITY_ICON[$severity],
-                    $item['url'],
+                $out[] = sprintf(
+                    '| [#%d](%s) %s%s | %s | %s | %s |',
                     $item['number'],
-                    $this->trim($item['title'], 80),
-                    $marks === [] ? '' : ' `' . implode('` `', $marks) . '`',
-                    $this->trim($item['verdict']['rationale'], 110)
+                    $item['url'],
+                    $item['title'],
+                    $marks === [] ? '' : ' ' . implode(' ', $marks),
+                    $item['verdict']['confidence'],
+                    $item['verdict']['suggested_status'] ?? '-',
+                    $this->trim($item['verdict']['rationale'], 200)
                 );
             }
-            $lines[] = $this->overflow(count($band));
+            $out[] = '';
         }
 
-        foreach (['blocking' => 'Blocking', 'soon' => 'Soon'] as $level => $label) {
+        if ($others !== []) {
+            $out[] = sprintf('## Issues that are not bug reports (%d)', count($others));
+            $out[] = '';
+            $out[] = 'Real work, but backlog rather than triage — severity does not apply, so '
+                . 'they are listed separately instead of padding the bands above.';
+            $out[] = '';
+            foreach ($others as $item) {
+                $out[] = sprintf(
+                    '- [#%d](%s) %s — _%s_ — %s',
+                    $item['number'],
+                    $item['url'],
+                    $item['title'],
+                    $item['verdict']['kind'],
+                    $this->trim($item['verdict']['rationale'], 200)
+                );
+            }
+            $out[] = '';
+        }
+
+        $out[] = '## Pull requests by attention needed';
+        $out[] = '';
+        foreach (['blocking' => 'Blocking', 'soon' => 'Soon', 'routine' => 'Routine'] as $level => $label) {
             $band = array_values(array_filter(
                 $prs,
                 fn (array $i): bool => ($i['verdict']['attention'] ?? '') === $level
             ));
+            $out[] = sprintf('### %s (%d)', $label, count($band));
+            $out[] = '';
             if ($band === []) {
+                $out[] = '_None._';
+                $out[] = '';
+
                 continue;
             }
-            $lines[] = '';
-            $lines[] = sprintf('*Pull requests · %s (%d)*', $label, count($band));
-            foreach (array_slice($band, 0, self::PER_BAND) as $item) {
-                $lines[] = sprintf(
-                    '<%s|#%d> %s — waiting on *%s*, %dd idle',
-                    $item['url'],
+            $out[] = '| PR | Waiting on | Idle | Why |';
+            $out[] = '|---|---|---|---|';
+            foreach ($band as $item) {
+                $out[] = sprintf(
+                    '| [#%d](%s) %s | %s | %dd | %s |',
                     $item['number'],
-                    $this->trim($item['title'], 80),
-                    $item['verdict']['waiting_on'] ?? 'unknown',
-                    $item['daysSinceUpdate']
+                    $item['url'],
+                    $item['title'],
+                    $item['verdict']['waiting_on'] ?? '-',
+                    $item['daysSinceUpdate'],
+                    $this->trim($item['verdict']['rationale'], 200)
                 );
             }
-            $lines[] = $this->overflow(count($band));
+            $out[] = '';
         }
 
-        return implode(PHP_EOL, array_filter($lines, fn (string $l): bool => $l !== "\0"));
-    }
+        $uncertain = array_values(array_filter(
+            $items,
+            fn (array $i): bool => ($i['verdict']['confidence'] ?? '') === 'low'
+        ));
+        $out[] = sprintf('## Low confidence — the agent was guessing (%d)', count($uncertain));
+        $out[] = '';
+        if ($uncertain === []) {
+            $out[] = '_None._';
+        }
+        foreach ($uncertain as $item) {
+            $out[] = sprintf(
+                '- [#%d](%s) %s — %s',
+                $item['number'],
+                $item['url'],
+                $item['title'],
+                $this->trim($item['verdict']['rationale'], 200)
+            );
+        }
+        $out[] = '';
 
-    private function overflow(int $total): string
-    {
-        return $total > self::PER_BAND
-            ? sprintf('_+ %d more, see the workflow run_', $total - self::PER_BAND)
-            : "\0";
+        return implode(PHP_EOL, $out);
     }
 
     private function trim(string $text, int $limit): string

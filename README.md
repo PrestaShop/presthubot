@@ -235,8 +235,14 @@ Runs every Monday from `.github/workflows/triageagent.yml`.
 | `--dry-run` | No | Render the report but do not post it to Slack |
 
 The workflow exposes the same two controls on `workflow_dispatch`: a `dry-run`
-toggle and a `channel` override. Aim the first live run at a test channel rather
-than letting it land in the core channel unseen.
+toggle and a `channel` override.
+
+Two outputs, on purpose. The **Slack message is a digest**: the attention list,
+any proposed Critical, a census of the rest, and a link back. Slack collapses
+anything much past four thousand characters behind a "See more", so listing
+every Minor there would hide the part that matters. The **full report** — every
+item, every rationale — goes to the job summary and an artifact, and is what the
+digest links to.
 
 #### The rubric
 

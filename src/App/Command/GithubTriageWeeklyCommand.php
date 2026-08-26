@@ -100,7 +100,15 @@ class GithubTriageWeeklyCommand extends Command
             ->addOption('since', null, InputOption::VALUE_OPTIONAL, 'Window start (YYYY-MM-DD)', null)
             ->addOption('until', null, InputOption::VALUE_OPTIONAL, 'Window end (YYYY-MM-DD)', null)
             ->addOption('limit', null, InputOption::VALUE_OPTIONAL, 'Classify only the first N items', 0)
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Render everything but do not post to Slack');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Render everything but do not post to Slack')
+            ->addOption('run-url', null, InputOption::VALUE_OPTIONAL, 'Link the Slack digest back to this run', null)
+            ->addOption(
+                'report',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Where to write the full report',
+                __DIR__ . '/../../../var/report/triage-weekly.md'
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -139,7 +147,20 @@ class GithubTriageWeeklyCommand extends Command
             return Command::SUCCESS;
         }
 
-        $message = $this->renderer->renderSlack($items, $since, $until);
+        // The digest is a short thing that drives clicks; the full report is
+        // where the items it trimmed can actually be read. Writing it is not
+        // optional - without it the digest's "see the full report" leads nowhere.
+        $reportPath = (string) $input->getOption('report');
+        @mkdir(dirname($reportPath), 0777, true);
+        file_put_contents($reportPath, $this->renderer->renderMarkdown($items, $since, $until));
+        $output->writeln('Wrote the full report to ' . $reportPath);
+
+        $message = $this->renderer->renderSlack(
+            $items,
+            $since,
+            $until,
+            $input->getOption('run-url')
+        );
         $output->writeln('');
         $output->writeln($message);
         $output->writeln('');

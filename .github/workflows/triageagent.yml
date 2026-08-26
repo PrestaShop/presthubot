@@ -57,4 +57,22 @@ jobs:
               ARGS=""
               if [ -n "$DRY_RUN" ]; then ARGS="$ARGS --dry-run"; fi
               if [ -n "$CHANNEL" ]; then ARGS="$ARGS --slackchannel=$CHANNEL"; fi
-              php bin/console github:triage:weekly $ARGS
+              php bin/console github:triage:weekly $ARGS \
+                --run-url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+      # The Slack digest is capped per band and links here for the rest, so the
+      # full report has to exist somewhere readable.
+      -   name: Publish the full report
+          if: always()
+          run: |
+              if [ -f var/report/triage-weekly.md ]; then
+                cat var/report/triage-weekly.md >> "$GITHUB_STEP_SUMMARY"
+              fi
+
+      -   name: Upload the full report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: triage-weekly-${{ github.run_id }}
+            path: var/report/triage-weekly.md
+            if-no-files-found: ignore
