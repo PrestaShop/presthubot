@@ -265,6 +265,48 @@ the rest read it back at a tenth of the price. The command prints the measured
 token usage and cost at the end of every run, and warns if the cache is being
 invalidated.
 
+#### Calibration
+
+`github:triage:calibrate` answers the only question that matters about the
+rubric: **how far does it agree with the maintainers?** Without that number the
+weekly report is confident verdicts nobody can check.
+
+```bash
+php bin/console github:triage:calibrate            # score the held-out set
+php bin/console github:triage:calibrate --mine     # regenerate the worked examples
+php bin/console github:triage:calibrate --limit=20 # cheap smoke test
+```
+
+Manual only, from `.github/workflows/triagecalibrate.yml`. It is not a recurring
+job — run it when the rubric changes. The split seed is fixed, so two runs are
+directly comparable and this doubles as a regression test on the prompt.
+
+There is no fine-tuning. The ~2 300 closed issues carrying exactly one severity
+label are split once, deterministically and stratified by class, into a pool the
+worked examples are mined from and a held-out set that is scored and never
+appears in a prompt. Mining from the held-out half would hand over the answers.
+
+Read the confusion matrix, not the headline percentage. The corpus is heavily
+imbalanced (68 Critical against 1 378 Minor), so plain accuracy looks good while
+saying nothing. The numbers that matter are **Critical recall** — a Critical
+proposed as Minor is an issue the sheriff never sees ranked — and the
+**off-by-one rate**, since a Major proposed as Critical costs one glance and
+nothing more.
+
+The held-out set is scored with sequential calls rather than the Batch API.
+Batching would halve the cost, but it targets completion within 24 hours while a
+GitHub-hosted job is cut off at six; a few dollars is a poor trade for a run that
+can vanish. Expect roughly 80 minutes and $7 for the full 334 issues.
+
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--anthropic-token=<token>` | Yes/No | Use it or use .env. Not needed with `--mine` |
+| `--mine` | No | Regenerate `severity_examples.md` from the pool and stop |
+| `--refresh` | No | Refetch the corpus instead of using the cached copy |
+| `--limit=<n>` | No | Score only the first n held-out issues |
+| `--report=<path>` | No | Where to write the scored report |
+
 #### Known limits
 
 - The weekly window cannot surface a long-stalled PR: selecting on recent
