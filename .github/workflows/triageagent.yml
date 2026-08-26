@@ -28,6 +28,10 @@ jobs:
   triageagent:
     runs-on: ubuntu-latest
     name: Triage Agent
+    # Around 20 minutes for a normal week. A run that reaches an hour is stuck
+    # retrying, not working, and should be cut rather than left on the default
+    # six hours.
+    timeout-minutes: 60
     steps:
       -   name: Setup PHP
           uses: shivammathur/setup-php@v2

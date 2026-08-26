@@ -234,8 +234,25 @@ class GithubTriageCalibrateCommand extends Command
             shuffle($items);
 
             $take = min(self::EVAL_PER_CLASS, intdiv(count($items), 2));
-            $heldOut = array_merge($heldOut, array_slice($items, 0, $take));
+            $byClass[$severity] = array_slice($items, 0, $take);
             $pool = array_merge($pool, array_slice($items, $take));
+        }
+
+        // Interleaved round-robin rather than class after class, so that any
+        // prefix of the set is still stratified. Appending one class at a time
+        // would make --limit=20 score nothing but Criticals and produce a
+        // confusion matrix with a single populated row.
+        for ($index = 0;; ++$index) {
+            $added = false;
+            foreach (self::SEVERITIES as $severity) {
+                if (isset($byClass[$severity][$index])) {
+                    $heldOut[] = $byClass[$severity][$index];
+                    $added = true;
+                }
+            }
+            if (!$added) {
+                break;
+            }
         }
 
         return [$pool, $heldOut];

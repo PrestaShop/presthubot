@@ -108,7 +108,16 @@ PR, so it has to carry the *why*.
 
 # Confidence
 
-Use `low` whenever the timeline is ambiguous, whenever you cannot tell who the
-ball is with, or whenever the PR is large enough that its state is not readable
-from metadata alone. The sheriff can act on an honest `low`; they cannot act on
-a confident wrong answer.
+`high` when the timeline reads unambiguously: the last event is recent and
+clearly attributable, and `waiting_on` follows from it without interpretation.
+
+`medium` when you had to infer — labels and timeline disagree, or the last
+exchange is old enough that the ball may since have moved.
+
+`low` whenever the timeline is ambiguous, whenever you cannot tell who the ball
+is with, or whenever the PR is large enough that its state is not readable from
+metadata alone.
+
+The sheriff can act on an honest `low`; they cannot act on a confident wrong
+answer. Low-confidence items are pulled out into their own section of the
+report, so this is a routing instruction rather than a self-assessment.
