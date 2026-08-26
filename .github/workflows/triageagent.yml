@@ -1,0 +1,48 @@
+# Weekly pre-qualification of the PrestaShop core tracker for the sheriff.
+#
+# Reads the issues and pull requests touched in the past week, asks Claude for a
+# severity / attention proposal on each, and posts the ranked result to Slack.
+#
+# It proposes and never decides: nothing is written back to GitHub - no label,
+# no board card, no comment.
+name: Triage Agent
+
+on:
+  schedule:
+    # Mondays at 07:00 UTC, before the week's triage starts.
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Render the report but do not post it to Slack'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  triageagent:
+    runs-on: ubuntu-latest
+    name: Triage Agent
+    steps:
+      -   name: Setup PHP
+          uses: shivammathur/setup-php@v2
+          with:
+            php-version: '8.4'
+            extensions: mbstring, intl, gd, xml, dom, json, fileinfo, curl, zip, iconv
+
+      -   uses: actions/checkout@v2
+
+      -   name: Composer install
+          run: composer install --ansi --prefer-dist --no-interaction --no-progress --quiet
+
+      -   name: Write env file
+          run: |
+              echo 'GH_TOKEN='${{ secrets.GH_TOKEN }} > .env && \
+              echo 'ANTHROPIC_API_KEY='${{ secrets.ANTHROPIC_API_KEY }} >> .env && \
+              echo 'SLACK_TOKEN='${{ secrets.SLACK_TOKEN }} >> .env && \
+              echo 'SLACK_CHANNEL_CORE='${{ secrets.SLACK_CHANNEL_CORE }} >> .env
+
+      -   name: Execute script
+          run: |
+              php bin/console github:triage:weekly \
+                ${{ (github.event_name == 'workflow_dispatch' && inputs.dry-run) && '--dry-run' || '' }}

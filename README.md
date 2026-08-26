@@ -201,6 +201,77 @@ php bin/console slack:notifier
 | `--slacktoken=<slacktoken>` | Yes/No | Use it or use .env |
 | `--slackchannel=<slackchannel>` | Yes/No | Use it or use .env |
 
+### Weekly Triage Agent
+Pre-qualify the issues and pull requests touched in the past week so the sheriff
+reads a ranked list instead of the whole tracker, and post it to Slack.
+
+Each item is sent to Claude with a rubric and comes back with a proposal:
+- issues get a severity (`Critical` / `Major` / `Minor` / `Trivial`), a suggested
+  next step (`TBR` / `NMI` / `Needs Specs` / ready), and flags for a possible
+  security report or a regression
+- pull requests get an attention level and, above all, **who they are actually
+  waiting on** - read from the timeline rather than from labels, which are often
+  stale
+
+**It proposes and never decides.** Nothing is written back to GitHub: no label,
+no board card, no comment. A human accepts, corrects or ignores every line.
+
+```bash
+php bin/console github:triage:weekly --dry-run
+```
+
+Runs every Monday from `.github/workflows/triageagent.yml`.
+
+#### Parameters
+| Parameter | Required | Notes |
+| ------------- | ------------- | ------------- |
+| `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--anthropic-token=<token>` | Yes/No | Use it or use .env (`ANTHROPIC_API_KEY`) |
+| `--slacktoken=<slacktoken>` | Yes/No | Use it or use .env |
+| `--slackchannel=<slackchannel>` | Yes/No | Use it or use .env (defaults to `SLACK_CHANNEL_CORE`) |
+| `--since=<YYYY-MM-DD>` | No | Window start. Defaults to 7 days ago |
+| `--until=<YYYY-MM-DD>` | No | Window end. Defaults to today. Pass both to reproduce a past week exactly |
+| `--limit=<n>` | No | Classify only the first n items - useful when tuning the rubric |
+| `--dry-run` | No | Render the report but do not post it to Slack |
+
+#### The rubric
+
+The prompts live in `src/App/Resources/triage/` and are the substance of this
+command:
+
+- `severity_system.md` reproduces the project's [severity
+  classification](https://build.prestashop-project.org/news/2019/severity-classification/)
+  verbatim, then adds what that page leaves open: how to read its
+  "percentage of users" thresholds for a shop platform, the clauses that
+  override the count (security, data loss, broken E2E, law compliance, money),
+  and how to judge whether a workaround is obvious.
+- It also encodes the boundary from [how issues are
+  sorted](https://www.prestashop-project.org/get-involved/report-issues/how-issues-are-sorted/):
+  **severity is proposed, priority never is.** Priority belongs to the
+  Development / Product Management / QA meeting. What the agent can usefully
+  hand that meeting is whether a bug is a regression, kept independent of
+  severity - a trivial regression is still Trivial.
+- `severity_examples.md` holds 24 worked examples, 6 per level, mined from
+  closed issues that maintainers labelled themselves.
+- `pr_triage_system.md` covers pull requests, where severity does not apply.
+
+The rubric plus its examples is around 7 500 tokens and is identical for every
+item in a run, so it is sent as a cached block: the first item pays for it and
+the rest read it back at a tenth of the price. The command prints the measured
+token usage and cost at the end of every run, and warns if the cache is being
+invalidated.
+
+#### Known limits
+
+- The weekly window cannot surface a long-stalled PR: selecting on recent
+  updates means one nobody has touched in months is invisible *because* nobody
+  touched it. This covers what moved, not what is rotting.
+- PR triage reads metadata, not diffs. It can say a PR waited a month; it cannot
+  say whether the change is any good.
+- Severity is proposed from the report, not from a reproduction. An overstated
+  report and a genuine Critical read alike on paper - that is what `TBR` and the
+  confidence field are for.
+
 ### Release Note helper
 Generate the list of resolved issues in a milestone
 
