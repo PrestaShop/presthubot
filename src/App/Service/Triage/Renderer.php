@@ -164,9 +164,13 @@ class Renderer
             }
         }
 
+        // Anything already named in the attention block is left out here: the
+        // digest has little room, and repeating an item spends it on nothing.
+        $alreadyNamed = array_map(fn (array $e): int => $e['item']['number'], $flagged);
         $blocking = array_values(array_filter(
             $prs,
             fn (array $i): bool => ($i['verdict']['attention'] ?? '') === 'blocking'
+                && !in_array($i['number'], $alreadyNamed, true)
         ));
         if ($blocking !== []) {
             $lines[] = '';

@@ -85,6 +85,13 @@ class GithubTriageWeeklyCommand extends Command
      */
     protected $truncated = false;
 
+    /**
+     * Items collected but not classified, because the API call failed.
+     *
+     * @var int
+     */
+    protected $failures = 0;
+
     protected function configure(): void
     {
         $this->setName('github:triage:weekly')
@@ -164,11 +171,33 @@ class GithubTriageWeeklyCommand extends Command
             $items = array_merge($issues, $prs);
         }
 
+        $collected = count($items);
         $items = $this->classify($items, $output);
+
+        // An empty week and a week where every call failed look the same from
+        // here, and must not: a scheduled job that goes green while the agent
+        // is broken is how it stays broken.
         if ($items === []) {
+            if ($collected > 0) {
+                $output->writeln(sprintf(
+                    '<error>All %d items failed to classify — nothing was reported.</error>',
+                    $collected
+                ));
+
+                return Command::FAILURE;
+            }
+
             $output->writeln('<comment>Nothing to report.</comment>');
 
             return Command::SUCCESS;
+        }
+
+        if ($this->failures > 0) {
+            $output->writeln(sprintf(
+                '<comment>%d of %d items failed to classify and are missing from the report.</comment>',
+                $this->failures,
+                $collected
+            ));
         }
 
         // The digest is a short thing that drives clicks; the full report is
@@ -362,6 +391,7 @@ class GithubTriageWeeklyCommand extends Command
                 );
             } catch (\RuntimeException $e) {
                 $output->writeln('    <error>' . $e->getMessage() . '</error>');
+                ++$this->failures;
 
                 continue;
             }
@@ -393,21 +423,23 @@ class GithubTriageWeeklyCommand extends Command
             return [];
         }
 
-        $query = new TriageQuery();
-        $query->setQuery(sprintf(
-            'repo:%s is:issue is:open in:title %s',
-            self::REPOSITORY,
-            implode(' ', $keywords)
-        ));
-
+        // REST rather than the GraphQL helper on purpose. That helper pages
+        // through every result before returning, and TriageQuery would drag a
+        // full body, comments and reviews along for each one - all of it
+        // discarded here, where only a number and a title are needed.
         $candidates = [];
         try {
-            foreach ($this->github->search($query) as $edge) {
-                $node = $edge['node'] ?? null;
-                if (empty($node) || !isset($node['number']) || $node['number'] === $issue['number']) {
+            $results = $this->github->getClient()->api('search')->issues(sprintf(
+                'repo:%s is:issue is:open in:title %s',
+                self::REPOSITORY,
+                implode(' ', $keywords)
+            ));
+
+            foreach ($results['items'] ?? [] as $found) {
+                if (($found['number'] ?? null) === null || $found['number'] === $issue['number']) {
                     continue;
                 }
-                $candidates[] = ['number' => $node['number'], 'title' => $node['title'] ?? ''];
+                $candidates[] = ['number' => $found['number'], 'title' => $found['title'] ?? ''];
                 if (count($candidates) >= 10) {
                     break;
                 }
