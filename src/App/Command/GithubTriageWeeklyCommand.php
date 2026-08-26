@@ -26,7 +26,18 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class GithubTriageWeeklyCommand extends Command
 {
-    private const REPOSITORY = 'PrestaShop/PrestaShop';
+    /**
+     * Default target. The rubric is written for this repository - its severity
+     * thresholds assume core flows, and its category and component vocabularies
+     * are core's labels - so pointing this elsewhere means writing a rubric for
+     * that repository too, not just changing this string.
+     */
+    private const DEFAULT_REPOSITORY = 'PrestaShop/PrestaShop';
+
+    /**
+     * @var string
+     */
+    protected $repository = self::DEFAULT_REPOSITORY;
 
     /**
      * Accounts whose activity is machine-generated. Nothing they open needs a
@@ -98,6 +109,13 @@ class GithubTriageWeeklyCommand extends Command
             ->setDescription('Pre-qualify the past week\'s issues and PRs and report to Slack')
             ->addOption('ghtoken', null, InputOption::VALUE_OPTIONAL, '', $_ENV['GH_TOKEN'] ?? null)
             ->addOption(
+                'repository',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Repository to triage. The rubric is written for the core one',
+                self::DEFAULT_REPOSITORY
+            )
+            ->addOption(
                 'anthropic-token',
                 null,
                 InputOption::VALUE_OPTIONAL,
@@ -129,6 +147,7 @@ class GithubTriageWeeklyCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->github = new Github($input->getOption('ghtoken'));
+        $this->repository = (string) $input->getOption('repository');
         $this->anthropic = new Anthropic($input->getOption('anthropic-token'));
         $this->slack = new Slack($input->getOption('slacktoken'));
         $this->renderer = new Renderer();
@@ -142,7 +161,7 @@ class GithubTriageWeeklyCommand extends Command
         $since = $input->getOption('since') ?: date('Y-m-d', strtotime('-7 days'));
         $until = $input->getOption('until') ?: date('Y-m-d');
 
-        $output->writeln(sprintf('Collecting %s from %s to %s...', self::REPOSITORY, $since, $until));
+        $output->writeln(sprintf('Collecting %s from %s to %s...', $this->repository, $since, $until));
         [$items, $skipped] = $this->collect($since, $until);
         $output->writeln(sprintf(
             '  %d to classify, %d skipped',
@@ -268,7 +287,7 @@ class GithubTriageWeeklyCommand extends Command
         $query = new TriageQuery();
         $query->setQuery(sprintf(
             'repo:%s updated:%s..%s sort:updated-desc',
-            self::REPOSITORY,
+            $this->repository,
             $since,
             $until
         ));
@@ -431,7 +450,7 @@ class GithubTriageWeeklyCommand extends Command
         try {
             $results = $this->github->getClient()->api('search')->issues(sprintf(
                 'repo:%s is:issue is:open in:title %s',
-                self::REPOSITORY,
+                $this->repository,
                 implode(' ', $keywords)
             ));
 

@@ -33,7 +33,18 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class GithubTriageCalibrateCommand extends Command
 {
-    private const REPOSITORY = 'PrestaShop/PrestaShop';
+    /**
+     * The only repository with a severity-labelled history to measure against.
+     * No native module carries those labels, so calibration has no ground truth
+     * anywhere else - the option exists for completeness, not because pointing
+     * it elsewhere would produce a meaningful number.
+     */
+    private const DEFAULT_REPOSITORY = 'PrestaShop/PrestaShop';
+
+    /**
+     * @var string
+     */
+    protected $repository = self::DEFAULT_REPOSITORY;
 
     private const RESOURCES = __DIR__ . '/../Resources/triage';
 
@@ -78,6 +89,13 @@ class GithubTriageCalibrateCommand extends Command
             ->setDescription('Score the triage severity rubric against maintainer labels')
             ->addOption('ghtoken', null, InputOption::VALUE_OPTIONAL, '', $_ENV['GH_TOKEN'] ?? null)
             ->addOption(
+                'repository',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Repository whose labelled history to score against',
+                self::DEFAULT_REPOSITORY
+            )
+            ->addOption(
                 'anthropic-token',
                 null,
                 InputOption::VALUE_OPTIONAL,
@@ -99,6 +117,7 @@ class GithubTriageCalibrateCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->github = new Github($input->getOption('ghtoken'));
+        $this->repository = (string) $input->getOption('repository');
 
         $corpus = $this->corpus((bool) $input->getOption('refresh'), $output);
         [$pool, $heldOut] = $this->split($corpus);
@@ -177,7 +196,7 @@ class GithubTriageCalibrateCommand extends Command
                 $query = new Query();
                 $query->setQuery(sprintf(
                     'repo:%s is:issue is:closed label:%s%s created:%d-01-01..%d-12-31',
-                    self::REPOSITORY,
+                    $this->repository,
                     $severity,
                     $exclusions,
                     $year,

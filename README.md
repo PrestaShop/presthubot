@@ -227,6 +227,7 @@ Runs every Monday from `.github/workflows/triageagent.yml`.
 | Parameter | Required | Notes |
 | ------------- | ------------- | ------------- |
 | `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--repository=<org/repo>` | No | Defaults to `PrestaShop/PrestaShop`. See the note below before pointing it elsewhere |
 | `--anthropic-token=<token>` | Yes/No | Use it or use .env (`ANTHROPIC_API_KEY`) |
 | `--slacktoken=<slacktoken>` | Yes/No | Use it or use .env |
 | `--slackchannel=<slackchannel>` | Yes/No | Use it or use .env (defaults to `SLACK_CHANNEL_CORE`) |
@@ -314,11 +315,29 @@ can vanish. Expect roughly 80 minutes and $7 for the full 334 issues.
 | Parameter | Required | Notes |
 | ------------- | ------------- | ------------- |
 | `--ghtoken=<ghtoken>` | Yes/No | Use it or use .env |
+| `--repository=<org/repo>` | No | Defaults to `PrestaShop/PrestaShop`, the only repository with a severity-labelled history |
 | `--anthropic-token=<token>` | Yes/No | Use it or use .env. Not needed with `--mine` |
 | `--mine` | No | Regenerate `severity_examples.md` from the pool and stop |
 | `--refresh` | No | Refetch the corpus instead of using the cached copy |
 | `--limit=<n>` | No | Score only the first n held-out issues. The set is interleaved, so any prefix stays balanced across the four classes |
 | `--report=<path>` | No | Where to write the scored report |
+
+#### On pointing this at another repository
+
+`--repository` exists, but the plumbing is the easy half. The rubric is written
+for the core: its thresholds are expressed in terms of core flows (install,
+upgrade, BO login, checkout), and its `category` and `component` vocabularies are
+core's own labels. Applied to a module — which only a fraction of shops install —
+the "> 60% of users" test would rule out `Critical` for every bug it could ever
+have.
+
+Calibration cannot follow either: no native module carries severity labels at
+all, so there is no ground truth to measure a module rubric against.
+
+For modules the useful shape is probably one organisation-wide digest rather than
+a run per repository — several of them see one or two items in a week, which is
+not worth a report. `SlackNotifierCommand` already has the org-wide query for
+exactly that.
 
 #### Known limits
 
