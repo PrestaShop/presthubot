@@ -6,6 +6,7 @@ use Console\App\Service\Anthropic;
 use Console\App\Service\Github;
 use Console\App\Service\Github\TriageQuery;
 use Console\App\Service\Slack;
+use Console\App\Service\Triage\Prompts;
 use Console\App\Service\Triage\Renderer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -27,8 +28,6 @@ class GithubTriageWeeklyCommand extends Command
 {
     private const REPOSITORY = 'PrestaShop/PrestaShop';
 
-    private const RESOURCES = __DIR__ . '/../Resources/triage';
-
     /**
      * Accounts whose activity is machine-generated. Nothing they open needs a
      * human pre-qualification pass.
@@ -43,9 +42,11 @@ class GithubTriageWeeklyCommand extends Command
     ];
 
     /**
-     * A severity label means a maintainer has already ruled on the issue, and a
-     * Regression label means the same for that call. Either way there is
-     * nothing left to propose.
+     * A severity label means a maintainer has already ruled on the issue, so
+     * there is nothing left to propose and no reason to pay for a verdict.
+     *
+     * A `Regression` label is handled separately: it settles that one field but
+     * says nothing about severity, so those issues are still classified.
      */
     private const ALREADY_RATED = ['Critical', 'Major', 'Minor', 'Trivial'];
 
@@ -76,6 +77,13 @@ class GithubTriageWeeklyCommand extends Command
      * @var Renderer
      */
     protected $renderer;
+
+    /**
+     * Set when the search hit GitHub's result cap and the week is incomplete.
+     *
+     * @var bool
+     */
+    protected $truncated = false;
 
     protected function configure(): void
     {
@@ -134,10 +142,26 @@ class GithubTriageWeeklyCommand extends Command
             count($items),
             count($skipped)
         ));
+        if ($this->truncated) {
+            $output->writeln(
+                '<comment>Warning: hit GitHub\'s 1000-result search cap — '
+                . 'this week is incomplete. Narrow the window.</comment>'
+            );
+        }
 
+        // Per type rather than across the mixed list: a small run is for eyeballing
+        // the rubrics, and both of them need to be exercised.
         $limit = (int) $input->getOption('limit');
         if ($limit > 0) {
-            $items = array_slice($items, 0, $limit);
+            $issues = array_slice(array_values(array_filter(
+                $items,
+                fn (array $i): bool => $i['type'] === 'issue'
+            )), 0, $limit);
+            $prs = array_slice(array_values(array_filter(
+                $items,
+                fn (array $i): bool => $i['type'] === 'pull_request'
+            )), 0, $limit);
+            $items = array_merge($issues, $prs);
         }
 
         $items = $this->classify($items, $output);
@@ -152,7 +176,10 @@ class GithubTriageWeeklyCommand extends Command
         // optional - without it the digest's "see the full report" leads nowhere.
         $reportPath = (string) $input->getOption('report');
         @mkdir(dirname($reportPath), 0777, true);
-        file_put_contents($reportPath, $this->renderer->renderMarkdown($items, $since, $until));
+        file_put_contents(
+            $reportPath,
+            $this->renderer->renderMarkdown($items, $since, $until, $skipped)
+        );
         $output->writeln('Wrote the full report to ' . $reportPath);
 
         $message = $this->renderer->renderSlack(
@@ -220,7 +247,15 @@ class GithubTriageWeeklyCommand extends Command
         $items = [];
         $skipped = [];
 
-        foreach ($this->github->search($query) as $edge) {
+        $edges = $this->github->search($query);
+        // GitHub search returns at most 1000 results. Hitting that means the
+        // window silently lost items, which is exactly the kind of quiet
+        // truncation the rest of this command works to avoid.
+        if (count($edges) >= 1000) {
+            $this->truncated = true;
+        }
+
+        foreach ($edges as $edge) {
             $node = $edge['node'];
             if (empty($node)) {
                 continue;
@@ -275,7 +310,17 @@ class GithubTriageWeeklyCommand extends Command
                 'additions' => $node['additions'] ?? null,
                 'deletions' => $node['deletions'] ?? null,
                 'alreadyMarkedRegression' => in_array('Regression', $labels, true),
+                'duplicateCandidates' => [],
             ];
+        }
+
+        // One extra search per issue. Grounding the model in a real shortlist is
+        // what stops it inventing issue numbers: it may only pick from what it
+        // is handed, or return nothing.
+        foreach ($items as $index => $item) {
+            if ($item['type'] === 'issue') {
+                $items[$index]['duplicateCandidates'] = $this->findDuplicates($item);
+            }
         }
 
         return [$items, $skipped];
@@ -288,16 +333,14 @@ class GithubTriageWeeklyCommand extends Command
      */
     protected function classify(array $items, OutputInterface $output): array
     {
-        $schemas = json_decode((string) file_get_contents(self::RESOURCES . '/schemas.json'), true);
-        if (!is_array($schemas)) {
-            throw new \RuntimeException('Could not read the output schemas');
-        }
-
         $systems = [
-            'issue' => Anthropic::cachedSystem($this->loadPrompt('severity_system.md', 'severity_examples.md')),
-            'pull_request' => Anthropic::cachedSystem($this->loadPrompt('pr_triage_system.md')),
+            'issue' => Anthropic::cachedSystem(Prompts::severity()),
+            'pull_request' => Anthropic::cachedSystem(Prompts::pullRequest()),
         ];
-        $schemaFor = ['issue' => $schemas['issue']['schema'], 'pull_request' => $schemas['pull_request']['schema']];
+        $schemaFor = [
+            'issue' => Prompts::schema('issue'),
+            'pull_request' => Prompts::schema('pull_request'),
+        ];
 
         $classified = [];
         $total = count($items);
@@ -336,18 +379,78 @@ class GithubTriageWeeklyCommand extends Command
         return $classified;
     }
 
-    protected function loadPrompt(string ...$files): string
+    /**
+     * Open issues whose titles share keywords with this one.
+     *
+     * @param array<string, mixed> $issue
+     *
+     * @return array<int, array{number: int, title: string}>
+     */
+    protected function findDuplicates(array $issue): array
     {
-        $parts = [];
-        foreach ($files as $file) {
-            $path = self::RESOURCES . '/' . $file;
-            if (!is_file($path)) {
-                throw new \RuntimeException('Missing prompt resource: ' . $file);
-            }
-            $parts[] = (string) file_get_contents($path);
+        $keywords = $this->titleKeywords($issue['title']);
+        if (count($keywords) < 2) {
+            return [];
         }
 
-        return implode(PHP_EOL . PHP_EOL, $parts);
+        $query = new TriageQuery();
+        $query->setQuery(sprintf(
+            'repo:%s is:issue is:open in:title %s',
+            self::REPOSITORY,
+            implode(' ', $keywords)
+        ));
+
+        $candidates = [];
+        try {
+            foreach ($this->github->search($query) as $edge) {
+                $node = $edge['node'] ?? null;
+                if (empty($node) || !isset($node['number']) || $node['number'] === $issue['number']) {
+                    continue;
+                }
+                $candidates[] = ['number' => $node['number'], 'title' => $node['title'] ?? ''];
+                if (count($candidates) >= 10) {
+                    break;
+                }
+            }
+        } catch (\Throwable $e) {
+            // A duplicate shortlist is a nicety; losing it must not cost the run.
+            return [];
+        }
+
+        return $candidates;
+    }
+
+    /**
+     * Words from a title worth searching on.
+     *
+     * Without the stopword filter a search for "the" and "when" returns the
+     * whole tracker and the shortlist is worthless.
+     *
+     * @return array<int, string>
+     */
+    protected function titleKeywords(string $title, int $limit = 5): array
+    {
+        $stopwords = [
+            'the', 'and', 'for', 'with', 'when', 'from', 'that', 'this', 'have',
+            'has', 'not', 'are', 'but', 'you', 'your', 'its', 'can', 'cant',
+            'does', 'doesnt', 'after', 'before', 'into', 'there', 'then', 'than',
+            'was', 'were', 'issue', 'bug', 'problem', 'error', 'prestashop', 'shop',
+        ];
+
+        preg_match_all('/[A-Za-z][A-Za-z0-9_-]{2,}/', mb_strtolower($title), $matches);
+
+        $keywords = [];
+        foreach ($matches[0] as $word) {
+            if (in_array($word, $stopwords, true) || in_array($word, $keywords, true)) {
+                continue;
+            }
+            $keywords[] = $word;
+            if (count($keywords) === $limit) {
+                break;
+            }
+        }
+
+        return $keywords;
     }
 
     /**
@@ -423,7 +526,16 @@ class GithubTriageWeeklyCommand extends Command
             $lines[] = '';
             $lines[] = '## Candidate duplicates';
             $lines[] = '';
-            $lines[] = 'None supplied - return an empty list.';
+            $candidates = $item['duplicateCandidates'] ?? [];
+            if ($candidates === []) {
+                $lines[] = 'None found - return an empty list.';
+            } else {
+                $lines[] = 'You may only return numbers from this list, and only if the '
+                    . 'other issue describes the same underlying defect:';
+                foreach ($candidates as $candidate) {
+                    $lines[] = sprintf('- #%d: %s', $candidate['number'], $candidate['title']);
+                }
+            }
         }
 
         return implode(PHP_EOL, $lines);

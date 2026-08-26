@@ -13,6 +13,12 @@ class Renderer
 {
     public const SEVERITIES = ['Critical', 'Major', 'Minor', 'Trivial'];
 
+    private const ATTENTION_ICON = [
+        'blocking' => ':red_circle:',
+        'soon' => ':large_orange_circle:',
+        'routine' => ':white_circle:',
+    ];
+
     private const SEVERITY_ICON = [
         'Critical' => ':red_circle:',
         'Major' => ':large_orange_circle:',
@@ -158,6 +164,32 @@ class Renderer
             }
         }
 
+        $blocking = array_values(array_filter(
+            $prs,
+            fn (array $i): bool => ($i['verdict']['attention'] ?? '') === 'blocking'
+        ));
+        if ($blocking !== []) {
+            $lines[] = '';
+            $lines[] = sprintf('*Pull requests · blocking (%d)*', count($blocking));
+            foreach (array_slice($blocking, 0, self::PER_BAND) as $item) {
+                $lines[] = sprintf(
+                    '%s <%s|#%d> %s — waiting on *%s*, %dd idle',
+                    self::ATTENTION_ICON['blocking'],
+                    $item['url'],
+                    $item['number'],
+                    $this->trim($item['title'], 70),
+                    $item['verdict']['waiting_on'] ?? 'unknown',
+                    $item['daysSinceUpdate']
+                );
+            }
+            if (count($blocking) > self::PER_BAND) {
+                $lines[] = sprintf(
+                    '_+ %d more in the full report_',
+                    count($blocking) - self::PER_BAND
+                );
+            }
+        }
+
         $census = [];
         foreach (['Major', 'Minor', 'Trivial'] as $severity) {
             $count = count($this->bySeverity($bugs, $severity));
@@ -166,7 +198,7 @@ class Renderer
             }
         }
         $prCensus = [];
-        foreach (['blocking', 'soon'] as $level) {
+        foreach (['soon', 'routine'] as $level) {
             $count = count(array_filter(
                 $prs,
                 fn (array $i): bool => ($i['verdict']['attention'] ?? '') === $level
@@ -197,6 +229,21 @@ class Renderer
     }
 
     /**
+     * The category and component the rubric proposed, as one cell.
+     *
+     * @param array<string, mixed> $verdict
+     */
+    private function area(array $verdict): string
+    {
+        $category = $verdict['category'] ?? '-';
+        $component = $verdict['component'] ?? 'none';
+
+        return $component === 'none'
+            ? (string) $category
+            : sprintf('%s / %s', $category, $component);
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $bugs
      *
      * @return array<int, array<string, mixed>>
@@ -214,9 +261,14 @@ class Renderer
      * links to, and the only place the trimmed overflow can be read.
      *
      * @param array<int, array<string, mixed>> $items
+     * @param array<int, array{number: int, reason: string}> $skipped
      */
-    public function renderMarkdown(array $items, string $since, string $until): string
-    {
+    public function renderMarkdown(
+        array $items,
+        string $since,
+        string $until,
+        array $skipped = [],
+    ): string {
         $bugs = $this->bugReports($items);
         $prs = array_values(array_filter($items, fn (array $i): bool => $i['type'] === 'pull_request'));
         $others = array_values(array_filter(
@@ -272,8 +324,8 @@ class Renderer
 
                 continue;
             }
-            $out[] = '| Issue | Confidence | Next step | Why |';
-            $out[] = '|---|---|---|---|';
+            $out[] = '| Issue | Area | Confidence | Next step | Why |';
+            $out[] = '|---|---|---|---|---|';
             foreach ($band as $item) {
                 $marks = [];
                 if (!empty($item['verdict']['looks_like_regression'])) {
@@ -283,11 +335,12 @@ class Renderer
                     $marks[] = '`security?`';
                 }
                 $out[] = sprintf(
-                    '| [#%d](%s) %s%s | %s | %s | %s |',
+                    '| [#%d](%s) %s%s | %s | %s | %s | %s |',
                     $item['number'],
                     $item['url'],
                     $item['title'],
                     $marks === [] ? '' : ' ' . implode(' ', $marks),
+                    $this->area($item['verdict']),
                     $item['verdict']['confidence'],
                     $item['verdict']['suggested_status'] ?? '-',
                     $this->trim($item['verdict']['rationale'], 200)
@@ -334,13 +387,63 @@ class Renderer
             $out[] = '|---|---|---|---|';
             foreach ($band as $item) {
                 $out[] = sprintf(
-                    '| [#%d](%s) %s | %s | %dd | %s |',
+                    '| [#%d](%s) %s%s | %s | %dd | %s |',
                     $item['number'],
                     $item['url'],
                     $item['title'],
+                    empty($item['verdict']['metadata_incomplete']) ? '' : ' `template incomplete`',
                     $item['verdict']['waiting_on'] ?? '-',
                     $item['daysSinceUpdate'],
                     $this->trim($item['verdict']['rationale'], 200)
+                );
+            }
+            $out[] = '';
+        }
+
+        $misrouted = array_values(array_filter(
+            $prs,
+            fn (array $i): bool => !empty($i['verdict']['target_branch_looks_wrong'])
+        ));
+        if ($misrouted !== []) {
+            $out[] = sprintf('## Branch check (%d)', count($misrouted));
+            $out[] = '';
+            $out[] = 'Labelled a bug fix but opened against `develop`, so the fix would skip '
+                . 'the next patch release. Legitimate when the bug only exists in unreleased '
+                . 'code — worth a glance, not an alarm.';
+            $out[] = '';
+            foreach ($misrouted as $item) {
+                $out[] = sprintf(
+                    '- [#%d](%s) %s — `%s`',
+                    $item['number'],
+                    $item['url'],
+                    $item['title'],
+                    $item['baseBranch'] ?? '?'
+                );
+            }
+            $out[] = '';
+        }
+
+        $withDuplicates = array_values(array_filter(
+            $items,
+            fn (array $i): bool => !empty($i['verdict']['duplicate_candidates'])
+        ));
+        if ($withDuplicates !== []) {
+            $out[] = sprintf('## Possible duplicates (%d)', count($withDuplicates));
+            $out[] = '';
+            $out[] = 'Picked from a keyword shortlist, so these are suggestions rather than '
+                . 'matches — and a duplicate sharing no title keywords will not appear here.';
+            $out[] = '';
+            foreach ($withDuplicates as $item) {
+                $numbers = array_map(
+                    fn ($n): string => '#' . $n,
+                    $item['verdict']['duplicate_candidates']
+                );
+                $out[] = sprintf(
+                    '- [#%d](%s) %s — possibly the same as %s',
+                    $item['number'],
+                    $item['url'],
+                    $item['title'],
+                    implode(', ', $numbers)
                 );
             }
             $out[] = '';
@@ -363,6 +466,22 @@ class Renderer
                 $item['title'],
                 $this->trim($item['verdict']['rationale'], 200)
             );
+        }
+        $out[] = '';
+
+        $out[] = sprintf('## Not classified (%d)', count($skipped));
+        $out[] = '';
+        if ($skipped === []) {
+            $out[] = '_Nothing was left out._';
+        } else {
+            $out[] = '<details>';
+            $out[] = '<summary>Why each item was left out</summary>';
+            $out[] = '';
+            foreach ($skipped as $entry) {
+                $out[] = sprintf('- #%d — %s', $entry['number'], $entry['reason']);
+            }
+            $out[] = '';
+            $out[] = '</details>';
         }
         $out[] = '';
 

@@ -5,6 +5,7 @@ namespace Console\App\Command;
 use Console\App\Service\Anthropic;
 use Console\App\Service\Github;
 use Console\App\Service\Github\Query;
+use Console\App\Service\Triage\Prompts;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -317,16 +318,11 @@ class GithubTriageCalibrateCommand extends Command
      */
     protected function evaluate(array $heldOut, OutputInterface $output): array
     {
-        $schemas = json_decode((string) file_get_contents(self::RESOURCES . '/schemas.json'), true);
-        if (!is_array($schemas)) {
-            throw new \RuntimeException('Could not read the output schemas');
-        }
-
-        $system = Anthropic::cachedSystem(
-            (string) file_get_contents(self::RESOURCES . '/severity_system.md')
-            . PHP_EOL . PHP_EOL
-            . (string) file_get_contents(self::RESOURCES . '/severity_examples.md')
-        );
+        // Through Prompts, so the calibration measures byte-for-byte what the
+        // weekly run executes. Assembling it here as well would let the two
+        // drift without anything failing.
+        $system = Anthropic::cachedSystem(Prompts::severity());
+        $schema = Prompts::schema('issue');
 
         $predictions = [];
         $failures = 0;
@@ -340,7 +336,7 @@ class GithubTriageCalibrateCommand extends Command
             try {
                 $verdict = $this->anthropic->classify(
                     $system,
-                    $schemas['issue']['schema'],
+                    $schema,
                     $this->renderForEval($issue)
                 );
             } catch (\RuntimeException $e) {

@@ -115,7 +115,10 @@ class Anthropic
                 // Transient: throttling, a dropped connection, a 5xx. Worth
                 // another go after backing off.
                 $lastError = $e;
-                sleep(5 * (2 ** $attempt));
+                // No point sleeping before giving up on the final attempt.
+                if ($attempt < self::MAX_ATTEMPTS - 1) {
+                    sleep(5 * (2 ** $attempt));
+                }
 
                 continue;
             } catch (APIStatusException $e) {
