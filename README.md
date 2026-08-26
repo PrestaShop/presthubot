@@ -207,8 +207,9 @@ reads a ranked list instead of the whole tracker, and post it to Slack.
 
 Each item is sent to Claude with a rubric and comes back with a proposal:
 - issues get a severity (`Critical` / `Major` / `Minor` / `Trivial`), a suggested
-  next step (`TBR` / `NMI` / `Needs Specs` / ready), and flags for a possible
-  security report or a regression
+  next step (`TBR` / `NMI` / `Needs Specs` / ready), the area concerned, possible
+  duplicates picked from a keyword shortlist, and flags for a possible security
+  report or a regression
 - pull requests get an attention level and, above all, **who they are actually
   waiting on** - read from the timeline rather than from labels, which are often
   stale
@@ -231,18 +232,24 @@ Runs every Monday from `.github/workflows/triageagent.yml`.
 | `--slackchannel=<slackchannel>` | Yes/No | Use it or use .env (defaults to `SLACK_CHANNEL_CORE`) |
 | `--since=<YYYY-MM-DD>` | No | Window start. Defaults to 7 days ago |
 | `--until=<YYYY-MM-DD>` | No | Window end. Defaults to today. Pass both to reproduce a past week exactly |
-| `--limit=<n>` | No | Classify only the first n items - useful when tuning the rubric |
-| `--dry-run` | No | Render the report but do not post it to Slack |
+| `--limit=<n>` | No | Classify only the first n issues and n pull requests, so a short run still exercises both rubrics |
+| `--dry-run` | No | Render everything but do not post it to Slack |
+| `--report=<path>` | No | Where to write the full report |
+| `--run-url=<url>` | No | Link the Slack digest back to this run. The workflow fills it in |
 
 The workflow exposes the same two controls on `workflow_dispatch`: a `dry-run`
 toggle and a `channel` override.
 
 Two outputs, on purpose. The **Slack message is a digest**: the attention list,
-any proposed Critical, a census of the rest, and a link back. Slack collapses
-anything much past four thousand characters behind a "See more", so listing
-every Minor there would hide the part that matters. The **full report** — every
-item, every rationale — goes to the job summary and an artifact, and is what the
-digest links to.
+any proposed Critical, the blocking pull requests, a census of the rest, and a
+link back. Nothing is repeated between those blocks — an item named in the
+attention list is skipped further down. Slack collapses anything much past four
+thousand characters behind a "See more", so listing every Minor there would hide
+the part that matters.
+
+The **full report** — every item, every rationale, plus the branch check,
+possible duplicates and the list of what was skipped and why — goes to the job
+summary and an artifact, and is what the digest links to.
 
 #### The rubric
 
@@ -265,7 +272,7 @@ command:
   closed issues that maintainers labelled themselves.
 - `pr_triage_system.md` covers pull requests, where severity does not apply.
 
-The rubric plus its examples is around 7 500 tokens and is identical for every
+The rubric plus its examples is around 8 000 tokens and is identical for every
 item in a run, so it is sent as a cached block: the first item pays for it and
 the rest read it back at a tenth of the price. The command prints the measured
 token usage and cost at the end of every run, and warns if the cache is being
@@ -280,7 +287,7 @@ weekly report is confident verdicts nobody can check.
 ```bash
 php bin/console github:triage:calibrate            # score the held-out set
 php bin/console github:triage:calibrate --mine     # regenerate the worked examples
-php bin/console github:triage:calibrate --limit=20 # cheap smoke test
+php bin/console github:triage:calibrate --limit=20 # smoke test, 5 of each class
 ```
 
 Manual only, from `.github/workflows/triagecalibrate.yml`. It is not a recurring
@@ -310,7 +317,7 @@ can vanish. Expect roughly 80 minutes and $7 for the full 334 issues.
 | `--anthropic-token=<token>` | Yes/No | Use it or use .env. Not needed with `--mine` |
 | `--mine` | No | Regenerate `severity_examples.md` from the pool and stop |
 | `--refresh` | No | Refetch the corpus instead of using the cached copy |
-| `--limit=<n>` | No | Score only the first n held-out issues |
+| `--limit=<n>` | No | Score only the first n held-out issues. The set is interleaved, so any prefix stays balanced across the four classes |
 | `--report=<path>` | No | Where to write the scored report |
 
 #### Known limits
@@ -318,6 +325,9 @@ can vanish. Expect roughly 80 minutes and $7 for the full 334 issues.
 - The weekly window cannot surface a long-stalled PR: selecting on recent
   updates means one nobody has touched in months is invisible *because* nobody
   touched it. This covers what moved, not what is rotting.
+- Duplicate detection can only pick from a keyword shortlist, so it cannot
+  invent an issue number and cannot find a duplicate that shares no title
+  keywords.
 - PR triage reads metadata, not diffs. It can say a PR waited a month; it cannot
   say whether the change is any good.
 - Severity is proposed from the report, not from a reproduction. An overstated
