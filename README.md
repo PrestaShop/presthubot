@@ -234,6 +234,10 @@ Runs every Monday from `.github/workflows/triageagent.yml`.
 | `--limit=<n>` | No | Classify only the first n items - useful when tuning the rubric |
 | `--dry-run` | No | Render the report but do not post it to Slack |
 
+The workflow exposes the same two controls on `workflow_dispatch`: a `dry-run`
+toggle and a `channel` override. Aim the first live run at a test channel rather
+than letting it land in the core channel unseen.
+
 #### The rubric
 
 The prompts live in `src/App/Resources/triage/` and are the substance of this

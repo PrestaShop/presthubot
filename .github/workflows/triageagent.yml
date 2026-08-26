@@ -18,6 +18,11 @@ on:
         required: false
         default: true
         type: boolean
+      channel:
+        description: 'Slack channel to post to. Leave empty for SLACK_CHANNEL_CORE. Aim the first live run at a test channel.'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   triageagent:
@@ -42,7 +47,14 @@ jobs:
               echo 'SLACK_TOKEN='${{ secrets.SLACK_TOKEN }} >> .env && \
               echo 'SLACK_CHANNEL_CORE='${{ secrets.SLACK_CHANNEL_CORE }} >> .env
 
+      # Arguments are assembled in the shell rather than interpolated into the
+      # command line, so an empty input cannot turn into a stray argument.
       -   name: Execute script
+          env:
+            DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry-run) && '1' || '' }}
+            CHANNEL: ${{ github.event.inputs.channel }}
           run: |
-              php bin/console github:triage:weekly \
-                ${{ (github.event_name == 'workflow_dispatch' && inputs.dry-run) && '--dry-run' || '' }}
+              ARGS=""
+              if [ -n "$DRY_RUN" ]; then ARGS="$ARGS --dry-run"; fi
+              if [ -n "$CHANNEL" ]; then ARGS="$ARGS --slackchannel=$CHANNEL"; fi
+              php bin/console github:triage:weekly $ARGS
