@@ -1,0 +1,79 @@
+# Scores the triage severity rubric against the labels maintainers actually
+# applied, so the weekly agent's verdicts can be trusted - or not.
+#
+# Manual only. This is not a recurring job: run it when the rubric changes. The
+# split seed is fixed, so two runs are directly comparable and this doubles as a
+# regression test on the prompt.
+name: Triage Calibration
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Score only the first N held-out issues. 0 scores all ~334. Use a small number for a cheap smoke test.'
+        required: false
+        default: '0'
+        type: string
+      mine:
+        description: 'Regenerate the worked examples from the corpus and stop, without scoring'
+        required: false
+        default: false
+        type: boolean
+      refresh:
+        description: 'Refetch the corpus from GitHub instead of using the cache'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    name: Triage Calibration
+    # Scoring the full held-out set is a few hundred sequential calls; the
+    # default six hours is ample, but be explicit about it.
+    timeout-minutes: 240
+    steps:
+      -   name: Setup PHP
+          uses: shivammathur/setup-php@v2
+          with:
+            php-version: '8.4'
+            extensions: mbstring, intl, gd, xml, dom, json, fileinfo, curl, zip, iconv
+
+      -   uses: actions/checkout@v2
+
+      -   name: Composer install
+          run: composer install --ansi --prefer-dist --no-interaction --no-progress --quiet
+
+      -   name: Write env file
+          run: |
+              echo 'GH_TOKEN='${{ secrets.GH_TOKEN }} > .env && \
+              echo 'ANTHROPIC_API_KEY='${{ secrets.ANTHROPIC_API_KEY }} >> .env
+
+      -   name: Calibrate
+          env:
+            LIMIT: ${{ inputs.limit }}
+            MINE: ${{ inputs.mine && '1' || '' }}
+            REFRESH: ${{ inputs.refresh && '1' || '' }}
+          run: |
+              ARGS=""
+              if [ -n "$MINE" ]; then ARGS="$ARGS --mine"; fi
+              if [ -n "$REFRESH" ]; then ARGS="$ARGS --refresh"; fi
+              if [ -n "$LIMIT" ] && [ "$LIMIT" != "0" ]; then ARGS="$ARGS --limit=$LIMIT"; fi
+              php bin/console github:triage:calibrate $ARGS
+
+      -   name: Publish the report
+          if: always()
+          run: |
+              if [ -f var/report/triage-calibration.md ]; then
+                cat var/report/triage-calibration.md >> "$GITHUB_STEP_SUMMARY"
+              fi
+
+      -   name: Upload the report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: triage-calibration-${{ github.run_id }}
+            path: |
+              var/report/triage-calibration.md
+              src/App/Resources/triage/severity_examples.md
+            if-no-files-found: ignore
