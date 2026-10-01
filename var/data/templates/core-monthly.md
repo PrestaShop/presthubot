@@ -25,7 +25,7 @@ Dear community,
 ## A quick update about PrestaShop's GitHub issues and pull requests:
 
 - [{issues_opened} new issues](https://github.com/search?q=repo%3APrestaShop%2FPrestaShop+is%3Apublic++is%3Aissue+created%3A{date_start}..{date_end}) have been created in the project repositories;
-- [{issues_closed} have been closed](https://github.com/search?q=repo%3APrestaShop%2FPrestaShop+is%3Apublic++is%3Aissue+closed%3A{date_start}..{date_end}), including [{issues_fixed} fixed issues](https://github.com/search?q=repo%3APrestaShop%2FPrestaShop+is%3Apublic++is%3Aissue+label%3Afixed+closed%3A{date_start}..{date_end}) on the core;
+- [{issues_closed} have been closed](https://github.com/search?q=repo%3APrestaShop%2FPrestaShop+is%3Apublic++is%3Aissue+closed%3A{date_start}..{date_end}), including [{issues_fixed} fixed issues](https://github.com/search?q=repo%3APrestaShop%2FPrestaShop+is%3Apublic++is%3Aissue+reason%3Acompleted+linked%3Apr+closed%3A{date_start}..{date_end}) on the core;
 - [{prs_opened} pull requests have been opened](https://github.com/search?q=org%3APrestaShop+is%3Apublic++-repo%3Aprestashop%2Fprestashop.github.io++is%3Apr+created%3A{date_start}..{date_end}) in the project repositories;
 - [{prs_closed} pull requests have been closed](https://github.com/search?q=org%3APrestaShop+is%3Apublic++-repo%3Aprestashop%2Fprestashop.github.io++is%3Apr+closed%3A{date_start}..{date_end}), including [{prs_merged} merged pull requests](https://github.com/search?q=org%3APrestaShop+is%3Apublic++-repo%3Aprestashop%2Fprestashop.github.io++is%3Apr+merged%3A{date_start}..{date_end}).
         

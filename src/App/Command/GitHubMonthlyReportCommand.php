@@ -205,7 +205,7 @@ class GitHubMonthlyReportCommand extends Command
         $this->results['issues_closed'] = count($closedIssues);
 
         $graphQLQuery = new Query();
-        $graphQLQuery->setQuery('type:issue label:fixed closed:' . $this->dateStart . '..' . $this->dateEnd . ' repo:PrestaShop/PrestaShop');
+        $graphQLQuery->setQuery('type:issue reason:completed linked:pr closed:' . $this->dateStart . '..' . $this->dateEnd . ' repo:PrestaShop/PrestaShop');
         $fixedIssues = $this->github->search($graphQLQuery);
 
         $this->results['issues_fixed'] = count($fixedIssues);
