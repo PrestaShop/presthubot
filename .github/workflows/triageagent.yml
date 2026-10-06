@@ -1,0 +1,82 @@
+# Weekly pre-qualification of the PrestaShop core tracker for the sheriff.
+#
+# Reads the issues and pull requests touched in the past week, asks Claude for a
+# severity / attention proposal on each, and posts the ranked result to Slack.
+#
+# It proposes and never decides: nothing is written back to GitHub - no label,
+# no board card, no comment.
+name: Triage Agent
+
+on:
+  schedule:
+    # Mondays at 07:00 UTC, before the week's triage starts.
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Render the report but do not post it to Slack'
+        required: false
+        default: true
+        type: boolean
+      channel:
+        description: 'Slack channel to post to. Leave empty for SLACK_CHANNEL_CORE. Aim the first live run at a test channel.'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  triageagent:
+    runs-on: ubuntu-latest
+    name: Triage Agent
+    # Around 20 minutes for a normal week. A run that reaches an hour is stuck
+    # retrying, not working, and should be cut rather than left on the default
+    # six hours.
+    timeout-minutes: 60
+    steps:
+      -   name: Setup PHP
+          uses: shivammathur/setup-php@v2
+          with:
+            php-version: '8.4'
+            extensions: mbstring, intl, gd, xml, dom, json, fileinfo, curl, zip, iconv
+
+      -   uses: actions/checkout@v2
+
+      -   name: Composer install
+          run: composer install --ansi --prefer-dist --no-interaction --no-progress --quiet
+
+      -   name: Write env file
+          run: |
+              echo 'GH_TOKEN='${{ secrets.GH_TOKEN }} > .env && \
+              echo 'ANTHROPIC_API_KEY='${{ secrets.ANTHROPIC_API_KEY }} >> .env && \
+              echo 'SLACK_TOKEN='${{ secrets.SLACK_TOKEN }} >> .env && \
+              echo 'SLACK_CHANNEL_CORE='${{ secrets.SLACK_CHANNEL_CORE }} >> .env
+
+      # Arguments are assembled in the shell rather than interpolated into the
+      # command line, so an empty input cannot turn into a stray argument.
+      -   name: Execute script
+          env:
+            DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry-run) && '1' || '' }}
+            CHANNEL: ${{ github.event.inputs.channel }}
+          run: |
+              ARGS=""
+              if [ -n "$DRY_RUN" ]; then ARGS="$ARGS --dry-run"; fi
+              if [ -n "$CHANNEL" ]; then ARGS="$ARGS --slackchannel=$CHANNEL"; fi
+              php bin/console github:triage:weekly $ARGS \
+                --run-url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+      # The Slack digest is capped per band and links here for the rest, so the
+      # full report has to exist somewhere readable.
+      -   name: Publish the full report
+          if: always()
+          run: |
+              if [ -f var/report/triage-weekly.md ]; then
+                cat var/report/triage-weekly.md >> "$GITHUB_STEP_SUMMARY"
+              fi
+
+      -   name: Upload the full report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: triage-weekly-${{ github.run_id }}
+            path: var/report/triage-weekly.md
+            if-no-files-found: ignore
